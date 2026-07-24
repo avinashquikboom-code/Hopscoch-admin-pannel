@@ -168,7 +168,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
       icon: Settings,
       items: [
         { name: 'General Settings', href: '/settings', icon: Settings },
-        { name: 'Languages & Currency', href: '/settings/languages', icon: Languages },
+        { name: 'Languages, Currencies & Countries', href: '/settings/languages', icon: Languages },
         { name: 'Integrations', href: '/settings/integrations', icon: SlidersHorizontal },
         { name: 'Reset Store Data', href: '/settings/reset', icon: Trash2 },
       ],
