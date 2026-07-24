@@ -250,6 +250,7 @@ export default function NewProductPage() {
     }
 
     const price = parseFloat(formDataObj.get('price') as string) || 0;
+    const shippingCharge = parseFloat(formDataObj.get('shippingCharge') as string) || 0;
     const stock = parseInt(formDataObj.get('stock') as string) || 0;
 
     const isSavedTaxRule = selectedTaxRule && selectedTaxRule !== 'none' && selectedTaxRule !== '__custom__';
@@ -258,6 +259,7 @@ export default function NewProductPage() {
       sku: formDataObj.get('sku') as string,
       price: price,
       basePrice: price,
+      shippingCharge: shippingCharge,
       stock: stock,
       categoryId: Number(selectedSubCategory || selectedCategory),
       brandId: Number(selectedBrand),
@@ -574,18 +576,22 @@ export default function NewProductPage() {
                   <CardDescription>Set pricing and stock information</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div className="space-y-2">
                       <Label htmlFor="price">Price *</Label>
-                      <Input id="price" name="price" type="number" placeholder="0.00" required />
+                      <Input id="price" name="price" type="number" step="0.01" placeholder="0.00" required />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="mrp">MRP</Label>
-                      <Input id="mrp" type="number" placeholder="0.00" />
+                      <Input id="mrp" type="number" step="0.01" placeholder="0.00" />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="discount">Discount</Label>
                       <Input id="discount" type="number" placeholder="0" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="shippingCharge">Shipping Charge (₹)</Label>
+                      <Input id="shippingCharge" name="shippingCharge" type="number" step="0.01" placeholder="0.00" defaultValue="0.00" />
                     </div>
                   </div>
 

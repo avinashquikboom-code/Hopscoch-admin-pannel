@@ -93,6 +93,7 @@ function normalizeProduct(raw: any) {
     name: raw.name || raw.title || 'Unnamed Product',
     sku: raw.sku || (raw.variants && raw.variants[0]?.sku) || raw.code || `SKU-${raw.id ? String(raw.id).slice(0, 6) : '000'}`,
     price: Number(raw.basePrice || raw.price || raw.sellingPrice || raw.mrp || 0),
+    shippingCharge: Number(raw.shippingCharge || raw.shipping_charge || 0),
     stock: Number(raw.stock ?? stockFromVariant ?? raw.stockQuantity ?? raw.inventory?.quantity ?? 0),
     category: raw.category?.name || raw.categoryName || raw.category || 'General',
     brand: raw.brand?.name || raw.brandName || raw.brand || 'Unbranded',
@@ -285,6 +286,7 @@ export default function ProductsPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
   const [editPrice, setEditPrice] = useState('');
+  const [editShippingCharge, setEditShippingCharge] = useState('');
   const [editBrand, setEditBrand] = useState('');
   const [editDesc, setEditDesc] = useState('');
   const [editStatus, setEditStatus] = useState('PUBLISHED');
@@ -518,6 +520,7 @@ export default function ProductsPage() {
       const body: any = {
         name: editName,
         price: parseFloat(editPrice) || 0,
+        shippingCharge: parseFloat(editShippingCharge) || 0,
         brand: editBrand,
         description: editDesc,
         status: editStatus,
@@ -1610,6 +1613,7 @@ export default function ProductsPage() {
                           } else {
                             setEditName(selectedProduct.name);
                             setEditPrice(String(selectedProduct.price));
+                            setEditShippingCharge(String(selectedProduct.shippingCharge || 0));
                             setEditBrand(selectedProduct.brand);
                             setEditDesc(selectedProduct.description);
                             setEditStatus(selectedProduct.status?.toUpperCase() || 'PUBLISHED');
@@ -1751,26 +1755,39 @@ export default function ProductsPage() {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-3">
                     <Card className="border-border/30 bg-muted/10 shadow-sm rounded-lg">
-                      <CardContent className="p-4">
+                      <CardContent className="p-3">
                         <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
                           <DollarSign className="h-3.5 w-3.5 text-primary" /> Listing Price
                         </span>
                         {isEditing ? (
                           <Input type="number" step="0.01" value={editPrice} onChange={e => setEditPrice(e.target.value)} className="h-9 rounded-md border-border/50 mt-1.5 font-mono text-sm focus:border-primary" />
                         ) : (
-                          <h4 className="text-2xl font-black text-foreground mt-1.5">{fmtPrice(selectedProduct.price)}</h4>
+                          <h4 className="text-xl font-black text-foreground mt-1.5">{fmtPrice(selectedProduct.price)}</h4>
                         )}
                       </CardContent>
                     </Card>
 
                     <Card className="border-border/30 bg-muted/10 shadow-sm rounded-lg">
-                      <CardContent className="p-4">
+                      <CardContent className="p-3">
                         <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
-                          <Layers className="h-3.5 w-3.5 text-primary" /> Department Category
+                          🚚 Shipping Fee
                         </span>
-                        <h4 className="text-lg font-bold text-foreground mt-2">{selectedProduct.category}</h4>
+                        {isEditing ? (
+                          <Input type="number" step="0.01" value={editShippingCharge} onChange={e => setEditShippingCharge(e.target.value)} className="h-9 rounded-md border-border/50 mt-1.5 font-mono text-sm focus:border-primary" />
+                        ) : (
+                          <h4 className="text-xl font-black text-foreground mt-1.5">{fmtPrice(selectedProduct.shippingCharge || 0)}</h4>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-border/30 bg-muted/10 shadow-sm rounded-lg">
+                      <CardContent className="p-3">
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                          <Layers className="h-3.5 w-3.5 text-primary" /> Category
+                        </span>
+                        <h4 className="text-sm font-bold text-foreground mt-2 truncate">{selectedProduct.category}</h4>
                       </CardContent>
                     </Card>
                   </div>
