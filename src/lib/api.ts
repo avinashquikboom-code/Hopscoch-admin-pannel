@@ -11,45 +11,93 @@ export const APP_TYPE = 'admin'; // Admin panel specific app type
  * Normalizes image URLs for display across the admin panel.
  * Handles relative paths, double slashes, blob URLs, and overrides stale local IP hostnames.
  */
-export function getImageUrl(url?: string | null): string {
+export function getImageUrl(url?: any): string {
   if (!url) return '';
 
-  // Local file previews (blob URLs / base64 data URIs)
+  // 1. Handle object/array inputs (e.g. { url: '...' }, { imageUrl: '...' }, ['...'])
+  if (typeof url === 'object') {
+    if (Array.isArray(url)) {
+      url = url[0];
+    } else {
+      url = url.url || url.imageUrl || url.image_url || url.path || url.src || '';
+    }
+    if (!url) return '';
+  }
+
+  if (typeof url !== 'string') return '';
+
+  url = url.trim();
+  if (!url) return '';
+
+  // 2. Handle JSON strings (e.g. '["/uploads/123.jpg"]' or '{"url":"/uploads/123.jpg"}')
+  if (url.startsWith('[') || url.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(url);
+      return getImageUrl(parsed);
+    } catch {
+      // Not valid JSON, continue normal string parsing
+    }
+  }
+
+  // 3. Strip escaped wrapping quotes (e.g. '"/uploads/123.jpg"')
+  if ((url.startsWith('"') && url.endsWith('"')) || (url.startsWith("'") && url.endsWith("'"))) {
+    url = url.slice(1, -1).trim();
+  }
+
+  // 4. Local file previews (blob URLs / base64 data URIs)
   if (url.startsWith('blob:') || url.startsWith('data:')) {
     return url;
   }
 
-  // If full HTTP/HTTPS URL
+  // 5. If full HTTP/HTTPS URL
   if (url.startsWith('http://') || url.startsWith('https://')) {
     try {
       const parsed = new URL(url);
-      // Replace hardcoded local IPs / localhost with current API_BASE origin
+
+      const isBrowserLocalhost = typeof window !== 'undefined' && (
+        window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1'
+      );
+
+      // Only rewrite localhost/local IP URLs to API_BASE if the frontend is running in production (not on localhost)
       if (
-        parsed.hostname === 'localhost' ||
-        parsed.hostname === '127.0.0.1' ||
-        parsed.hostname.startsWith('192.168.') ||
-        parsed.hostname.startsWith('10.') ||
-        parsed.hostname.startsWith('172.')
+        !isBrowserLocalhost &&
+        (
+          parsed.hostname === 'localhost' ||
+          parsed.hostname === '127.0.0.1' ||
+          parsed.hostname.startsWith('192.168.') ||
+          parsed.hostname.startsWith('10.') ||
+          parsed.hostname.startsWith('172.')
+        )
       ) {
         const cleanBase = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE;
         const path = parsed.pathname.startsWith('/') ? parsed.pathname : `/${parsed.pathname}`;
         return `${cleanBase}${path}${parsed.search}`;
       }
-      // Upgrade HTTP to HTTPS if site is served over HTTPS to avoid mixed content block
-      if (typeof window !== 'undefined' && window.location.protocol === 'https:' && parsed.protocol === 'http:') {
+
+      // Upgrade HTTP to HTTPS if site is served over HTTPS (unless it's localhost)
+      if (
+        typeof window !== 'undefined' &&
+        window.location.protocol === 'https:' &&
+        parsed.protocol === 'http:' &&
+        !parsed.hostname.includes('localhost') &&
+        !parsed.hostname.includes('127.0.0.1')
+      ) {
         return url.replace(/^http:\/\//, 'https://');
       }
+
       return url;
     } catch {
       return url;
     }
   }
 
-  // Relative path cleanup
+  // 6. Relative path cleanup
   const cleanPath = url.startsWith('/') ? url : `/${url}`;
   const cleanBase = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE;
   return `${cleanBase}${cleanPath}`;
 }
+
 
 
 function getToken(): string | null {

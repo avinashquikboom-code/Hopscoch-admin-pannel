@@ -932,18 +932,19 @@ export default function OrdersPage() {
                       <div className="p-4 bg-muted/20 space-y-2 text-xs">
                         <div className="flex justify-between text-muted-foreground">
                           <span>Subtotal</span>
-                          <span>{fmtPrice(Math.max(0, selectedOrder.amount - (selectedOrder.shippingFee || 0)))}</span>
+                          <span>{fmtPrice(selectedOrder.subtotal || Math.max(0, selectedOrder.amount - (selectedOrder.shippingFee || 0) - (selectedOrder.taxAmount || 0)))}</span>
                         </div>
-                        {(selectedOrder.shippingFee || selectedOrder.taxAmount) > 0 && (
-                          <div className="flex justify-between text-muted-foreground">
-                            <span>Shipping & Taxes</span>
-                            <span>{fmtPrice((selectedOrder.shippingFee || 0) + (selectedOrder.taxAmount || 0))}</span>
-                          </div>
-                        )}
-                        <Separator className="my-2 border-border/20" />
-                        <div className="flex justify-between text-sm font-black text-foreground">
+                        <div className="flex justify-between text-muted-foreground">
+                          <span>Shipping Fee</span>
+                          <span>{selectedOrder.shippingFee > 0 ? fmtPrice(selectedOrder.shippingFee) : 'Free'}</span>
+                        </div>
+                        <div className="flex justify-between text-foreground font-semibold py-1 border-y border-border/30 my-1">
+                          <span>Tax / GST</span>
+                          <span>{fmtPrice(selectedOrder.taxAmount ? selectedOrder.taxAmount : Math.round((selectedOrder.amount * 0.18) * 100) / 100)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm font-black text-foreground pt-1">
                           <span>Grand Total</span>
-                          <span>{fmtPrice(selectedOrder.amount)}</span>
+                          <span className="text-primary text-base">{fmtPrice(selectedOrder.amount)}</span>
                         </div>
                       </div>
                     </div>

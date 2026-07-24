@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { toast } from '@/components/ui/toast';
 import {
   Table,
   TableBody,
@@ -121,19 +122,28 @@ export default function SettingsPage() {
     setResetLoading(true);
     setResetError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/admin/reset-data`, {
+      let res = await fetch(`${API_BASE}/api/v1/admin/settings/reset-data`, {
         method: 'POST',
         headers: authHeaders(),
-        body: JSON.stringify({ password: resetPassword }),
+        body: JSON.stringify({ password: resetPassword, scope: 'all' }),
       });
+      if (!res.ok) {
+        res = await fetch(`${API_BASE}/api/admin/reset-data`, {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({ password: resetPassword, scope: 'all' }),
+        });
+      }
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || 'Failed to reset store data');
 
-      alert('All store data has been successfully reset.');
+      toast.success('All store data has been successfully reset.');
       setIsResetOpen(false);
       setResetPassword('');
       setResetConfirmText('');
-      window.location.reload();
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     } catch (err: any) {
       setResetError(err.message || 'Reset failed');
     } finally {

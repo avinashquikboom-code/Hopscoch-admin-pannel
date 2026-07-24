@@ -20,11 +20,10 @@ import {
   RefreshCw,
   ShieldCheck,
   BrainCircuit,
-  MapPin
+  MapPin,
+  Cloud
 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
-
-
 
 function authHeaders(): HeadersInit {
   const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
@@ -35,12 +34,14 @@ export default function IntegrationsSettingsPage() {
   const [shiprocket, setShiprocket] = useState({ email: '', password: '', base_url: '' });
   const [razorpay, setRazorpay] = useState({ key_id: '', key_secret: '' });
   const [google, setGoogle] = useState({ gemini_api_key: '', maps_api_key: '' });
+  const [aws, setAws] = useState({ access_key_id: '', secret_access_key: '', region: 'ap-south-1', bucket_name: '' });
 
   // Show/Hide password states
   const [showRzpSecret, setShowRzpSecret] = useState(false);
   const [showSrPassword, setShowSrPassword] = useState(false);
   const [showGemini, setShowGemini] = useState(false);
   const [showMaps, setShowMaps] = useState(false);
+  const [showAwsSecret, setShowAwsSecret] = useState(false);
 
   // Test Connection States
   const [testingShiprocket, setTestingShiprocket] = useState(false);
@@ -52,6 +53,9 @@ export default function IntegrationsSettingsPage() {
   const [testingGoogle, setTestingGoogle] = useState(false);
   const [googleTestResult, setGoogleTestResult] = useState<'success' | 'fail' | null>(null);
 
+  const [testingAws, setTestingAws] = useState(false);
+  const [awsTestResult, setAwsTestResult] = useState<'success' | 'fail' | null>(null);
+
   const loadSettings = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/v1/admin/settings/integrations`, { headers: authHeaders() });
@@ -60,6 +64,7 @@ export default function IntegrationsSettingsPage() {
         if (json.data.shiprocket) setShiprocket(json.data.shiprocket);
         if (json.data.razorpay) setRazorpay(json.data.razorpay);
         if (json.data.google) setGoogle(json.data.google);
+        if (json.data.aws) setAws(json.data.aws);
       }
     } catch (err) {
       console.error(err);
@@ -70,11 +75,11 @@ export default function IntegrationsSettingsPage() {
     loadSettings();
   }, []);
 
-  const handleSave = async (provider: 'shiprocket' | 'razorpay' | 'google') => {
+  const handleSave = async (provider: 'shiprocket' | 'razorpay' | 'google' | 'aws') => {
     try {
       const payload = {
         provider,
-        settings: provider === 'shiprocket' ? shiprocket : provider === 'razorpay' ? razorpay : google,
+        settings: provider === 'shiprocket' ? shiprocket : provider === 'razorpay' ? razorpay : provider === 'google' ? google : aws,
       };
 
       const res = await fetch(`${API_BASE}/api/v1/admin/settings/integrations`, {
@@ -84,7 +89,7 @@ export default function IntegrationsSettingsPage() {
       });
 
       if (res.ok) {
-        const label = provider === 'shiprocket' ? 'Shiprocket' : provider === 'razorpay' ? 'Razorpay' : 'Google';
+        const label = provider === 'shiprocket' ? 'Shiprocket' : provider === 'razorpay' ? 'Razorpay' : provider === 'google' ? 'Google' : 'AWS S3';
         toast.success(`${label} credentials saved successfully.`);
         loadSettings();
       } else {
@@ -97,8 +102,8 @@ export default function IntegrationsSettingsPage() {
     }
   };
 
-  const handleDisconnect = async (provider: 'shiprocket' | 'razorpay' | 'google', keyName?: string) => {
-    const label = keyName === 'gemini_api_key' ? 'Google Gemini Vision' : keyName === 'maps_api_key' ? 'Google Places API' : provider === 'shiprocket' ? 'Shiprocket' : 'Razorpay';
+  const handleDisconnect = async (provider: 'shiprocket' | 'razorpay' | 'google' | 'aws', keyName?: string) => {
+    const label = keyName === 'gemini_api_key' ? 'Google Gemini Vision' : keyName === 'maps_api_key' ? 'Google Places API' : provider === 'shiprocket' ? 'Shiprocket' : provider === 'razorpay' ? 'Razorpay' : 'AWS S3 Bucket';
     if (!confirm(`Are you sure you want to disconnect ${label}? This will clear its saved credentials.`)) {
       return;
     }
@@ -107,10 +112,12 @@ export default function IntegrationsSettingsPage() {
         ? { email: '', password: '', base_url: '' }
         : provider === 'razorpay'
         ? { key_id: '', key_secret: '' }
-        : {
+        : provider === 'google'
+        ? {
             gemini_api_key: keyName === 'gemini_api_key' ? '' : google.gemini_api_key,
             maps_api_key: keyName === 'maps_api_key' ? '' : google.maps_api_key
-          };
+          }
+        : { access_key_id: '', secret_access_key: '', region: '', bucket_name: '' };
 
       const res = await fetch(`${API_BASE}/api/v1/admin/settings/integrations`, {
         method: 'PUT',
@@ -126,7 +133,7 @@ export default function IntegrationsSettingsPage() {
         } else if (provider === 'razorpay') {
           setRazorpay({ key_id: '', key_secret: '' });
           setRazorpayTestResult(null);
-        } else {
+        } else if (provider === 'google') {
           if (keyName === 'gemini_api_key') {
             setGoogle(prev => ({ ...prev, gemini_api_key: '' }));
           } else if (keyName === 'maps_api_key') {
@@ -135,6 +142,9 @@ export default function IntegrationsSettingsPage() {
             setGoogle({ gemini_api_key: '', maps_api_key: '' });
           }
           setGoogleTestResult(null);
+        } else {
+          setAws({ access_key_id: '', secret_access_key: '', region: 'ap-south-1', bucket_name: '' });
+          setAwsTestResult(null);
         }
       } else {
         toast.error(`Failed to disconnect ${label}.`);
@@ -145,16 +155,19 @@ export default function IntegrationsSettingsPage() {
     }
   };
 
-  const testConnection = async (provider: 'shiprocket' | 'razorpay' | 'google') => {
+  const testConnection = async (provider: 'shiprocket' | 'razorpay' | 'google' | 'aws') => {
     if (provider === 'shiprocket') {
       setTestingShiprocket(true);
       setShiprocketTestResult(null);
     } else if (provider === 'razorpay') {
       setTestingRazorpay(true);
       setRazorpayTestResult(null);
-    } else {
+    } else if (provider === 'google') {
       setTestingGoogle(true);
       setGoogleTestResult(null);
+    } else {
+      setTestingAws(true);
+      setAwsTestResult(null);
     }
 
     try {
@@ -163,27 +176,31 @@ export default function IntegrationsSettingsPage() {
         headers: authHeaders(),
         body: JSON.stringify({
           provider,
-          settings: provider === 'shiprocket' ? shiprocket : provider === 'razorpay' ? razorpay : google,
+          settings: provider === 'shiprocket' ? shiprocket : provider === 'razorpay' ? razorpay : provider === 'google' ? google : aws,
         }),
       });
 
       if (res.ok) {
         if (provider === 'shiprocket') setShiprocketTestResult('success');
         else if (provider === 'razorpay') setRazorpayTestResult('success');
-        else setGoogleTestResult('success');
+        else if (provider === 'google') setGoogleTestResult('success');
+        else setAwsTestResult('success');
       } else {
         if (provider === 'shiprocket') setShiprocketTestResult('fail');
         else if (provider === 'razorpay') setRazorpayTestResult('fail');
-        else setGoogleTestResult('fail');
+        else if (provider === 'google') setGoogleTestResult('fail');
+        else setAwsTestResult('fail');
       }
     } catch (err) {
       if (provider === 'shiprocket') setShiprocketTestResult('fail');
       else if (provider === 'razorpay') setRazorpayTestResult('fail');
-      else setGoogleTestResult('fail');
+      else if (provider === 'google') setGoogleTestResult('fail');
+      else setAwsTestResult('fail');
     } finally {
       if (provider === 'shiprocket') setTestingShiprocket(false);
       else if (provider === 'razorpay') setTestingRazorpay(false);
-      else setTestingGoogle(false);
+      else if (provider === 'google') setTestingGoogle(false);
+      else setTestingAws(false);
     }
   };
 
@@ -563,6 +580,125 @@ export default function IntegrationsSettingsPage() {
               {google.maps_api_key && (
                 <Button
                   onClick={() => handleDisconnect('google', 'maps_api_key')}
+                  variant="ghost"
+                  className="rounded-lg text-rose-500 hover:bg-rose-500/10 hover:text-rose-500 h-11 px-4 text-xs ml-auto"
+                >
+                  Disconnect
+                </Button>
+              )}
+            </div>
+          </Card>
+
+          {/* AWS S3 Storage Integration Card */}
+          <Card className="border-border/40 rounded-lg bg-card shadow-sm overflow-hidden flex flex-col justify-between">
+            <CardContent className="p-6 space-y-5 flex-1">
+
+              {/* Header block */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 dark:text-amber-400">
+                    <Cloud className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-foreground text-lg">AWS S3 Storage</h3>
+                  </div>
+                </div>
+                <StatusBadge configured={Boolean(aws.access_key_id && aws.secret_access_key && aws.bucket_name)} />
+              </div>
+
+              {/* Setup Box */}
+              <div className="bg-amber-500/5 border border-amber-500/15 rounded-lg p-4 space-y-1.5 text-xs text-amber-700 dark:text-amber-300/90">
+                <p className="font-bold text-amber-800 dark:text-amber-300">Setup steps</p>
+                <ol className="list-decimal pl-4 space-y-1">
+                  <li>Log in to AWS Console → IAM → Create Access Key</li>
+                  <li>Copy Access Key ID and Secret Access Key</li>
+                  <li>Enter S3 Bucket Name and AWS Region (e.g. ap-south-1)</li>
+                </ol>
+              </div>
+
+              {/* Active display (if configured) */}
+              {Boolean(aws.access_key_id && aws.bucket_name) && (
+                <ActiveKeyRow value={`${aws.bucket_name} (${aws.region || 'ap-south-1'})`} onCopy={() => copyToClipboard(aws.bucket_name, 'S3 Bucket Name')} />
+              )}
+
+              {/* Inputs block */}
+              <div className="space-y-4 pt-1">
+                <div className="space-y-1.5">
+                  <Label htmlFor="awsAccessKeyId" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">AWS Access Key ID</Label>
+                  <Input
+                    id="awsAccessKeyId"
+                    value={aws.access_key_id}
+                    onChange={(e) => setAws({ ...aws, access_key_id: e.target.value })}
+                    placeholder="AKIAIOSFODNN7EXAMPLE"
+                    className="rounded-lg border-border/60 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 h-11 text-sm"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="awsSecretAccessKey" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">AWS Secret Access Key</Label>
+                  <PasswordInput
+                    id="awsSecretAccessKey"
+                    value={aws.secret_access_key}
+                    onChange={(v) => setAws({ ...aws, secret_access_key: v })}
+                    placeholder="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+                    visible={showAwsSecret}
+                    onToggleVisible={() => setShowAwsSecret(!showAwsSecret)}
+                    focusColor="blue"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="awsRegion" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">AWS Region</Label>
+                    <Input
+                      id="awsRegion"
+                      value={aws.region}
+                      onChange={(e) => setAws({ ...aws, region: e.target.value })}
+                      placeholder="ap-south-1"
+                      className="rounded-lg border-border/60 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 h-11 text-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="awsBucketName" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Bucket Name</Label>
+                    <Input
+                      id="awsBucketName"
+                      value={aws.bucket_name}
+                      onChange={(e) => setAws({ ...aws, bucket_name: e.target.value })}
+                      placeholder="my-app-uploads"
+                      className="rounded-lg border-border/60 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 h-11 text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <TestResultBanner result={awsTestResult} failMessage="Connection check failed. Verify AWS credentials & bucket permissions." />
+            </CardContent>
+
+            {/* Bottom Actions */}
+            <div className="p-6 border-t border-border/20 bg-muted/20 flex items-center gap-3">
+              <Button
+                onClick={() => handleSave('aws')}
+                className="rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold h-11 px-6 flex items-center gap-2 text-xs"
+              >
+                <Key className="h-4 w-4" />
+                {Boolean(aws.access_key_id && aws.bucket_name) ? 'Update Credentials' : 'Save Credentials'}
+              </Button>
+
+              <Button
+                type="button"
+                onClick={() => testConnection('aws')}
+                disabled={testingAws}
+                variant="outline"
+                className="rounded-lg border-border/60 h-11 px-4 flex items-center gap-2 text-xs"
+              >
+                <RefreshCw className={`h-4 w-4 ${testingAws ? 'animate-spin' : ''}`} />
+                Test Connection
+              </Button>
+
+              {Boolean(aws.access_key_id || aws.bucket_name) && (
+                <Button
+                  onClick={() => handleDisconnect('aws')}
                   variant="ghost"
                   className="rounded-lg text-rose-500 hover:bg-rose-500/10 hover:text-rose-500 h-11 px-4 text-xs ml-auto"
                 >

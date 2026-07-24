@@ -211,7 +211,7 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
         discount: Number(rawOrder.discountAmount || 0),
         coupon: '',
         shippingCharges: Number(rawOrder.shippingAmount || 0),
-        tax: Number(rawOrder.taxAmount || 0),
+        tax: Number(rawOrder.taxAmount ? rawOrder.taxAmount : Math.round((Number(rawOrder.subtotal || rawOrder.totalAmount || 0) * 0.18) * 100) / 100),
         total: Number(rawOrder.totalAmount || 0),
         orderDate: rawOrder.createdAt ? new Date(rawOrder.createdAt).toLocaleDateString('en-IN') : '',
         expectedDelivery: '',
@@ -457,31 +457,31 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
                 <div className="mt-4 pt-4 border-t space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span>${orderDetails.subtotal.toFixed(2)}</span>
+                    <span>₹{orderDetails.subtotal.toFixed(2)}</span>
                   </div>
                   {orderDetails.discount > 0 && (
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Discount</span>
-                      <span className="text-destructive">-${orderDetails.discount.toFixed(2)}</span>
+                      <span className="text-destructive">-₹{orderDetails.discount.toFixed(2)}</span>
                     </div>
                   )}
                   {orderDetails.coupon && (
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Coupon ({orderDetails.coupon})</span>
-                      <span className="text-success">-${orderDetails.discount.toFixed(2)}</span>
+                      <span className="text-success">-₹{orderDetails.discount.toFixed(2)}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Shipping</span>
-                    <span>${orderDetails.shippingCharges.toFixed(2)}</span>
+                    <span>{orderDetails.shippingCharges > 0 ? `₹${orderDetails.shippingCharges.toFixed(2)}` : 'FREE'}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Tax</span>
-                    <span>${orderDetails.tax.toFixed(2)}</span>
+                  <div className="flex justify-between text-sm py-1.5 border-y border-border/40 my-1 bg-muted/20 px-2 rounded">
+                    <span className="font-semibold text-foreground">Tax / GST (18%)</span>
+                    <span className="font-bold text-foreground">₹{orderDetails.tax.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between items-center pt-2 border-t">
-                    <span className="text-lg font-semibold">Total</span>
-                    <span className="text-2xl font-bold text-primary">${orderDetails.total.toFixed(2)}</span>
+                  <div className="flex justify-between items-center pt-2">
+                    <span className="text-lg font-semibold">Total Amount</span>
+                    <span className="text-2xl font-bold text-primary">₹{orderDetails.total.toFixed(2)}</span>
                   </div>
                 </div>
               </CardContent>
