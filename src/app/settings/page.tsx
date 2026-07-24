@@ -283,6 +283,10 @@ export default function SettingsPage() {
                 {notificationsList.length}
               </Badge>
             </TabsTrigger>
+            <TabsTrigger value="reset" className="rounded-lg py-2 px-4 text-xs font-semibold text-rose-500 hover:text-rose-600 data-[state=active]:bg-rose-500/10 data-[state=active]:text-rose-600 flex items-center gap-1.5">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              <span>Data Reset</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="general" className="mt-0">
@@ -380,6 +384,26 @@ export default function SettingsPage() {
                         <Save className="h-4 w-4" /> Save Configuration
                       </>
                     )}
+                  </Button>
+                </div>
+
+                <Separator className="border-border/10 my-4" />
+                <div className="p-4 border border-rose-500/20 bg-rose-500/5 rounded-xl flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <AlertTriangle className="h-5 w-5 text-rose-500 shrink-0" />
+                    <div>
+                      <h4 className="text-xs font-bold text-foreground">Danger Zone — Reset All Store Data</h4>
+                      <p className="text-[11px] text-muted-foreground">Purge all products, orders, inventory, customers, reviews, and logs.</p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs h-9 px-4 rounded-lg flex items-center gap-1.5 shrink-0 cursor-pointer"
+                    onClick={() => setIsResetOpen(true)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" /> Reset Data
                   </Button>
                 </div>
               </CardContent>
@@ -688,32 +712,54 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
           </TabsContent>
-        </Tabs>
 
-        {/* Danger Zone — Reset Store Data Card */}
-        <Card className="border-rose-500/30 bg-rose-500/5 rounded-2xl overflow-hidden shadow-xs mt-8">
-          <CardContent className="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3.5">
-              <div className="p-3 bg-rose-500/10 text-rose-500 rounded-xl border border-rose-500/20">
-                <AlertTriangle className="h-6 w-6" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-foreground">Danger Zone — Reset All Store Data</h3>
-                <p className="text-xs text-muted-foreground mt-0.5 max-w-xl">
-                  Permanently delete products, orders, inventory, customers, reviews, and transactions. Admin user accounts and Tax Rules will be preserved.
-                </p>
-              </div>
-            </div>
-            <Button
-              type="button"
-              variant="destructive"
-              className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-5 h-10 rounded-xl flex-shrink-0 cursor-pointer"
-              onClick={() => setIsResetOpen(true)}
-            >
-              <Trash2 className="h-4 w-4 mr-1.5" /> Reset Store Data
-            </Button>
-          </CardContent>
-        </Card>
+          <TabsContent value="reset" className="mt-0 space-y-6">
+            <Card className="border-rose-500/30 bg-card/60 backdrop-blur-md rounded-2xl overflow-hidden shadow-xs">
+              <CardContent className="p-6 space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3.5">
+                    <div className="p-3 bg-rose-500/10 text-rose-500 rounded-xl border border-rose-500/20">
+                      <AlertTriangle className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-foreground">Danger Zone — Reset All Store Data</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5 max-w-xl">
+                        Permanently delete products, orders, inventory, customers, reviews, and transactions. Admin user accounts and Tax Rules will be preserved.
+                      </p>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="bg-rose-500/10 text-rose-500 border-rose-500/30 px-3 py-1 font-bold text-xs">
+                    High Risk
+                  </Badge>
+                </div>
+
+                <Separator className="border-border/10" />
+
+                <div className="bg-rose-500/5 border border-rose-500/15 rounded-xl p-4 space-y-2 text-xs text-rose-700 dark:text-rose-300 font-medium">
+                  <p className="font-bold text-sm text-rose-800 dark:text-rose-200">⚠️ Summary of Data Purge Operations:</p>
+                  <ul className="list-disc pl-5 space-y-1 text-xs">
+                    <li>All Products, Variants, Images, and Inventory movements</li>
+                    <li>All Orders, Invoices, Payment history, and Return requests</li>
+                    <li>All Customer Accounts (Admin user accounts remain preserved)</li>
+                    <li>All Carts, Wishlists, Reviews, FAQs, Support Tickets, and Coupons</li>
+                    <li>All Analytics logs, Notifications, and System activity history</li>
+                  </ul>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-6 h-11 rounded-xl flex items-center gap-2 cursor-pointer shadow-md"
+                    onClick={() => setIsResetOpen(true)}
+                  >
+                    <Trash2 className="h-4 w-4" /> Reset Store Data
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         {/* Two-Step Verification Modal for Data Reset */}
         {isResetOpen && (
