@@ -32,6 +32,7 @@ import {
   Home,
   Palette,
   Ruler,
+  Trash2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -166,8 +167,10 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
       name: 'Settings',
       icon: Settings,
       items: [
+        { name: 'General Settings', href: '/settings', icon: Settings },
         { name: 'Languages & Currency', href: '/settings/languages', icon: Languages },
         { name: 'Integrations', href: '/settings/integrations', icon: SlidersHorizontal },
+        { name: 'Reset Store Data', href: '/settings/reset', icon: Trash2 },
       ],
     },
   ];
