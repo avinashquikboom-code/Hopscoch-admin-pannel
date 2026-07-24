@@ -118,7 +118,7 @@ export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [addSheetOpen, setAddSheetOpen] = useState(false);
-  const [formData, setFormData] = useState({ name: '', sku: '', price: '', stock: '', category: '', subCategory: '', brand: '', colors: [] as string[], sizes: [] as string[], description: '', status: 'PUBLISHED', taxType: 'GST', taxPercent: '', selectedTaxRuleId: '' });
+  const [formData, setFormData] = useState({ name: '', sku: '', price: '', shippingCharge: '0.00', stock: '', category: '', subCategory: '', brand: '', colors: [] as string[], sizes: [] as string[], description: '', status: 'PUBLISHED', taxType: 'GST', taxPercent: '', selectedTaxRuleId: '' });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [editImageFiles, setEditImageFiles] = useState<File[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -411,6 +411,7 @@ export default function ProductsPage() {
       name: formData.name, 
       sku: formData.sku && formData.sku.trim() !== '' ? formData.sku.trim() : undefined,
       price: parseFloat(formData.price) || 0,
+      shippingCharge: parseFloat(formData.shippingCharge) || 0,
       stock: parseInt(formData.stock) || 0,
       category: formData.category,
       subCategory: formData.subCategory || undefined,
@@ -478,7 +479,7 @@ export default function ProductsPage() {
       setAddSheetOpen(false);
       setImageFiles([]);
       setSubCategories([]);
-      setFormData({ name: '', sku: '', price: '', stock: '', category: categories[0]?.name || '', subCategory: '', brand: brands[0]?.name || '', colors: [], sizes: [], description: '', status: 'PUBLISHED', taxType: 'GST', taxPercent: '', selectedTaxRuleId: '' });
+      setFormData({ name: '', sku: '', price: '', shippingCharge: '0.00', stock: '', category: categories[0]?.name || '', subCategory: '', brand: brands[0]?.name || '', colors: [], sizes: [], description: '', status: 'PUBLISHED', taxType: 'GST', taxPercent: '', selectedTaxRuleId: '' });
       
       fetchProducts();
       fetchCategories();
@@ -1317,9 +1318,9 @@ export default function ProductsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-1.5">
-                    <Label htmlFor="price" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Price ($)</Label>
+                    <Label htmlFor="price" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Price (₹)</Label>
                     <Input
                       id="price"
                       type="number"
@@ -1327,8 +1328,20 @@ export default function ProductsPage() {
                       required
                       value={formData.price}
                       onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                      placeholder="e.g. 89.99"
+                      placeholder="e.g. 899.00"
                       className="rounded-lg border-border/50 focus:border-primary focus:ring-1 focus:ring-primary/20 h-11"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="shippingCharge" className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1">Shipping (₹)</Label>
+                    <Input
+                      id="shippingCharge"
+                      type="number"
+                      step="0.01"
+                      value={formData.shippingCharge}
+                      onChange={(e) => setFormData({ ...formData, shippingCharge: e.target.value })}
+                      placeholder="0.00"
+                      className="rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20 h-11"
                     />
                   </div>
                   <div className="space-y-1.5">
