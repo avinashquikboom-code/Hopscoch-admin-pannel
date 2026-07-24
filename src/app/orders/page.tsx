@@ -85,7 +85,17 @@ function normalizeOrder(raw: any) {
     status: (raw.status || 'pending').toLowerCase().trim(),
     paymentStatus: (raw.paymentStatus || raw.payment?.status || 'pending').toLowerCase().trim(),
     items: raw._count?.items ?? rawItems.length ?? raw.itemCount ?? 0,
-    date: raw.createdAt ? new Date(raw.createdAt).toLocaleDateString('en-IN') : (raw.orderDate || ''),
+    date: raw.createdAt
+      ? new Date(raw.createdAt).toLocaleString('en-IN', {
+          timeZone: 'Asia/Kolkata',
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        }) + ' IST'
+      : (raw.orderDate || ''),
     trackingNumber: raw.trackingNumber || raw.shipments?.[0]?.trackingNumber || '',
     address: addressStr || 'Standard Shipping Address',
     orderItems: rawItems,
@@ -482,7 +492,7 @@ export default function OrdersPage() {
                       {/* Min Amount */}
                       <div className="space-y-1.5">
                         <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
-                          Min Price ($)
+                          Min Price (₹)
                         </span>
                         <Input
                           type="number"
@@ -497,7 +507,7 @@ export default function OrdersPage() {
                       <div className="space-y-1.5 flex flex-col justify-between">
                         <div>
                           <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
-                            Max Price ($)
+                            Max Price (₹)
                           </span>
                           <Input
                             type="number"

@@ -145,9 +145,17 @@ function authHeaders(): HeadersInit {
   const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
   return { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
 }
-export default function OrderDetailsPage({ params }: { params: Promise<{ id: string }> }) {
-  const unwrappedParams = use(params);
-  const id = unwrappedParams.id;
+export default function OrderDetailsPage({ params }: { params: any }) {
+  const [id, setId] = useState<string>('');
+
+  useEffect(() => {
+    if (!params) return;
+    if (typeof params.then === 'function') {
+      params.then((p: any) => setId(p?.id || ''));
+    } else {
+      setId(params?.id || '');
+    }
+  }, [params]);
 
   // ── Real order data from API ──────────────────────────────────────────────
   const [orderDetails, setOrderDetails] = useState<any>(null);
@@ -213,7 +221,9 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
         shippingCharges: Number(rawOrder.shippingAmount || 0),
         tax: Number(rawOrder.taxAmount ? rawOrder.taxAmount : Math.round((Number(rawOrder.subtotal || rawOrder.totalAmount || 0) * 0.18) * 100) / 100),
         total: Number(rawOrder.totalAmount || 0),
-        orderDate: rawOrder.createdAt ? new Date(rawOrder.createdAt).toLocaleDateString('en-IN') : '',
+        orderDate: rawOrder.createdAt
+          ? new Date(rawOrder.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) + ' IST'
+          : '',
         expectedDelivery: '',
         courierPartner: rawOrder.shipment?.courierName || '',
         trackingNumber: rawOrder.shipment?.trackingId || '',

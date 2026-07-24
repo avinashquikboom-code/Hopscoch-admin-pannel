@@ -4,8 +4,8 @@ import { API_BASE } from '@/lib/api';
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
-  USD: '$',
   INR: '₹',
+  USD: '$',
   EUR: '€',
   GBP: '£',
   JPY: '¥',
@@ -24,8 +24,8 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
 };
 
 const CURRENCY_LOCALES: Record<string, string> = {
-  USD: 'en-US',
   INR: 'en-IN',
+  USD: 'en-US',
   EUR: 'de-DE',
   GBP: 'en-GB',
   JPY: 'ja-JP',
@@ -51,21 +51,20 @@ interface CurrencyContextValue {
 }
 
 const CurrencyContext = createContext<CurrencyContextValue>({
-  currencyCode: 'USD',
-  currencySymbol: '$',
-  fmt: (v) => `$${v.toFixed(2)}`,
+  currencyCode: 'INR',
+  currencySymbol: '₹',
+  fmt: (v) => `₹${(v || 0).toFixed(2)}`,
   setCurrencyCode: () => {},
 });
-
 
 const LS_KEY = 'admin_currency';
 
 export function CurrencyProvider({ children }: { children: React.ReactNode }) {
   const [currencyCode, setCurrencyCodeState] = useState<string>(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem(LS_KEY) || 'USD';
+      return localStorage.getItem(LS_KEY) || 'INR';
     }
-    return 'USD';
+    return 'INR';
   });
 
   // Fetch currency from settings API on mount
@@ -93,15 +92,15 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== 'undefined') localStorage.setItem(LS_KEY, code);
   }, []);
 
-  const currencySymbol = CURRENCY_SYMBOLS[currencyCode] ?? currencyCode + ' ';
+  const currencySymbol = CURRENCY_SYMBOLS[currencyCode] ?? (currencyCode === 'INR' ? '₹' : currencyCode + ' ');
 
   const fmt = useCallback(
     (value: number): string => {
-      const locale = CURRENCY_LOCALES[currencyCode] ?? 'en-US';
+      const locale = CURRENCY_LOCALES[currencyCode] ?? 'en-IN';
       try {
         return new Intl.NumberFormat(locale, {
           style: 'currency',
-          currency: currencyCode,
+          currency: currencyCode || 'INR',
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
         }).format(value || 0);

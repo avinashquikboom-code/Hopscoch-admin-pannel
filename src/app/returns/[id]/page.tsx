@@ -1,7 +1,7 @@
 'use client';
 
 import { getImageUrl } from '@/lib/api';
-import { useState, use } from 'react';
+import { useState, useEffect } from 'react';
 import { AdminLayout } from '@/components/layout/admin-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -109,9 +109,17 @@ const timeline = [
   },
 ];
 
-export default function ReturnDetailsPage({ params }: { params: Promise<{ id: string }> }) {
-  const unwrappedParams = use(params);
-  const id = unwrappedParams.id;
+export default function ReturnDetailsPage({ params }: { params: any }) {
+  const [id, setId] = useState<string>('');
+
+  useEffect(() => {
+    if (!params) return;
+    if (typeof params.then === 'function') {
+      params.then((p: any) => setId(p?.id || ''));
+    } else {
+      setId(params?.id || '');
+    }
+  }, [params]);
   const [adminNotes, setAdminNotes] = useState(returnDetails.adminNotes);
   const statusInfo = statusConfig[returnDetails.status as keyof typeof statusConfig];
 
