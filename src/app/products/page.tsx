@@ -118,6 +118,7 @@ export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [addSheetOpen, setAddSheetOpen] = useState(false);
+  const [shippingType, setShippingType] = useState<'free' | 'paid'>('free');
   const [formData, setFormData] = useState({ name: '', sku: '', price: '', shippingCharge: '0.00', stock: '', category: '', subCategory: '', brand: '', colors: [] as string[], sizes: [] as string[], description: '', status: 'PUBLISHED', taxType: 'GST', taxPercent: '', selectedTaxRuleId: '' });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [editImageFiles, setEditImageFiles] = useState<File[]>([]);
@@ -407,11 +408,13 @@ export default function ProductsPage() {
     const isSavedRule = formData.selectedTaxRuleId && formData.selectedTaxRuleId !== '__custom__' && formData.selectedTaxRuleId !== '__none__';
     const isExemptRule = formData.selectedTaxRuleId === '__none__';
 
+    const finalShippingCharge = shippingType === 'free' ? 0 : (parseFloat(formData.shippingCharge) || 0);
+
     const body: any = {
       name: formData.name, 
       sku: formData.sku && formData.sku.trim() !== '' ? formData.sku.trim() : undefined,
       price: parseFloat(formData.price) || 0,
-      shippingCharge: parseFloat(formData.shippingCharge) || 0,
+      shippingCharge: finalShippingCharge,
       stock: parseInt(formData.stock) || 0,
       category: formData.category,
       subCategory: formData.subCategory || undefined,
@@ -477,6 +480,7 @@ export default function ProductsPage() {
       setProductsList(prev => [optimisticProduct, ...prev]);
 
       setAddSheetOpen(false);
+      setShippingType('free');
       setImageFiles([]);
       setSubCategories([]);
       setFormData({ name: '', sku: '', price: '', shippingCharge: '0.00', stock: '', category: categories[0]?.name || '', subCategory: '', brand: brands[0]?.name || '', colors: [], sizes: [], description: '', status: 'PUBLISHED', taxType: 'GST', taxPercent: '', selectedTaxRuleId: '' });
@@ -1318,7 +1322,7 @@ export default function ProductsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="price" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Price (₹)</Label>
                     <Input
@@ -1330,18 +1334,6 @@ export default function ProductsPage() {
                       onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                       placeholder="e.g. 899.00"
                       className="rounded-lg border-border/50 focus:border-primary focus:ring-1 focus:ring-primary/20 h-11"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="shippingCharge" className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1">Shipping (₹)</Label>
-                    <Input
-                      id="shippingCharge"
-                      type="number"
-                      step="0.01"
-                      value={formData.shippingCharge}
-                      onChange={(e) => setFormData({ ...formData, shippingCharge: e.target.value })}
-                      placeholder="0.00"
-                      className="rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20 h-11"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -1505,6 +1497,74 @@ export default function ProductsPage() {
                       />
                     </div>
                   </div>
+                </div>
+
+                {/* Shipping Configuration */}
+                <div className="space-y-3 p-4 rounded-xl border border-border/50 bg-muted/20">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                      🚚 Shipping Configuration
+                    </Label>
+                    <span className="text-xs font-bold text-foreground">
+                      {shippingType === 'free' ? (
+                        <span className="text-emerald-600 dark:text-emerald-400">Free Delivery</span>
+                      ) : (
+                        <span className="text-primary">₹{formData.shippingCharge || '0.00'}</span>
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShippingType('free');
+                        setFormData(prev => ({ ...prev, shippingCharge: '0.00' }));
+                      }}
+                      className={`h-11 rounded-lg border text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                        shippingType === 'free'
+                          ? 'border-emerald-500/60 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-sm ring-1 ring-emerald-500/30'
+                          : 'border-border/50 text-muted-foreground hover:border-border/80 bg-background'
+                      }`}
+                    >
+                      <span className="text-base">🎁</span> Free Shipping
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShippingType('paid');
+                        if (formData.shippingCharge === '0.00' || !formData.shippingCharge) {
+                          setFormData(prev => ({ ...prev, shippingCharge: '' }));
+                        }
+                      }}
+                      className={`h-11 rounded-lg border text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                        shippingType === 'paid'
+                          ? 'border-primary/60 bg-primary/10 text-primary shadow-sm ring-1 ring-primary/30'
+                          : 'border-border/50 text-muted-foreground hover:border-border/80 bg-background'
+                      }`}
+                    >
+                      <span className="text-base">💳</span> Paid Shipping
+                    </button>
+                  </div>
+
+                  {shippingType === 'paid' && (
+                    <div className="space-y-1.5 pt-1">
+                      <Label htmlFor="shippingChargeAmount" className="text-xs font-semibold text-muted-foreground">
+                        Shipping Charge Amount (₹)
+                      </Label>
+                      <Input
+                        id="shippingChargeAmount"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.shippingCharge}
+                        onChange={(e) => setFormData({ ...formData, shippingCharge: e.target.value })}
+                        placeholder="Enter shipping fee (e.g. 50.00)"
+                        className="h-11 rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20 bg-background"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
