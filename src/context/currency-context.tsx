@@ -1,6 +1,6 @@
 'use client';
 import { API_BASE } from '@/lib/api';
-
+import countryToCurrency from 'country-to-currency';
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -43,11 +43,19 @@ const CURRENCY_LOCALES: Record<string, string> = {
   TTD: 'en-TT',
 };
 
+export function getCurrencyForCountry(countryIsoCode: string): string {
+  if (!countryIsoCode) return 'INR';
+  const cleanCode = countryIsoCode.trim().toUpperCase();
+  const map = (countryToCurrency as any) || {};
+  return map[cleanCode] || (cleanCode === 'IN' ? 'INR' : 'INR');
+}
+
 interface CurrencyContextValue {
   currencyCode: string;
   currencySymbol: string;
   fmt: (value: number) => string;
   setCurrencyCode: (code: string) => void;
+  getCurrencyFromCountry: (countryCode: string) => string;
 }
 
 const CurrencyContext = createContext<CurrencyContextValue>({
@@ -55,6 +63,7 @@ const CurrencyContext = createContext<CurrencyContextValue>({
   currencySymbol: '₹',
   fmt: (v) => `₹${(v || 0).toFixed(2)}`,
   setCurrencyCode: () => {},
+  getCurrencyFromCountry: (c) => getCurrencyForCountry(c),
 });
 
 const LS_KEY = 'admin_currency';
@@ -112,7 +121,7 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <CurrencyContext.Provider value={{ currencyCode, currencySymbol, fmt, setCurrencyCode }}>
+    <CurrencyContext.Provider value={{ currencyCode, currencySymbol, fmt, setCurrencyCode, getCurrencyFromCountry: getCurrencyForCountry }}>
       {children}
     </CurrencyContext.Provider>
   );
