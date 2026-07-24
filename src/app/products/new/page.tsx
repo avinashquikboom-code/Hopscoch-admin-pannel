@@ -423,6 +423,23 @@ export default function NewProductPage() {
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="space-y-2">
+                      <Label htmlFor="price">Price (₹) *</Label>
+                      <Input id="price" name="price" type="number" step="0.01" placeholder="0.00" required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="shippingCharge" className="font-bold text-primary flex items-center gap-1.5">
+                        Shipping Charge (₹)
+                      </Label>
+                      <Input id="shippingCharge" name="shippingCharge" type="number" step="0.01" placeholder="0.00" defaultValue="0.00" className="border-primary/40 focus:border-primary" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="stock">Stock *</Label>
+                      <Input id="stock" name="stock" type="number" placeholder="0" required />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-2">
                       <Label htmlFor="brand">Brand</Label>
                       <Select value={selectedBrand} onValueChange={(val) => setSelectedBrand(val || '')}>
                         <SelectTrigger>
