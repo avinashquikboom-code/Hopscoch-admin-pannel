@@ -294,6 +294,87 @@ export default function OrderDetailsPage({ params }: { params: any }) {
     }
   };
 
+  const handlePrintInvoice = () => {
+    if (!orderDetails) return;
+    const win = window.open('', '_blank');
+    if (!win) return;
+    const itemsHtml = (orderDetails.items || [])
+      .map(
+        (it: any) => `
+      <tr>
+        <td style="padding:10px; border-bottom:1px solid #eee;">${it.name}<br/><small style="color:#666;">Size: ${it.size} | Color: ${it.color} | SKU: ${it.id}</small></td>
+        <td style="padding:10px; border-bottom:1px solid #eee; text-align:center;">${it.quantity}</td>
+        <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">₹${(it.price || 0).toFixed(2)}</td>
+        <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">₹${((it.price || 0) * (it.quantity || 1)).toFixed(2)}</td>
+      </tr>`
+      )
+      .join('');
+
+    win.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Tax Invoice - ${orderDetails.id}</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px; color: #111; max-width: 800px; margin: 0 auto; }
+            .header { display: flex; justify-content: space-between; border-bottom: 2px solid #2563eb; padding-bottom: 20px; margin-bottom: 20px; }
+            .title { font-size: 24px; font-weight: bold; color: #2563eb; }
+            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+            th { background: #f8fafc; padding: 10px; text-align: left; border-bottom: 2px solid #cbd5e1; font-size: 13px; font-weight: 600; }
+            .totals { float: right; width: 300px; }
+            .total-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
+            .grand-total { font-size: 18px; font-weight: bold; color: #2563eb; border-top: 2px solid #2563eb; border-bottom: none; padding-top: 10px; margin-top: 6px; }
+            @media print { body { padding: 0; } }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <div class="title">HOPSCOTCH TAX INVOICE</div>
+              <p style="margin:4px 0; font-size:13px; color:#64748b;">Luxury E-Commerce</p>
+            </div>
+            <div style="text-align:right;">
+              <p style="margin:2px 0; font-weight:bold;">Invoice #: ${orderDetails.invoiceNumber || orderDetails.id}</p>
+              <p style="margin:2px 0; font-size:13px; color:#64748b;">Date: ${orderDetails.orderDate}</p>
+            </div>
+          </div>
+          <div class="info-grid">
+            <div>
+              <h4 style="margin:0 0 6px 0; color:#475569;">Billed To:</h4>
+              <p style="margin:2px 0; font-weight:600;">${orderDetails.customer?.name || 'Customer'}</p>
+              <p style="margin:2px 0; font-size:13px; color:#64748b;">${orderDetails.customer?.email || ''}</p>
+              <p style="margin:2px 0; font-size:13px; color:#64748b;">${orderDetails.customer?.phone || ''}</p>
+            </div>
+            <div>
+              <h4 style="margin:0 0 6px 0; color:#475569;">Shipping Address:</h4>
+              <p style="margin:2px 0; font-size:13px;">${orderDetails.deliveryAddress?.street || ''}, ${orderDetails.deliveryAddress?.city || ''}, ${orderDetails.deliveryAddress?.state || ''} - ${orderDetails.deliveryAddress?.zipCode || ''}, ${orderDetails.deliveryAddress?.country || 'India'}</p>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Item Description</th>
+                <th style="text-align:center;">Qty</th>
+                <th style="text-align:right;">Price</th>
+                <th style="text-align:right;">Total</th>
+              </tr>
+            </thead>
+            <tbody>${itemsHtml}</tbody>
+          </table>
+          <div class="totals">
+            <div class="total-row"><span>Subtotal:</span><span>₹${(orderDetails.subtotal || 0).toFixed(2)}</span></div>
+            <div class="total-row"><span>Shipping Charge:</span><span>${(orderDetails.shippingCharges || 0) > 0 ? `₹${(orderDetails.shippingCharges).toFixed(2)}` : 'FREE'}</span></div>
+            <div class="total-row"><span>Tax / GST (18%):</span><span>₹${(orderDetails.tax || 0).toFixed(2)}</span></div>
+            <div class="total-row grand-total"><span>Grand Total:</span><span>₹${(orderDetails.total || 0).toFixed(2)}</span></div>
+          </div>
+          <script>window.onload = function() { window.print(); }</script>
+        </body>
+      </html>
+    `);
+    win.document.close();
+  };
+
   return (
     <AdminLayout>
       {loadingOrder && (
@@ -325,11 +406,11 @@ export default function OrderDetailsPage({ params }: { params: any }) {
               <statusInfo.icon className="h-4 w-4 mr-1" />
               {statusInfo.label}
             </Badge>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handlePrintInvoice}>
               <Download className="mr-2 h-4 w-4" />
               Download Invoice
             </Button>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handlePrintInvoice}>
               <Printer className="mr-2 h-4 w-4" />
               Print Invoice
             </Button>
