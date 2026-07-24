@@ -1131,9 +1131,18 @@ export default function ProductsPage() {
                             </span>
                           </TableCell>
 
-                          {/* Price */}
-                          <TableCell className="py-4 text-sm font-black text-foreground">
-                            {fmtPrice(product.price)}
+                          {/* Price & Shipping */}
+                          <TableCell className="py-4">
+                            <div className="flex flex-col">
+                              <span className="text-sm font-black text-foreground">{fmtPrice(product.price)}</span>
+                              {Number(product.shippingCharge || 0) > 0 ? (
+                                <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                  + {fmtPrice(product.shippingCharge)} shipping
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-medium text-muted-foreground">Free shipping</span>
+                              )}
+                            </div>
                           </TableCell>
 
                           {/* Stock Level */}

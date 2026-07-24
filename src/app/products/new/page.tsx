@@ -61,6 +61,10 @@ export default function NewProductPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedSubCategory, setSelectedSubCategory] = useState<string>('');
 
+  const [price, setPrice] = useState<string>('');
+  const [shippingCharge, setShippingCharge] = useState<string>('0.00');
+  const [stock, setStock] = useState<string>('');
+
   const [availableColors, setAvailableColors] = useState<string[]>(STANDARD_COLORS);
   const [availableSizes, setAvailableSizes] = useState<string[]>(STANDARD_SIZES);
 
@@ -249,18 +253,18 @@ export default function NewProductPage() {
       return;
     }
 
-    const price = parseFloat(formDataObj.get('price') as string) || 0;
-    const shippingCharge = parseFloat(formDataObj.get('shippingCharge') as string) || 0;
-    const stock = parseInt(formDataObj.get('stock') as string) || 0;
+    const parsedPrice = parseFloat(price) || parseFloat(formDataObj.get('price') as string) || 0;
+    const parsedShippingCharge = parseFloat(shippingCharge) || parseFloat(formDataObj.get('shippingCharge') as string) || 0;
+    const parsedStock = parseInt(stock) || parseInt(formDataObj.get('stock') as string) || 0;
 
     const isSavedTaxRule = selectedTaxRule && selectedTaxRule !== 'none' && selectedTaxRule !== '__custom__';
     const body = {
       name: formDataObj.get('name') as string,
       sku: formDataObj.get('sku') as string,
-      price: price,
-      basePrice: price,
-      shippingCharge: shippingCharge,
-      stock: stock,
+      price: parsedPrice,
+      basePrice: parsedPrice,
+      shippingCharge: parsedShippingCharge,
+      stock: parsedStock,
       categoryId: Number(selectedSubCategory || selectedCategory),
       brandId: Number(selectedBrand),
       taxRuleId: isSavedTaxRule ? Number(selectedTaxRule) : null,
@@ -283,8 +287,8 @@ export default function NewProductPage() {
             const cleanSize = (v.size || 'ONETIME').trim().toUpperCase().replace(/\s+/g, '-');
             return {
               sku: v.sku.trim() || `${baseSku}-${cleanColor}-${cleanSize}-${idx + 1}`,
-              price: parseFloat(v.price) || price,
-              stock: parseInt(v.stock) || stock,
+              price: parseFloat(v.price) || parsedPrice,
+              stock: parseInt(v.stock) || parsedStock,
               color: v.color || null,
               size: v.size || null,
               material: v.material || null,
@@ -300,8 +304,8 @@ export default function NewProductPage() {
             for (const s of sList) {
               finalVars.push({
                 sku: `${baseSku}-${c.toUpperCase().replace(/\s+/g, '-')}-${s.toUpperCase().replace(/\s+/g, '-')}-${idx++}`,
-                price: price,
-                stock: stock,
+                price: parsedPrice,
+                stock: parsedStock,
                 color: c !== 'Default' ? c : null,
                 size: s !== 'One Size' ? s : null,
                 material: null,
@@ -424,17 +428,43 @@ export default function NewProductPage() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="space-y-2">
                       <Label htmlFor="price">Price (₹) *</Label>
-                      <Input id="price" name="price" type="number" step="0.01" placeholder="0.00" required />
+                      <Input 
+                        id="price" 
+                        name="price" 
+                        type="number" 
+                        step="0.01" 
+                        placeholder="0.00" 
+                        value={price}
+                        onChange={(e) => setPrice(e.target.value)}
+                        required 
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="shippingCharge" className="font-bold text-primary flex items-center gap-1.5">
                         Shipping Charge (₹)
                       </Label>
-                      <Input id="shippingCharge" name="shippingCharge" type="number" step="0.01" placeholder="0.00" defaultValue="0.00" className="border-primary/40 focus:border-primary" />
+                      <Input 
+                        id="shippingCharge" 
+                        name="shippingCharge" 
+                        type="number" 
+                        step="0.01" 
+                        placeholder="0.00" 
+                        value={shippingCharge}
+                        onChange={(e) => setShippingCharge(e.target.value)}
+                        className="border-primary/40 focus:border-primary" 
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="stock">Stock *</Label>
-                      <Input id="stock" name="stock" type="number" placeholder="0" required />
+                      <Input 
+                        id="stock" 
+                        name="stock" 
+                        type="number" 
+                        placeholder="0" 
+                        value={stock}
+                        onChange={(e) => setStock(e.target.value)}
+                        required 
+                      />
                     </div>
                   </div>
 
@@ -595,8 +625,15 @@ export default function NewProductPage() {
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="price">Price *</Label>
-                      <Input id="price" name="price" type="number" step="0.01" placeholder="0.00" required />
+                      <Label htmlFor="pricing-price">Price (₹) *</Label>
+                      <Input 
+                        id="pricing-price" 
+                        type="number" 
+                        step="0.01" 
+                        placeholder="0.00" 
+                        value={price}
+                        onChange={(e) => setPrice(e.target.value)}
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="mrp">MRP</Label>
@@ -607,15 +644,31 @@ export default function NewProductPage() {
                       <Input id="discount" type="number" placeholder="0" />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="shippingCharge">Shipping Charge (₹)</Label>
-                      <Input id="shippingCharge" name="shippingCharge" type="number" step="0.01" placeholder="0.00" defaultValue="0.00" />
+                      <Label htmlFor="pricing-shippingCharge" className="font-bold text-primary flex items-center gap-1.5">
+                        Shipping Charge (₹)
+                      </Label>
+                      <Input 
+                        id="pricing-shippingCharge" 
+                        type="number" 
+                        step="0.01" 
+                        placeholder="0.00" 
+                        value={shippingCharge}
+                        onChange={(e) => setShippingCharge(e.target.value)}
+                        className="border-primary/40 focus:border-primary" 
+                      />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="stock">Stock *</Label>
-                      <Input id="stock" name="stock" type="number" placeholder="0" required />
+                      <Label htmlFor="pricing-stock">Stock *</Label>
+                      <Input 
+                        id="pricing-stock" 
+                        type="number" 
+                        placeholder="0" 
+                        value={stock}
+                        onChange={(e) => setStock(e.target.value)}
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="lowStock">Low Stock Threshold</Label>
