@@ -224,7 +224,7 @@ export default function OrderDetailsPage({ params }: { params: any }) {
         discount: Number(rawOrder.discountAmount || 0),
         coupon: '',
         shippingCharges: Number(rawOrder.shippingAmount || 0),
-        tax: Number(rawOrder.taxAmount ? rawOrder.taxAmount : Math.round((Number(rawOrder.subtotal || rawOrder.totalAmount || 0) * 0.18) * 100) / 100),
+        tax: Number(rawOrder.taxAmount || 0),
         total: Number(rawOrder.totalAmount || 0),
         orderDate: rawOrder.createdAt
           ? new Date(rawOrder.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) + ' IST'

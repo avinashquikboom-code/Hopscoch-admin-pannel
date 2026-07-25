@@ -1281,7 +1281,7 @@ export default function OrdersPage() {
                         </div>
                         <div className="flex justify-between text-foreground font-semibold py-1 border-y border-border/30 my-1">
                           <span>Tax / GST</span>
-                          <span>{fmtPrice(selectedOrder.taxAmount ? selectedOrder.taxAmount : Math.round((selectedOrder.amount * 0.18) * 100) / 100)}</span>
+                          <span>{fmtPrice(selectedOrder.taxAmount || 0)}</span>
                         </div>
                         <div className="flex justify-between text-sm font-black text-foreground pt-1">
                           <span>Grand Total</span>
