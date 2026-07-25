@@ -65,41 +65,72 @@ function authHeaders(): HeadersInit {
   };
 }
 
-// Normalize a raw API order (admin shape) into the shape the UI expects
+// Normalize a raw API order (admin shape) into the shape the UI expects safely
 function normalizeOrder(raw: any) {
+  if (!raw || typeof raw !== 'object') {
+    return {
+      id: '',
+      _rawId: '',
+      customer: 'Customer',
+      email: '',
+      phone: '',
+      amount: 0,
+      status: 'pending',
+      paymentStatus: 'pending',
+      items: 0,
+      date: '',
+      trackingNumber: '',
+      address: 'Standard Shipping Address',
+      orderItems: [],
+    };
+  }
   const user = raw.user || {};
   const shippingAddress = raw.shippingAddress || raw.address || {};
   const addressStr = typeof shippingAddress === 'string'
     ? shippingAddress
-    : [shippingAddress.recipientName || shippingAddress.name, shippingAddress.addressLine1 || shippingAddress.line1, shippingAddress.city, shippingAddress.state, shippingAddress.pincode || shippingAddress.postalCode]
+    : [
+        shippingAddress.recipientName || shippingAddress.fullName || shippingAddress.name,
+        shippingAddress.addressLine1 || shippingAddress.line1,
+        shippingAddress.city,
+        shippingAddress.state,
+        shippingAddress.pincode || shippingAddress.postalCode
+      ]
         .filter(Boolean).join(', ');
 
   const rawItems = raw.items || raw.orderItems || [];
 
   return {
-    id: raw.orderNumber || raw.id || '',
-    _rawId: raw.id,
-    customer: shippingAddress.fullName || shippingAddress.recipientName || shippingAddress.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.name || (user.email ? user.email.split('@')[0] : '') || raw.customerName || 'Customer',
-    email: user.email || raw.email || '',
-    phone: user.phone || raw.phone || shippingAddress.phone || '',
-    amount: Number(raw.totalAmount || raw.total || 0),
-    status: (raw.status || 'pending').toLowerCase().trim(),
-    paymentStatus: (raw.paymentStatus || raw.payment?.status || 'pending').toLowerCase().trim(),
-    items: raw._count?.items ?? rawItems.length ?? raw.itemCount ?? 0,
+    id: String(raw.orderNumber || raw.id || ''),
+    _rawId: String(raw.id || raw.orderNumber || ''),
+    customer: String(shippingAddress.fullName || shippingAddress.recipientName || shippingAddress.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.name || (user.email ? user.email.split('@')[0] : '') || raw.customerName || 'Customer'),
+    email: String(user.email || raw.email || ''),
+    phone: String(user.phone || raw.phone || shippingAddress.phone || ''),
+    amount: Number(raw.totalAmount || raw.total || 0) || 0,
+    status: String(raw.status || 'pending').toLowerCase().trim(),
+    paymentStatus: String(raw.paymentStatus || raw.payment?.status || 'pending').toLowerCase().trim(),
+    items: Number(raw._count?.items ?? (Array.isArray(rawItems) ? rawItems.length : 0) ?? raw.itemCount ?? 0) || 0,
     date: raw.createdAt
-      ? new Date(raw.createdAt).toLocaleString('en-IN', {
-          timeZone: 'Asia/Kolkata',
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true,
-        }) + ' IST'
-      : (raw.orderDate || ''),
-    trackingNumber: raw.trackingNumber || raw.shipments?.[0]?.trackingNumber || '',
+      ? (() => {
+          try {
+            const d = new Date(raw.createdAt);
+            if (isNaN(d.getTime())) return String(raw.createdAt);
+            return d.toLocaleString('en-IN', {
+              timeZone: 'Asia/Kolkata',
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true,
+            }) + ' IST';
+          } catch (_) {
+            return String(raw.createdAt);
+          }
+        })()
+      : String(raw.orderDate || ''),
+    trackingNumber: String(raw.trackingNumber || raw.shipments?.[0]?.trackingNumber || ''),
     address: addressStr || 'Standard Shipping Address',
-    orderItems: rawItems,
+    orderItems: Array.isArray(rawItems) ? rawItems : [],
   };
 }
 
@@ -451,11 +482,11 @@ export default function OrdersPage() {
     setError(null);
     try {
       const res = await fetch(`${API_BASE}/api/admin/orders`, { headers: authHeaders() });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.message || 'Failed to load orders');
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.message || `Failed to load orders (${res.status})`);
       const rawData = json.data?.orders ?? json.orders ?? json.data ?? json ?? [];
       const rawList = Array.isArray(rawData) ? rawData : (Array.isArray(rawData?.orders) ? rawData.orders : []);
-      setOrdersList(rawList.map(normalizeOrder));
+      setOrdersList(rawList.map(normalizeOrder).filter(Boolean));
     } catch (e: any) {
       setError(e.message || 'Could not fetch orders');
     } finally {
@@ -524,37 +555,48 @@ export default function OrdersPage() {
   // Filtered orders selector
   const filteredOrders = useMemo(() => {
     return ordersList.filter(order => {
+      if (!order) return false;
+      
+      const customer = (order.customer || '').toString();
+      const orderId = (order.id || '').toString();
+      const email = (order.email || '').toString();
+      const q = (searchQuery || '').toLowerCase();
+
       // 1. Search Query
       const matchesSearch = 
-        order.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.email.toLowerCase().includes(searchQuery.toLowerCase());
+        customer.toLowerCase().includes(q) ||
+        orderId.toLowerCase().includes(q) ||
+        email.toLowerCase().includes(q);
       
       // 2. Main Tab (Status)
+      const orderStatus = (order.status || '').toLowerCase();
       const matchesTab = activeTab === 'all' ||
-        (activeTab === 'processing' && ['processing', 'pending', 'confirmed', 'paid', 'placed', 'created', 'order_placed'].includes(order.status)) ||
-        (activeTab === 'shipped' && ['shipped', 'out_for_delivery', 'in_transit', 'packed', 'ready_to_ship'].includes(order.status)) ||
-        (activeTab === 'delivered' && ['delivered', 'completed'].includes(order.status)) ||
-        (activeTab === 'cancelled' && ['cancelled', 'refunded', 'return_requested', 'returned'].includes(order.status)) ||
-        order.status === activeTab;
+        (activeTab === 'processing' && ['processing', 'pending', 'confirmed', 'paid', 'placed', 'created', 'order_placed'].includes(orderStatus)) ||
+        (activeTab === 'shipped' && ['shipped', 'out_for_delivery', 'in_transit', 'packed', 'ready_to_ship'].includes(orderStatus)) ||
+        (activeTab === 'delivered' && ['delivered', 'completed'].includes(orderStatus)) ||
+        (activeTab === 'cancelled' && ['cancelled', 'refunded', 'return_requested', 'returned'].includes(orderStatus)) ||
+        orderStatus === activeTab;
 
       // 3. Payment Status
-      const matchesPayment = paymentFilter === 'all' || order.paymentStatus === paymentFilter;
+      const orderPaymentStatus = (order.paymentStatus || '').toLowerCase();
+      const matchesPayment = paymentFilter === 'all' || orderPaymentStatus === paymentFilter;
 
       // 4. Date Range Filter
       let matchesDate = true;
-      if (dateFilter !== 'all') {
+      if (dateFilter !== 'all' && order.date) {
         const orderDate = new Date(order.date);
-        const today = new Date();
-        const diffTime = Math.abs(today.getTime() - orderDate.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        if (dateFilter === 'today') {
-          matchesDate = diffDays <= 1;
-        } else if (dateFilter === '7days') {
-          matchesDate = diffDays <= 7;
-        } else if (dateFilter === '30days') {
-          matchesDate = diffDays <= 30;
+        if (!isNaN(orderDate.getTime())) {
+          const today = new Date();
+          const diffTime = Math.abs(today.getTime() - orderDate.getTime());
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          
+          if (dateFilter === 'today') {
+            matchesDate = diffDays <= 1;
+          } else if (dateFilter === '7days') {
+            matchesDate = diffDays <= 7;
+          } else if (dateFilter === '30days') {
+            matchesDate = diffDays <= 30;
+          }
         }
       }
 

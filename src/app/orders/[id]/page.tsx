@@ -170,11 +170,16 @@ export default function OrderDetailsPage({ params }: { params: any }) {
     setOrderError(null);
 
     Promise.all([
-      fetch(`${API_BASE}/api/admin/orders/${numericId}`, { headers: authHeaders() }).then(r => r.json()),
-      fetch(`${API_BASE}/api/admin/orders/${numericId}/timeline`, { headers: authHeaders() }).then(r => r.json()),
+      fetch(`${API_BASE}/api/admin/orders/${numericId}`, { headers: authHeaders() }).then(r => r.json()).catch(() => ({})),
+      fetch(`${API_BASE}/api/admin/orders/${numericId}/timeline`, { headers: authHeaders() }).then(r => r.json()).catch(() => ({})),
     ]).then(([orderJson, timelineJson]) => {
-      const rawOrder = orderJson.data ?? orderJson;
-      const addr = rawOrder.address || {};
+      const rawOrder = orderJson?.data ?? orderJson;
+      if (!rawOrder || typeof rawOrder !== 'object' || (!rawOrder.id && !rawOrder.orderNumber)) {
+        setOrderError('Order details could not be loaded or were not found');
+        setLoadingOrder(false);
+        return;
+      }
+      const addr = rawOrder.address || rawOrder.shippingAddress || {};
       const user = rawOrder.user || {};
       const payment = rawOrder.payment || {};
       // Shape the data into what the UI expects
