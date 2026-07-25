@@ -572,7 +572,7 @@ export default function OrderDetailsPage({ params }: { params: any }) {
                     <span>{orderDetails.shippingCharges > 0 ? `₹${orderDetails.shippingCharges.toFixed(2)}` : 'FREE'}</span>
                   </div>
                   <div className="flex justify-between text-sm py-1.5 border-y border-border/40 my-1 bg-muted/20 px-2 rounded">
-                    <span className="font-semibold text-foreground">GST / Tax</span>
+                    <span className="font-semibold text-foreground">GST / Tax (18%)</span>
                     <span className="font-bold text-foreground">₹{orderDetails.tax.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center pt-2">
