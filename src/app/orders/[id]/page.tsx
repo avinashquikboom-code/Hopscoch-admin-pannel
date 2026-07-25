@@ -571,10 +571,26 @@ export default function OrderDetailsPage({ params }: { params: any }) {
                     <span className="text-muted-foreground">Shipping</span>
                     <span>{orderDetails.shippingCharges > 0 ? `₹${orderDetails.shippingCharges.toFixed(2)}` : 'FREE'}</span>
                   </div>
-                  <div className="flex justify-between text-sm py-1.5 border-y border-border/40 my-1 bg-muted/20 px-2 rounded">
-                    <span className="font-semibold text-foreground">Tax / GST (18%)</span>
-                    <span className="font-bold text-foreground">₹{orderDetails.tax.toFixed(2)}</span>
-                  </div>
+                  {(() => {
+                    const hasInclusive = orderDetails.tax > 0 && orderDetails.subtotal + orderDetails.shippingCharges === orderDetails.total;
+                    return (
+                      <>
+                        <div className="flex justify-between text-sm py-1.5 border-y border-border/40 my-1 bg-muted/20 px-2 rounded">
+                          <span className={hasInclusive ? "text-muted-foreground italic" : "font-semibold text-foreground"}>
+                            {hasInclusive ? "GST / Tax (included in price)" : "GST / Tax (added)"}
+                          </span>
+                          <span className={hasInclusive ? "text-muted-foreground italic" : "font-bold text-foreground"}>
+                            ₹{orderDetails.tax.toFixed(2)}
+                          </span>
+                        </div>
+                        {hasInclusive && (
+                          <p className="text-xs text-muted-foreground italic text-right pt-0.5">
+                            Price shown is inclusive of ₹{orderDetails.tax.toFixed(2)} GST
+                          </p>
+                        )}
+                      </>
+                    );
+                  })()}
                   <div className="flex justify-between items-center pt-2">
                     <span className="text-lg font-semibold">Total Amount</span>
                     <span className="text-2xl font-bold text-primary">₹{orderDetails.total.toFixed(2)}</span>
