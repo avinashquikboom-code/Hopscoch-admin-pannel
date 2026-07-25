@@ -812,8 +812,16 @@ export default function TaxesPage() {
                 <Label className="text-xs font-semibold">Tax Type *</Label>
                 <select
                   value={form.taxType}
-                  onChange={(e) => setForm({ ...form, taxType: e.target.value })}
-                  className="w-full h-10 rounded-lg border border-border/50 bg-background px-3 text-xs font-medium outline-none"
+                  onChange={(e) => {
+                    const selected = e.target.value;
+                    const isNoTaxSelected = !selected || ['No Tax', 'NO_TAX', 'NONE', 'None', 'Exempt'].includes(selected);
+                    if (isNoTaxSelected) {
+                      setForm({ ...form, taxType: selected, rate: '0', cgst: '0', sgst: '0', igst: '0' });
+                    } else {
+                      setForm({ ...form, taxType: selected, rate: form.rate === '0' ? '18' : form.rate });
+                    }
+                  }}
+                  className="w-full h-10 rounded-lg border border-border/50 bg-background px-3 text-xs font-medium outline-none cursor-pointer"
                 >
                   {dynamicTaxTypes.map((t) => (
                     <option key={t} value={t}>{t}</option>
@@ -825,7 +833,7 @@ export default function TaxesPage() {
                 <select
                   value={form.country}
                   onChange={(e) => setForm({ ...form, country: e.target.value })}
-                  className="w-full h-10 rounded-lg border border-border/50 bg-background px-3 text-xs font-medium outline-none"
+                  className="w-full h-10 rounded-lg border border-border/50 bg-background px-3 text-xs font-medium outline-none cursor-pointer"
                 >
                   {COUNTRIES.map((c) => (
                     <option key={c.code} value={c.code}>{c.name}</option>
@@ -834,94 +842,128 @@ export default function TaxesPage() {
               </div>
             </div>
 
-            {/* Tax Calculation Mode (Inclusive vs Exclusive) */}
-            <div className="space-y-1.5 pt-1">
-              <Label className="text-xs font-semibold">Tax Calculation Mode (Inclusive vs Exclusive) *</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setForm({ ...form, taxType: form.taxType === 'Inclusive' ? 'GST' : 'Exclusive' })}
-                  className={`p-2.5 rounded-xl border text-left flex flex-col gap-0.5 transition-all cursor-pointer ${
-                    form.taxType !== 'Inclusive'
-                      ? 'border-primary bg-primary/10 text-foreground font-bold shadow-xs'
-                      : 'border-border/60 bg-muted/20 text-muted-foreground hover:bg-muted/40'
-                  }`}
-                >
-                  <span className="text-xs font-bold flex items-center gap-1.5">
-                    🔹 Exclusive
-                  </span>
-                  <span className="text-[10px] font-normal opacity-80">Tax added extra at checkout</span>
-                </button>
+            {/* Helper computed boolean for No Tax */}
+            {(() => {
+              const isNoTax = !form.taxType || ['No Tax', 'NO_TAX', 'NONE', 'None', 'Exempt'].includes(form.taxType);
+              return (
+                <>
+                  {/* Tax Calculation Mode (Inclusive vs Exclusive) */}
+                  <div className="space-y-1.5 pt-1">
+                    <Label className="text-xs font-semibold flex items-center justify-between">
+                      <span>Tax Calculation Mode (Inclusive vs Exclusive) *</span>
+                      {isNoTax && (
+                        <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md">
+                          Disabled for No Tax
+                        </span>
+                      )}
+                    </Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        disabled={isNoTax}
+                        onClick={() => setForm({ ...form, taxType: form.taxType === 'Inclusive' ? 'GST' : 'Exclusive' })}
+                        className={`p-2.5 rounded-xl border text-left flex flex-col gap-0.5 transition-all ${
+                          isNoTax
+                            ? 'opacity-40 cursor-not-allowed bg-muted/10 border-border/40 text-muted-foreground'
+                            : form.taxType !== 'Inclusive'
+                            ? 'border-primary bg-primary/10 text-foreground font-bold shadow-xs cursor-pointer'
+                            : 'border-border/60 bg-muted/20 text-muted-foreground hover:bg-muted/40 cursor-pointer'
+                        }`}
+                      >
+                        <span className="text-xs font-bold flex items-center gap-1.5">
+                          🔹 Exclusive
+                        </span>
+                        <span className="text-[10px] font-normal opacity-80">Tax added extra at checkout</span>
+                      </button>
 
-                <button
-                  type="button"
-                  onClick={() => setForm({ ...form, taxType: 'Inclusive' })}
-                  className={`p-2.5 rounded-xl border text-left flex flex-col gap-0.5 transition-all cursor-pointer ${
-                    form.taxType === 'Inclusive'
-                      ? 'border-indigo-500 bg-indigo-500/10 text-foreground font-bold shadow-xs'
-                      : 'border-border/60 bg-muted/20 text-muted-foreground hover:bg-muted/40'
-                  }`}
-                >
-                  <span className="text-xs font-bold flex items-center gap-1.5">
-                    🔸 Inclusive
-                  </span>
-                  <span className="text-[10px] font-normal opacity-80">Price is inclusive of tax (MRP)</span>
-                </button>
-              </div>
-            </div>
+                      <button
+                        type="button"
+                        disabled={isNoTax}
+                        onClick={() => setForm({ ...form, taxType: 'Inclusive' })}
+                        className={`p-2.5 rounded-xl border text-left flex flex-col gap-0.5 transition-all ${
+                          isNoTax
+                            ? 'opacity-40 cursor-not-allowed bg-muted/10 border-border/40 text-muted-foreground'
+                            : form.taxType === 'Inclusive'
+                            ? 'border-indigo-500 bg-indigo-500/10 text-foreground font-bold shadow-xs cursor-pointer'
+                            : 'border-border/60 bg-muted/20 text-muted-foreground hover:bg-muted/40 cursor-pointer'
+                        }`}
+                      >
+                        <span className="text-xs font-bold flex items-center gap-1.5">
+                          🔸 Inclusive
+                        </span>
+                        <span className="text-[10px] font-normal opacity-80">Price is inclusive of tax (MRP)</span>
+                      </button>
+                    </div>
+                  </div>
 
-            {/* Total Rate % */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">Total Tax Rate (%) *</Label>
-              <Input
-                type="number"
-                step="0.01"
-                required
-                value={form.rate}
-                onChange={(e) => handleRateChange(e.target.value)}
-                placeholder="18"
-                className="h-10 rounded-lg text-xs font-bold text-emerald-600"
-              />
-            </div>
+                  {/* Total Rate % */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold flex items-center justify-between">
+                      <span>Total Tax Rate (%) *</span>
+                      {isNoTax && (
+                        <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400">Locked to 0%</span>
+                      )}
+                    </Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      required={!isNoTax}
+                      disabled={isNoTax}
+                      value={isNoTax ? '0' : form.rate}
+                      onChange={(e) => handleRateChange(e.target.value)}
+                      placeholder="18"
+                      className={`h-10 rounded-lg text-xs font-bold ${
+                        isNoTax ? 'bg-muted/30 text-muted-foreground opacity-60 cursor-not-allowed' : 'text-emerald-600'
+                      }`}
+                    />
+                  </div>
 
-            {/* GST Component Breakdown (CGST, SGST, IGST) */}
-            <div className="p-3 bg-muted/40 rounded-xl border border-border/40 space-y-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground block">
-                GST Component Breakdown (Auto-Calculated)
-              </span>
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <Label className="text-[10px] text-muted-foreground">CGST (%)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.cgst}
-                    onChange={(e) => setForm({ ...form, cgst: e.target.value })}
-                    className="h-9 text-xs rounded-lg bg-background"
-                  />
-                </div>
-                <div>
-                  <Label className="text-[10px] text-muted-foreground">SGST (%)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.sgst}
-                    onChange={(e) => setForm({ ...form, sgst: e.target.value })}
-                    className="h-9 text-xs rounded-lg bg-background"
-                  />
-                </div>
-                <div>
-                  <Label className="text-[10px] text-muted-foreground">IGST (%)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.igst}
-                    onChange={(e) => setForm({ ...form, igst: e.target.value })}
-                    className="h-9 text-xs rounded-lg bg-background"
-                  />
-                </div>
-              </div>
-            </div>
+                  {/* GST Component Breakdown (CGST, SGST, IGST) */}
+                  <div className={`p-3 rounded-xl border transition-all ${
+                    isNoTax ? 'bg-muted/20 border-border/30 opacity-50' : 'bg-muted/40 border-border/40'
+                  } space-y-2`}>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground block">
+                      GST Component Breakdown (Auto-Calculated)
+                    </span>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <Label className="text-[10px] text-muted-foreground">CGST (%)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          disabled={isNoTax}
+                          value={isNoTax ? '0' : form.cgst}
+                          onChange={(e) => setForm({ ...form, cgst: e.target.value })}
+                          className="h-9 text-xs rounded-lg bg-background"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] text-muted-foreground">SGST (%)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          disabled={isNoTax}
+                          value={isNoTax ? '0' : form.sgst}
+                          onChange={(e) => setForm({ ...form, sgst: e.target.value })}
+                          className="h-9 text-xs rounded-lg bg-background"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] text-muted-foreground">IGST (%)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          disabled={isNoTax}
+                          value={isNoTax ? '0' : form.igst}
+                          onChange={(e) => setForm({ ...form, igst: e.target.value })}
+                          className="h-9 text-xs rounded-lg bg-background"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
 
             {/* Priority & Display Order */}
             <div className="grid grid-cols-2 gap-3">
