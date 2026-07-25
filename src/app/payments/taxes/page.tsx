@@ -39,19 +39,6 @@ interface TaxRule {
   createdAt?: string;
 }
 
-const TAX_TYPES = [
-  'GST',
-  'VAT',
-  'Sales Tax',
-  'HST',
-  'PST',
-  'QST',
-  'Luxury Tax',
-  'Import Duty',
-  'Service Tax',
-  'No Tax',
-];
-
 const COUNTRIES = [
   { code: 'IN', name: 'India (IN)' },
   { code: 'US', name: 'United States (US)' },
@@ -70,6 +57,7 @@ export default function TaxesPage() {
   const [selectedType, setSelectedType] = useState('ALL');
   const [selectedCountry, setSelectedCountry] = useState('ALL');
   const [selectedStatus, setSelectedStatus] = useState('ALL');
+  const [dynamicTaxTypes, setDynamicTaxTypes] = useState<string[]>([]);
   
   // Pagination State
   const [page, setPage] = useState(1);
@@ -84,6 +72,25 @@ export default function TaxesPage() {
   const [openDrawer, setOpenDrawer] = useState(false);
   const [editingRule, setEditingRule] = useState<TaxRule | null>(null);
   const [viewingRule, setViewingRule] = useState<TaxRule | null>(null);
+
+  const fetchTaxTypes = useCallback(async () => {
+    try {
+      let res = await fetch(`${API_BASE}/api/admin/taxes/types`, { headers: authHeaders() });
+      if (!res.ok) {
+        res = await fetch(`${API_BASE}/api/taxes/types`, { headers: authHeaders() });
+      }
+      if (res.ok) {
+        const json = await res.json();
+        const raw = json.data || json;
+        if (Array.isArray(raw) && raw.length > 0) {
+          const names = raw.map((item: any) => typeof item === 'string' ? item : (item.name || item.id || item.code));
+          setDynamicTaxTypes(Array.from(new Set(names)));
+        }
+      }
+    } catch (e) {
+      console.warn('Could not fetch dynamic tax types', e);
+    }
+  }, []);
 
   // Form State
   const [form, setForm] = useState({
@@ -173,7 +180,8 @@ export default function TaxesPage() {
 
   useEffect(() => {
     fetchTaxes();
-  }, [fetchTaxes]);
+    fetchTaxTypes();
+  }, [fetchTaxes, fetchTaxTypes]);
 
   // Open Add Drawer
   const handleOpenAdd = () => {
@@ -457,7 +465,7 @@ export default function TaxesPage() {
               className="h-10 rounded-lg border border-border/50 bg-background px-3 text-xs font-semibold outline-none cursor-pointer"
             >
               <option value="ALL">All Tax Types</option>
-              {TAX_TYPES.map((t) => (
+              {dynamicTaxTypes.map((t) => (
                 <option key={t} value={t}>{t}</option>
               ))}
             </select>
@@ -582,7 +590,16 @@ export default function TaxesPage() {
                         <td className="p-3.5 font-mono font-bold text-foreground">{r.taxCode}</td>
                         <td className="p-3.5 font-semibold text-foreground">{r.name}</td>
                         <td className="p-3.5">
-                          <Badge variant="outline" className="text-[10px] font-bold border-teal-300 text-teal-700 bg-teal-50/50">
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] font-bold ${
+                              r.taxType?.toLowerCase().includes('inclusive')
+                                ? 'border-indigo-300 text-indigo-700 bg-indigo-50/50 dark:bg-indigo-950/30 dark:text-indigo-400 dark:border-indigo-800'
+                                : r.taxType?.toLowerCase().includes('exclusive')
+                                ? 'border-sky-300 text-sky-700 bg-sky-50/50 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-800'
+                                : 'border-teal-300 text-teal-700 bg-teal-50/50 dark:bg-teal-950/30 dark:text-teal-400 dark:border-teal-800'
+                            }`}
+                          >
                             {r.taxType}
                           </Badge>
                         </td>
@@ -798,7 +815,7 @@ export default function TaxesPage() {
                   onChange={(e) => setForm({ ...form, taxType: e.target.value })}
                   className="w-full h-10 rounded-lg border border-border/50 bg-background px-3 text-xs font-medium outline-none"
                 >
-                  {TAX_TYPES.map((t) => (
+                  {dynamicTaxTypes.map((t) => (
                     <option key={t} value={t}>{t}</option>
                   ))}
                 </select>
@@ -814,6 +831,42 @@ export default function TaxesPage() {
                     <option key={c.code} value={c.code}>{c.name}</option>
                   ))}
                 </select>
+              </div>
+            </div>
+
+            {/* Tax Calculation Mode (Inclusive vs Exclusive) */}
+            <div className="space-y-1.5 pt-1">
+              <Label className="text-xs font-semibold">Tax Calculation Mode (Inclusive vs Exclusive) *</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, taxType: form.taxType === 'Inclusive' ? 'GST' : 'Exclusive' })}
+                  className={`p-2.5 rounded-xl border text-left flex flex-col gap-0.5 transition-all cursor-pointer ${
+                    form.taxType !== 'Inclusive'
+                      ? 'border-primary bg-primary/10 text-foreground font-bold shadow-xs'
+                      : 'border-border/60 bg-muted/20 text-muted-foreground hover:bg-muted/40'
+                  }`}
+                >
+                  <span className="text-xs font-bold flex items-center gap-1.5">
+                    🔹 Exclusive
+                  </span>
+                  <span className="text-[10px] font-normal opacity-80">Tax added extra at checkout</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, taxType: 'Inclusive' })}
+                  className={`p-2.5 rounded-xl border text-left flex flex-col gap-0.5 transition-all cursor-pointer ${
+                    form.taxType === 'Inclusive'
+                      ? 'border-indigo-500 bg-indigo-500/10 text-foreground font-bold shadow-xs'
+                      : 'border-border/60 bg-muted/20 text-muted-foreground hover:bg-muted/40'
+                  }`}
+                >
+                  <span className="text-xs font-bold flex items-center gap-1.5">
+                    🔸 Inclusive
+                  </span>
+                  <span className="text-[10px] font-normal opacity-80">Price is inclusive of tax (MRP)</span>
+                </button>
               </div>
             </div>
 

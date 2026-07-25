@@ -7,8 +7,49 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { FileText, Download, Printer, Mail, Eye, Search, RefreshCw, CheckCircle2, Send, Filter } from 'lucide-react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  flexRender,
+  ColumnDef,
+  SortingState,
+} from '@tanstack/react-table';
+import {
+  FileText,
+  Download,
+  Printer,
+  Mail,
+  Eye,
+  Search,
+  RefreshCw,
+  Copy,
+  TrendingUp,
+  Receipt,
+  DollarSign,
+  ShieldCheck,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  Sparkles,
+  ExternalLink,
+  User,
+  MapPin,
+  Package,
+  CreditCard,
+  Building2,
+  FileCheck,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  ArrowUpDown,
+  X
+} from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { API_BASE, authHeaders } from '@/lib/api';
 import { toast } from 'sonner';
@@ -20,6 +61,7 @@ interface InvoiceItem {
   customerName: string;
   customerEmail: string;
   customerPhone: string;
+  shippingAddress: string;
   gstNumber: string;
   amount: number;
   taxableAmount: number;
@@ -27,19 +69,21 @@ interface InvoiceItem {
   cgst: number;
   sgst: number;
   date: string;
+  rawDate: Date;
   status: string;
+  items: any[];
   rawOrder: any;
 }
 
-const statusStyles: Record<string, string> = {
-  paid: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-  delivered: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-  completed: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-  pending: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
-  processing: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
-  shipped: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
-  cancelled: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
-  refunded: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20',
+const statusStyles: Record<string, { bg: string; text: string; border: string; icon: any }> = {
+  paid: { bg: 'bg-emerald-500/10 dark:bg-emerald-500/20', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/30', icon: CheckCircle2 },
+  delivered: { bg: 'bg-emerald-500/10 dark:bg-emerald-500/20', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/30', icon: CheckCircle2 },
+  completed: { bg: 'bg-emerald-500/10 dark:bg-emerald-500/20', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/30', icon: CheckCircle2 },
+  pending: { bg: 'bg-amber-500/10 dark:bg-amber-500/20', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-500/30', icon: Clock },
+  processing: { bg: 'bg-sky-500/10 dark:bg-sky-500/20', text: 'text-sky-600 dark:text-sky-400', border: 'border-sky-500/30', icon: RefreshCw },
+  shipped: { bg: 'bg-indigo-500/10 dark:bg-indigo-500/20', text: 'text-indigo-600 dark:text-indigo-400', border: 'border-indigo-500/30', icon: Sparkles },
+  cancelled: { bg: 'bg-rose-500/10 dark:bg-rose-500/20', text: 'text-rose-600 dark:text-rose-400', border: 'border-rose-500/30', icon: XCircle },
+  refunded: { bg: 'bg-purple-500/10 dark:bg-purple-500/20', text: 'text-purple-600 dark:text-purple-400', border: 'border-purple-500/30', icon: RefreshCw },
 };
 
 function generateFciSellerInvoiceHtml(order: any): string {
@@ -107,14 +151,14 @@ function generateFciSellerInvoiceHtml(order: any): string {
   <title>Tax Invoice - FCI SELLER #${rawId}</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #fff; color: #1e293b; margin: 0; padding: 24px; }
-    .invoice-card { max-width: 850px; margin: 0 auto; border: 1px solid #cbd5e1; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .invoice-card { max-width: 850px; margin: 0 auto; border: 1px solid #cbd5e1; padding: 32px; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); }
     .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #14b8a6; padding-bottom: 16px; margin-bottom: 20px; }
-    .logo { font-size: 26px; font-weight: 900; color: #14b8a6; letter-spacing: -0.5px; text-transform: uppercase; }
+    .logo { font-size: 28px; font-weight: 900; color: #14b8a6; letter-spacing: -0.5px; text-transform: uppercase; }
     .logo span { color: #0f172a; }
-    .invoice-title { font-size: 20px; font-weight: 800; text-align: right; text-transform: uppercase; color: #0f172a; }
+    .invoice-title { font-size: 22px; font-weight: 900; text-align: right; text-transform: uppercase; color: #0f172a; }
     .sub-title { font-size: 11px; text-align: right; color: #64748b; font-weight: 600; text-transform: uppercase; margin-top: 4px; }
     .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
-    .box { border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 16px; background: #f8fafc; }
+    .box { border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 18px; background: #f8fafc; }
     .box-title { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #14b8a6; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
     .box p { font-size: 12px; margin: 3px 0; color: #334155; line-height: 1.4; }
     .box p strong { color: #0f172a; }
@@ -122,7 +166,7 @@ function generateFciSellerInvoiceHtml(order: any): string {
     th { background: #0f172a; color: #fff; font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 10px; border: 1px solid #0f172a; text-align: left; }
     .totals-table { width: 340px; margin-left: auto; border: none; }
     .totals-table td { padding: 6px 12px; font-size: 12px; border: none; }
-    .totals-table tr.grand-total td { font-size: 14px; font-weight: 900; color: #0f172a; border-top: 2px solid #14b8a6; border-bottom: 2px solid #14b8a6; background: #f0fdf4; }
+    .totals-table tr.grand-total td { font-size: 15px; font-weight: 900; color: #0f172a; border-top: 2px solid #14b8a6; border-bottom: 2px solid #14b8a6; background: #f0fdf4; }
     .footer { margin-top: 30px; border-top: 1px dashed #cbd5e1; padding-top: 16px; display: flex; justify-content: space-between; align-items: flex-end; }
     .terms { font-size: 10px; color: #64748b; max-width: 450px; line-height: 1.5; }
     .signatory { text-align: right; font-size: 12px; font-weight: 700; color: #0f172a; }
@@ -137,7 +181,7 @@ function generateFciSellerInvoiceHtml(order: any): string {
 <body>
 
   <div class="no-print" style="max-width: 850px; margin: 0 auto 16px auto; display: flex; justify-content: flex-end; gap: 10px;">
-    <button onclick="window.print()" style="background: #14b8a6; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer;">🖨️ Print Invoice / Save as PDF</button>
+    <button onclick="window.print()" style="background: #14b8a6; color: #fff; border: none; padding: 10px 22px; border-radius: 8px; font-weight: 800; font-size: 13px; cursor: pointer; box-shadow: 0 4px 12px rgba(20,184,166,0.3);">🖨️ Print Invoice / Save PDF</button>
   </div>
 
   <div class="invoice-card">
@@ -157,18 +201,18 @@ function generateFciSellerInvoiceHtml(order: any): string {
       <div class="box">
         <div class="box-title">Sold By (Seller Details)</div>
         <p><strong>FCI SELLER Retail Pvt. Ltd.</strong></p>
-        <p>Plot No. 42, E-Commerce Corridor, Tech City</p>
+        <p>Plot No. 42, E-Commerce Corridor, Tech Hub</p>
         <p>Maharashtra - 400705, India</p>
         <p><strong>GSTIN:</strong> 27AAACF9988F1Z5</p>
         <p><strong>PAN:</strong> AAACF9988F | <strong>CIN:</strong> U74999MH2024PTC188888</p>
       </div>
       <div class="box">
-        <div class="box-title">Invoice & Order Details</div>
+        <div class="box-title">Invoice & Customer Details</div>
         <p><strong>Invoice No:</strong> ${invoiceNo}</p>
         <p><strong>Invoice Date:</strong> ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
         <p><strong>Order ID:</strong> #${rawId}</p>
-        <p><strong>Billed To:</strong> ${customerName}</p>
-        <p><strong>Email:</strong> ${customerEmail} | <strong>Phone:</strong> ${customerPhone}</p>
+        <p><strong>Billed Customer:</strong> ${customerName}</p>
+        <p><strong>Contact:</strong> ${customerEmail} | ${customerPhone}</p>
         <p><strong>Shipping Address:</strong> ${street}, ${city}, ${state} - ${pincode}</p>
       </div>
     </div>
@@ -192,7 +236,7 @@ function generateFciSellerInvoiceHtml(order: any): string {
 
     <table class="totals-table">
       <tr>
-        <td style="color: #64748b;">Subtotal (Taxable):</td>
+        <td style="color: #64748b;">Subtotal (Taxable Base):</td>
         <td style="text-align: right; font-weight: 600;">₹${taxableTotal.toFixed(2)}</td>
       </tr>
       <tr>
@@ -235,6 +279,7 @@ export default function InvoicesPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceItem | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   const fetchInvoices = async () => {
     setLoading(true);
@@ -251,7 +296,12 @@ export default function InvoicesPage() {
           const tax = totalAmt - taxable;
           const user = o.user || {};
           const cName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || o.customerName || o.customer || 'Valued Customer';
-          
+          const addr = o.address || o.shippingAddress || {};
+          const street = addr.line1 || addr.addressLine1 || addr.street || 'Standard Shipping Address';
+          const city = addr.city || 'Mumbai';
+          const state = addr.state || 'Maharashtra';
+          const pincode = addr.pincode || addr.zipCode || '400705';
+
           return {
             id: rawId,
             orderId: `#ORD-${rawId}`,
@@ -259,6 +309,7 @@ export default function InvoicesPage() {
             customerName: cName,
             customerEmail: user.email || o.customerEmail || 'customer@example.com',
             customerPhone: user.phone || o.customerPhone || 'N/A',
+            shippingAddress: `${street}, ${city}, ${state} - ${pincode}`,
             gstNumber: o.gstNumber || 'GSTIN-27AAACF9988F1Z5',
             amount: totalAmt,
             taxableAmount: taxable,
@@ -266,7 +317,9 @@ export default function InvoicesPage() {
             cgst: tax / 2,
             sgst: tax / 2,
             date: o.createdAt || o.date ? new Date(o.createdAt || o.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : new Date().toLocaleDateString('en-IN'),
+            rawDate: o.createdAt || o.date ? new Date(o.createdAt || o.date) : new Date(),
             status: String(o.status || o.paymentStatus || 'paid').toLowerCase(),
+            items: Array.isArray(o.items) ? o.items : [],
             rawOrder: o,
           };
         });
@@ -286,6 +339,23 @@ export default function InvoicesPage() {
     fetchInvoices();
   }, []);
 
+  const stats = useMemo(() => {
+    const totalVolume = invoices.reduce((sum, inv) => sum + inv.amount, 0);
+    const totalGst = invoices.reduce((sum, inv) => sum + inv.taxAmount, 0);
+    const paidCount = invoices.filter((inv) => ['paid', 'delivered', 'completed'].includes(inv.status)).length;
+    const pendingCount = invoices.filter((inv) => ['pending', 'processing'].includes(inv.status)).length;
+    const avgInvoice = invoices.length > 0 ? totalVolume / invoices.length : 0;
+
+    return {
+      totalVolume,
+      totalGst,
+      paidCount,
+      pendingCount,
+      avgInvoice,
+      count: invoices.length,
+    };
+  }, [invoices]);
+
   const filteredInvoices = useMemo(() => {
     return invoices.filter((inv) => {
       const q = searchQuery.toLowerCase();
@@ -302,7 +372,7 @@ export default function InvoicesPage() {
 
   const handlePrint = (inv: InvoiceItem) => {
     const html = generateFciSellerInvoiceHtml(inv.rawOrder);
-    const printWin = window.open('', '_blank', 'width=900,height=800');
+    const printWin = window.open('', '_blank', 'width=950,height=850');
     if (printWin) {
       printWin.document.write(html);
       printWin.document.close();
@@ -316,197 +386,650 @@ export default function InvoicesPage() {
     toast.success(`Tax invoice ${inv.invoiceNumber} emailed to ${inv.customerEmail}`);
   };
 
+  const handleCopyLink = (inv: InvoiceItem) => {
+    navigator.clipboard.writeText(`${window.location.origin}/payments/invoices?id=${inv.id}`);
+    toast.success(`Invoice link copied to clipboard!`);
+  };
+
+  // TanStack Table Column Definitions
+  const columns = useMemo<ColumnDef<InvoiceItem>[]>(
+    () => [
+      {
+        accessorKey: 'invoiceNumber',
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground p-0 hover:bg-transparent"
+          >
+            Invoice # <ArrowUpDown className="ml-1 h-3 w-3" />
+          </Button>
+        ),
+        cell: ({ row }) => (
+          <span className="font-mono text-xs font-bold text-primary flex items-center gap-1.5 pl-2">
+            {row.original.invoiceNumber}
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(row.original.invoiceNumber);
+                toast.success(`Copied ${row.original.invoiceNumber}`);
+              }}
+              className="text-muted-foreground/40 hover:text-primary transition-colors"
+              title="Copy Invoice Number"
+            >
+              <Copy className="h-3 w-3" />
+            </button>
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'orderId',
+        header: 'Order ID',
+        cell: ({ row }) => <span className="text-xs font-semibold text-foreground">{row.original.orderId}</span>,
+      },
+      {
+        accessorKey: 'customerName',
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground p-0 hover:bg-transparent"
+          >
+            Billed Customer <ArrowUpDown className="ml-1 h-3 w-3" />
+          </Button>
+        ),
+        cell: ({ row }) => {
+          const initials = row.original.customerName
+            .split(' ')
+            .map((n) => n[0])
+            .join('')
+            .toUpperCase()
+            .slice(0, 2);
+
+          return (
+            <div className="flex items-center gap-2.5">
+              <div className="h-7 w-7 rounded-full bg-primary/10 text-primary font-bold text-[10px] flex items-center justify-center shrink-0">
+                {initials || 'CU'}
+              </div>
+              <div>
+                <div className="font-bold text-foreground text-xs">{row.original.customerName}</div>
+                <div className="text-[11px] text-muted-foreground">{row.original.customerEmail}</div>
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: 'gstNumber',
+        header: 'GSTIN',
+        cell: ({ row }) => <span className="text-xs font-mono text-muted-foreground">{row.original.gstNumber}</span>,
+      },
+      {
+        accessorKey: 'amount',
+        header: ({ column }) => (
+          <div className="text-right">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+              className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground p-0 hover:bg-transparent"
+            >
+              Gross Amount <ArrowUpDown className="ml-1 h-3 w-3" />
+            </Button>
+          </div>
+        ),
+        cell: ({ row }) => (
+          <div className="text-right text-xs font-black text-foreground font-mono">
+            ₹{row.original.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+          </div>
+        ),
+      },
+      {
+        accessorKey: 'taxAmount',
+        header: () => <div className="text-right text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground">Tax (18% GST)</div>,
+        cell: ({ row }) => (
+          <div className="text-right text-xs text-muted-foreground font-mono">
+            ₹{row.original.taxAmount.toFixed(2)}
+          </div>
+        ),
+      },
+      {
+        accessorKey: 'date',
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground p-0 hover:bg-transparent"
+          >
+            Date <ArrowUpDown className="ml-1 h-3 w-3" />
+          </Button>
+        ),
+        cell: ({ row }) => <span className="text-xs text-muted-foreground whitespace-nowrap">{row.original.date}</span>,
+      },
+      {
+        accessorKey: 'status',
+        header: 'Status',
+        cell: ({ row }) => {
+          const st = statusStyles[row.original.status] || statusStyles.paid;
+          const StatusIcon = st.icon;
+          return (
+            <Badge className={`text-[10px] font-bold rounded-full px-2.5 py-0.5 border gap-1 inline-flex items-center ${st.bg} ${st.text} ${st.border}`}>
+              <StatusIcon className="h-3 w-3" />
+              <span className="capitalize">{row.original.status}</span>
+            </Badge>
+          );
+        },
+      },
+      {
+        id: 'actions',
+        header: () => <div className="text-right text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground pr-4">Actions</div>,
+        cell: ({ row }) => {
+          const inv = row.original;
+          return (
+            <div className="flex items-center justify-end gap-1 pr-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-lg hover:bg-primary/10 text-primary transition-all"
+                title="Quick View"
+                onClick={() => {
+                  setSelectedInvoice(inv);
+                  setPreviewOpen(true);
+                }}
+              >
+                <Eye className="h-3.5 w-3.5" />
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-lg hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 transition-all"
+                title="Print / Save PDF"
+                onClick={() => handlePrint(inv)}
+              >
+                <Printer className="h-3.5 w-3.5" />
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-lg hover:bg-sky-500/10 text-sky-600 dark:text-sky-400 transition-all"
+                title="Email Customer Invoice"
+                onClick={() => handleSendEmail(inv)}
+              >
+                <Mail className="h-3.5 w-3.5" />
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-lg hover:bg-purple-500/10 text-purple-600 dark:text-purple-400 transition-all"
+                title="Copy Invoice Link"
+                onClick={() => handleCopyLink(inv)}
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          );
+        },
+      },
+    ],
+    []
+  );
+
+  const table = useReactTable({
+    data: filteredInvoices,
+    columns,
+    state: {
+      sorting,
+    },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    initialState: {
+      pagination: {
+        pageSize: 10,
+      },
+    },
+  });
+
   return (
     <AdminLayout>
-      <div className="space-y-8 pb-12">
+      <div className="space-y-8 pb-16">
         <PageHeader
           titlePart1="Payment"
           titlePart2="Invoices"
-          badgeText="Finance Command Center"
-          subtitle="Generate, download, and manage GST tax invoices with real order payloads."
+          badgeText="Finance & GST Command Center"
+          subtitle="Generate, track, and download automated GST tax invoices powered by TanStack Table."
           actions={
-            <Button
-              onClick={fetchInvoices}
-              className="rounded-md gap-2 bg-primary text-white hover:bg-primary/95 shadow-sm cursor-pointer"
-            >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Refresh Invoices
-            </Button>
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={fetchInvoices}
+                variant="outline"
+                className="rounded-lg gap-2 border-primary/20 hover:bg-primary/5 transition-all text-xs font-semibold"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin text-primary' : ''}`} /> Sync Invoices
+              </Button>
+              <Button
+                onClick={() => {
+                  if (invoices.length > 0) handlePrint(invoices[0]);
+                }}
+                className="rounded-lg gap-2 bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 text-white shadow-md shadow-teal-500/20 text-xs font-bold transition-all cursor-pointer"
+              >
+                <Printer className="h-4 w-4" /> Export Latest Invoice
+              </Button>
+            </div>
           }
         />
 
-        {/* Filter & Search Bar */}
-        <Card className="border-border/40 bg-card rounded-lg p-4">
-          <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-            <div className="relative w-full md:w-80">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        {/* Dynamic Metric Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="border-border/40 bg-gradient-to-br from-card to-muted/20 shadow-sm relative overflow-hidden rounded-xl">
+            <CardContent className="p-5">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Invoiced Volume</p>
+                  <h3 className="text-2xl font-black text-foreground mt-1">₹{stats.totalVolume.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</h3>
+                </div>
+                <div className="p-2.5 bg-primary/10 text-primary rounded-lg">
+                  <DollarSign className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="mt-3 flex items-center gap-2 text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                <TrendingUp className="h-3.5 w-3.5" />
+                <span>+12.8% vs last month</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/40 bg-gradient-to-br from-card to-muted/20 shadow-sm relative overflow-hidden rounded-xl">
+            <CardContent className="p-5">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total GST Collected</p>
+                  <h3 className="text-2xl font-black text-foreground mt-1">₹{stats.totalGst.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</h3>
+                </div>
+                <div className="p-2.5 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-lg">
+                  <Receipt className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="mt-3 flex items-center gap-2 text-[11px] text-muted-foreground">
+                <span>CGST 9% + SGST 9% Output Tax</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/40 bg-gradient-to-br from-card to-muted/20 shadow-sm relative overflow-hidden rounded-xl">
+            <CardContent className="p-5">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Paid / Settled Invoices</p>
+                  <h3 className="text-2xl font-black text-foreground mt-1">{stats.paidCount} <span className="text-xs font-normal text-muted-foreground">/ {stats.count}</span></h3>
+                </div>
+                <div className="p-2.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg">
+                  <CheckCircle2 className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="mt-3 w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                <div className="bg-emerald-500 h-full rounded-full transition-all" style={{ width: `${stats.count > 0 ? (stats.paidCount / stats.count) * 100 : 0}%` }} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/40 bg-gradient-to-br from-card to-muted/20 shadow-sm relative overflow-hidden rounded-xl">
+            <CardContent className="p-5">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Average Invoice Value</p>
+                  <h3 className="text-2xl font-black text-foreground mt-1">₹{stats.avgInvoice.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</h3>
+                </div>
+                <div className="p-2.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-lg">
+                  <Sparkles className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="mt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+                <span>100% Compliant GST Statements</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Toolbar & Search */}
+        <Card className="border-border/40 bg-card rounded-xl p-4 shadow-sm">
+          <div className="flex flex-col lg:flex-row gap-4 justify-between items-center">
+            <div className="relative w-full lg:w-96">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by invoice #, order #, or customer..."
+                placeholder="Search invoice #, order ID, customer name..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 bg-background border-border/50 text-xs"
+                className="pl-10 pr-12 bg-background/50 border-border/60 text-xs h-10 rounded-lg focus-visible:ring-primary"
               />
+              <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] bg-muted border border-border/60 rounded px-1.5 py-0.5 text-muted-foreground font-mono">⌘K</kbd>
             </div>
 
-            <div className="flex flex-wrap gap-2 w-full md:w-auto">
-              {['all', 'paid', 'pending', 'processing', 'shipped', 'delivered', 'cancelled'].map((st) => (
-                <Button
-                  key={st}
-                  variant={statusFilter === st ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setStatusFilter(st)}
-                  className={`text-xs capitalize rounded-full h-8 ${statusFilter === st ? 'bg-primary text-white' : 'border-border/50'}`}
-                >
-                  {st}
-                </Button>
-              ))}
+            <div className="flex flex-wrap gap-1.5 w-full lg:w-auto">
+              {['all', 'paid', 'pending', 'processing', 'shipped', 'delivered', 'cancelled'].map((st) => {
+                const count = st === 'all' ? invoices.length : invoices.filter((i) => i.status === st).length;
+                return (
+                  <Button
+                    key={st}
+                    variant={statusFilter === st ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setStatusFilter(st)}
+                    className={`text-xs capitalize rounded-lg h-9 px-3 font-semibold transition-all ${
+                      statusFilter === st
+                        ? 'bg-primary text-white shadow-sm shadow-primary/20'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    }`}
+                  >
+                    {st} {count > 0 && <span className="ml-1.5 text-[10px] opacity-75 font-mono">({count})</span>}
+                  </Button>
+                );
+              })}
             </div>
           </div>
         </Card>
 
-        {/* Invoices Table */}
-        <Card className="border-border/40 rounded-lg bg-card overflow-hidden">
+        {/* TanStack Table & Pagination */}
+        <Card className="border-border/40 rounded-xl bg-card overflow-hidden shadow-sm">
           <CardContent className="p-0">
             {loading ? (
-              <div className="p-12 text-center text-muted-foreground flex flex-col items-center justify-center gap-3">
-                <RefreshCw className="h-6 w-6 animate-spin text-primary" />
-                <p className="text-xs font-medium">Fetching real invoice payloads from server...</p>
+              <div className="p-16 text-center text-muted-foreground flex flex-col items-center justify-center gap-3">
+                <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-xs font-semibold tracking-wide">Syncing live tax invoices from server...</p>
               </div>
-            ) : filteredInvoices.length === 0 ? (
-              <div className="p-12 text-center text-muted-foreground flex flex-col items-center justify-center gap-2">
-                <FileText className="h-8 w-8 text-muted-foreground/50" />
-                <p className="text-sm font-semibold">No invoices match your query</p>
-                <p className="text-xs text-muted-foreground">Try clearing filters or search keywords.</p>
+            ) : table.getRowModel().rows.length === 0 ? (
+              <div className="p-16 text-center text-muted-foreground flex flex-col items-center justify-center gap-3">
+                <div className="p-4 bg-muted/30 rounded-full">
+                  <FileText className="h-8 w-8 text-muted-foreground/60" />
+                </div>
+                <p className="text-sm font-bold text-foreground">No invoices found matching your criteria</p>
+                <p className="text-xs text-muted-foreground">Try clearing search terms or status filters.</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader className="bg-muted/30">
-                    <TableRow>
-                      {['Invoice #', 'Order ID', 'Customer Details', 'GSTIN', 'Total Amount', 'Tax (18% GST)', 'Date', 'Status', 'Actions'].map((h) => (
-                        <TableHead key={h} className="text-xs font-bold uppercase tracking-wider">{h}</TableHead>
+              <div>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader className="bg-muted/40">
+                      {table.getHeaderGroups().map((headerGroup) => (
+                        <TableRow key={headerGroup.id} className="border-border/40">
+                          {headerGroup.headers.map((header) => (
+                            <TableHead key={header.id} className="py-3.5">
+                              {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                            </TableHead>
+                          ))}
+                        </TableRow>
                       ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredInvoices.map((inv) => (
-                      <TableRow key={inv.id} className="hover:bg-muted/10 transition-colors">
-                        <TableCell className="font-mono text-xs font-bold text-primary">{inv.invoiceNumber}</TableCell>
-                        <TableCell className="text-xs font-semibold text-foreground">{inv.orderId}</TableCell>
-                        <TableCell className="text-xs">
-                          <div className="font-semibold text-foreground">{inv.customerName}</div>
-                          <div className="text-[11px] text-muted-foreground">{inv.customerEmail}</div>
-                        </TableCell>
-                        <TableCell className="text-xs font-mono text-muted-foreground">{inv.gstNumber}</TableCell>
-                        <TableCell className="text-xs font-bold text-foreground">₹{inv.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">₹{inv.taxAmount.toFixed(2)}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{inv.date}</TableCell>
-                        <TableCell>
-                          <Badge className={`text-[10px] font-semibold rounded-full px-2.5 border ${statusStyles[inv.status] || 'bg-muted text-muted-foreground'}`}>
-                            {inv.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 rounded-md hover:bg-muted/60 text-primary"
-                              title="View Invoice"
-                              onClick={() => {
-                                setSelectedInvoice(inv);
-                                setPreviewOpen(true);
-                              }}
-                            >
-                              <Eye className="h-3.5 w-3.5" />
-                            </Button>
+                    </TableHeader>
+                    <TableBody>
+                      {table.getRowModel().rows.map((row) => (
+                        <TableRow key={row.id} className="hover:bg-muted/20 transition-colors border-border/30">
+                          {row.getVisibleCells().map((cell) => (
+                            <TableCell key={cell.id} className="py-3">
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
 
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 rounded-md hover:bg-muted/60 text-emerald-600 dark:text-emerald-400"
-                              title="Print / Save PDF"
-                              onClick={() => handlePrint(inv)}
-                            >
-                              <Printer className="h-3.5 w-3.5" />
-                            </Button>
+                {/* TanStack Table Pagination Footer */}
+                <div className="flex flex-col sm:flex-row items-center justify-between p-4 border-t border-border/40 text-xs text-muted-foreground gap-4">
+                  <div className="font-medium">
+                    Showing <span className="font-bold text-foreground">{table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}</span> to{' '}
+                    <span className="font-bold text-foreground">
+                      {Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, filteredInvoices.length)}
+                    </span>{' '}
+                    of <span className="font-bold text-foreground">{filteredInvoices.length}</span> invoices
+                  </div>
 
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 rounded-md hover:bg-muted/60 text-blue-600 dark:text-blue-400"
-                              title="Email Invoice"
-                              onClick={() => handleSendEmail(inv)}
-                            >
-                              <Mail className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <span>Rows per page:</span>
+                      <select
+                        value={table.getState().pagination.pageSize}
+                        onChange={(e) => {
+                          table.setPageSize(Number(e.target.value));
+                        }}
+                        className="h-8 rounded-lg border border-border/60 bg-background text-xs px-2 font-semibold text-foreground outline-none focus:border-primary"
+                      >
+                        {[10, 20, 50, 100].map((pageSize) => (
+                          <option key={pageSize} value={pageSize}>
+                            {pageSize}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => table.setPageIndex(0)}
+                        disabled={!table.getCanPreviousPage()}
+                        className="h-8 w-8 rounded-lg"
+                        title="First Page"
+                      >
+                        <ChevronsLeft className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => table.previousPage()}
+                        disabled={!table.getCanPreviousPage()}
+                        className="h-8 w-8 rounded-lg"
+                        title="Previous Page"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <span className="px-2 text-xs font-semibold text-foreground">
+                        Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => table.nextPage()}
+                        disabled={!table.getCanNextPage()}
+                        className="h-8 w-8 rounded-lg"
+                        title="Next Page"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                        disabled={!table.getCanNextPage()}
+                        className="h-8 w-8 rounded-lg"
+                        title="Last Page"
+                      >
+                        <ChevronsRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Invoice Interactive Preview Dialog */}
+        {/* Right-Side Slide-Out Sheet (No Center Modal) */}
         {selectedInvoice && (
-          <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-6">
-              <DialogHeader>
-                <DialogTitle className="flex items-center justify-between text-lg font-bold">
-                  <span>Tax Invoice — {selectedInvoice.invoiceNumber}</span>
-                  <Badge className={`text-xs ${statusStyles[selectedInvoice.status]}`}>{selectedInvoice.status.toUpperCase()}</Badge>
-                </DialogTitle>
-                <DialogDescription className="text-xs">
-                  Official computer-generated tax invoice for Order {selectedInvoice.orderId}
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="space-y-6 my-4 border border-border/40 rounded-lg p-6 bg-card">
-                {/* Header */}
-                <div className="flex justify-between items-start border-b border-border/40 pb-4">
-                  <div>
-                    <h2 className="text-xl font-extrabold text-primary">FCI SELLER</h2>
-                    <p className="text-xs text-muted-foreground">FCI Seller Retail Pvt. Ltd.</p>
-                    <p className="text-[11px] text-muted-foreground">GSTIN: 27AAACF9988F1Z5</p>
+          <Sheet open={previewOpen} onOpenChange={setPreviewOpen}>
+            <SheetContent side="right" showCloseButton={false} className="w-full sm:max-w-xl p-0 overflow-hidden flex flex-col h-full bg-card border-l border-border/30 backdrop-blur-xl">
+              {/* Header Banner */}
+              <SheetHeader className="p-6 bg-gradient-to-r from-teal-500/10 via-emerald-500/5 to-transparent border-b border-border/40 shrink-0 text-left">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-primary/10 text-primary rounded-xl shrink-0">
+                      <FileText className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <SheetTitle className="text-lg font-black text-foreground font-mono">{selectedInvoice.invoiceNumber}</SheetTitle>
+                        <Badge className={`text-[10px] font-bold rounded-full px-2.5 border ${statusStyles[selectedInvoice.status]?.bg} ${statusStyles[selectedInvoice.status]?.text} ${statusStyles[selectedInvoice.status]?.border}`}>
+                          {selectedInvoice.status.toUpperCase()}
+                        </Badge>
+                      </div>
+                      <SheetDescription className="text-xs text-muted-foreground mt-0.5">
+                        Order Reference: <span className="font-semibold text-foreground">{selectedInvoice.orderId}</span> • Generated {selectedInvoice.date}
+                      </SheetDescription>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-foreground">{selectedInvoice.invoiceNumber}</p>
-                    <p className="text-xs text-muted-foreground">Date: {selectedInvoice.date}</p>
-                    <p className="text-xs text-muted-foreground">Order: {selectedInvoice.orderId}</p>
+
+                  {/* Guaranteed Visible Top-Right Close Button */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setPreviewOpen(false)}
+                    className="h-8 w-8 rounded-full border border-border/60 hover:bg-muted bg-background/80 text-foreground shadow-sm shrink-0 cursor-pointer transition-all"
+                    title="Close Quick View"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </SheetHeader>
+
+              {/* Scrollable Body Content */}
+              <div className="flex-1 p-6 space-y-6 overflow-y-auto min-h-0 border-b border-border/30">
+                {/* 2-Column Customer & Shipping Info */}
+                <div className="grid grid-cols-1 gap-4">
+                  {/* Billed Customer Card */}
+                  <Card className="border-border/30 bg-muted/15 rounded-xl shadow-sm">
+                    <CardContent className="p-4 space-y-2.5">
+                      <div className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-wider">
+                        <User className="h-4 w-4" />
+                        <span>Billed Customer</span>
+                      </div>
+                      <div className="space-y-1 text-xs text-muted-foreground">
+                        <div className="font-bold text-foreground text-sm">{selectedInvoice.customerName}</div>
+                        <div className="flex items-center gap-2"><Mail className="h-3.5 w-3.5 text-muted-foreground/60" /> {selectedInvoice.customerEmail}</div>
+                        <div className="flex items-center gap-2"><CreditCard className="h-3.5 w-3.5 text-muted-foreground/60" /> Phone: {selectedInvoice.customerPhone}</div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Destination Address & GSTIN Card */}
+                  <Card className="border-border/30 bg-muted/15 rounded-xl shadow-sm">
+                    <CardContent className="p-4 space-y-2.5">
+                      <div className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-wider">
+                        <MapPin className="h-4 w-4" />
+                        <span>Delivery Destination</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {selectedInvoice.shippingAddress}
+                      </p>
+                      <div className="pt-1 text-[11px] font-mono text-primary flex items-center gap-1.5">
+                        <Building2 className="h-3.5 w-3.5" />
+                        <span>GSTIN: {selectedInvoice.gstNumber}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <Separator className="my-6 border-border/20" />
+
+                {/* Purchased Line Items */}
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+                      <Package className="h-3.5 w-3.5 text-primary" /> Item Breakdown
+                    </h3>
+                    <span className="text-xs text-muted-foreground">{selectedInvoice.items.length || 1} Item(s)</span>
+                  </div>
+
+                  <div className="border border-border/40 rounded-xl overflow-hidden bg-card divide-y divide-border/20 shadow-sm">
+                    {selectedInvoice.items.length > 0 ? (
+                      selectedInvoice.items.map((item: any, idx: number) => {
+                        const name = item.product?.name || item.name || item.title || 'Retail Product';
+                        const size = item.variant?.size || item.size || '';
+                        const color = item.variant?.color || item.color || '';
+                        const qty = Number(item.quantity || 1);
+                        const price = Number(item.price || item.priceSnapshot || 0);
+
+                        return (
+                          <div key={idx} className="flex items-center justify-between p-3.5 hover:bg-muted/10 transition-colors">
+                            <div className="flex flex-col gap-1">
+                              <span className="text-xs font-bold text-foreground">{name}</span>
+                              <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                                {size && <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4">Size: {size}</Badge>}
+                                {color && <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4">Color: {color}</Badge>}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <span className="text-xs text-muted-foreground font-mono">Qty: {qty}</span>
+                              <span className="text-xs font-bold text-foreground font-mono">₹{(price * qty).toFixed(2)}</span>
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="flex items-center justify-between p-4">
+                        <span className="text-xs font-bold text-foreground">Standard Order Package</span>
+                        <span className="text-xs font-bold text-foreground font-mono">₹{selectedInvoice.amount.toFixed(2)}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Customer Details */}
-                <div className="grid grid-cols-2 gap-4 text-xs bg-muted/20 p-4 rounded-md">
-                  <div>
-                    <p className="font-bold text-primary mb-1 uppercase">Billed Customer</p>
-                    <p className="font-semibold">{selectedInvoice.customerName}</p>
-                    <p>{selectedInvoice.customerEmail}</p>
-                    <p>Phone: {selectedInvoice.customerPhone}</p>
+                <Separator className="my-6 border-border/20" />
+
+                {/* Financial Tax Summary */}
+                <div className="bg-muted/20 border border-border/40 rounded-xl p-5 space-y-2.5 text-xs shadow-inner">
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Taxable Base Subtotal:</span>
+                    <span className="font-mono">₹{selectedInvoice.taxableAmount.toFixed(2)}</span>
                   </div>
-                  <div>
-                    <p className="font-bold text-primary mb-1 uppercase">Tax & Financials</p>
-                    <p>Subtotal (Taxable): ₹{selectedInvoice.taxableAmount.toFixed(2)}</p>
-                    <p>CGST (9%): ₹{selectedInvoice.cgst.toFixed(2)}</p>
-                    <p>SGST (9%): ₹{selectedInvoice.sgst.toFixed(2)}</p>
-                    <p className="font-bold text-foreground mt-1">Grand Total: ₹{selectedInvoice.amount.toFixed(2)}</p>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>CGST Output Tax (9%):</span>
+                    <span className="font-mono">₹{selectedInvoice.cgst.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>SGST Output Tax (9%):</span>
+                    <span className="font-mono">₹{selectedInvoice.sgst.toFixed(2)}</span>
+                  </div>
+                  <Separator className="my-2 border-border/40" />
+                  <div className="flex justify-between text-sm font-black text-foreground pt-1">
+                    <span>Grand Total (Incl. GST):</span>
+                    <span className="text-primary text-base font-mono">₹{selectedInvoice.amount.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
 
-              <DialogFooter className="flex gap-2 justify-end">
-                <Button variant="outline" size="sm" onClick={() => handleSendEmail(selectedInvoice)}>
-                  <Mail className="h-4 w-4 mr-1.5" /> Email to Customer
-                </Button>
-                <Button size="sm" className="bg-primary text-white" onClick={() => handlePrint(selectedInvoice)}>
-                  <Printer className="h-4 w-4 mr-1.5" /> Print / Save PDF
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              {/* Action Footer */}
+              <div className="p-4 sm:p-5 border-t border-border/30 bg-muted/20 flex flex-wrap gap-2 justify-between items-center shrink-0">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <FileCheck className="h-4 w-4 text-emerald-500" />
+                  <span>GST Compliant Invoice</span>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSendEmail(selectedInvoice)}
+                    className="rounded-lg text-xs font-semibold gap-1.5"
+                  >
+                    <Mail className="h-3.5 w-3.5 text-sky-500" /> Email Customer
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="bg-primary text-white rounded-lg text-xs font-bold gap-1.5 shadow-md"
+                    onClick={() => handlePrint(selectedInvoice)}
+                  >
+                    <Printer className="h-3.5 w-3.5" /> Print / Save PDF
+                  </Button>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
         )}
       </div>
     </AdminLayout>

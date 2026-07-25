@@ -128,6 +128,7 @@ export default function ProductsPage() {
   const [availableColors, setAvailableColors] = useState<string[]>(STANDARD_COLORS);
   const [availableSizes, setAvailableSizes] = useState<string[]>(STANDARD_SIZES);
   const [existingTaxRules, setExistingTaxRules] = useState<any[]>([]);
+  const [fetchedTaxTypes, setFetchedTaxTypes] = useState<string[]>(['GST', 'IGST', 'VAT', 'EXCLUSIVE', 'INCLUSIVE', 'NONE']);
   const [subCategoryLoading, setSubCategoryLoading] = useState(false);
   const [taxLoading, setTaxLoading] = useState(false);
 
@@ -249,6 +250,20 @@ export default function ProductsPage() {
         const json = await res.json();
         const raw = json.data?.taxes ?? json.taxes ?? json.data ?? json ?? [];
         setExistingTaxRules(Array.isArray(raw) ? raw.filter((t: any) => t.isActive !== false) : []);
+      }
+
+      let typesRes = await fetch(`${API_BASE}/api/admin/taxes/types`, { headers: authHeaders() });
+      if (!typesRes.ok) {
+        typesRes = await fetch(`${API_BASE}/api/taxes/types`, { headers: authHeaders() });
+      }
+      if (typesRes.ok) {
+        const typesJson = await typesRes.json();
+        const rawTypes = typesJson.data || typesJson;
+        if (Array.isArray(rawTypes) && rawTypes.length > 0) {
+          const list = rawTypes.map((t: any) => typeof t === 'string' ? t : (t.name || t.id || t.code));
+          const unique = Array.from(new Set(['GST', 'IGST', 'VAT', 'EXCLUSIVE', 'INCLUSIVE', ...list]));
+          setFetchedTaxTypes(unique);
+        }
       }
     } catch (e) {
       console.error('Error fetching tax rules:', e);
@@ -1473,12 +1488,9 @@ export default function ProductsPage() {
                         disabled={Boolean(formData.selectedTaxRuleId && formData.selectedTaxRuleId !== '__custom__')}
                         className="w-full h-11 rounded-lg border border-border/50 bg-background px-3 py-1.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none cursor-pointer disabled:opacity-75"
                       >
-                        <option value="GST">GST</option>
-                        <option value="IGST">IGST</option>
-                        <option value="VAT">VAT</option>
-                        <option value="EXCLUSIVE">Exclusive</option>
-                        <option value="INCLUSIVE">Inclusive</option>
-                        <option value="NONE">None / Exempt</option>
+                        {fetchedTaxTypes.map((t) => (
+                          <option key={t} value={t.toUpperCase()}>{t}</option>
+                        ))}
                       </select>
                     </div>
                     <div className="space-y-1.5">
