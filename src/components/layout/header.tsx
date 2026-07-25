@@ -1,8 +1,11 @@
 'use client';
 
-import { getImageUrl } from '@/lib/api';
-import { Search, Bell, User, Settings, LogOut, Menu, Sun, Moon } from 'lucide-react';
+import { API_BASE, getImageUrl } from '@/lib/api';
+import { Search, Bell, User, Settings, LogOut, Menu, Sun, Moon, Globe, DollarSign, MapPin, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { toast } from '@/components/ui/toast';
+import { useCurrency, getCurrencyForCountry, getLanguageForCountry } from '@/context/currency-context';
 import { useTheme } from 'next-themes';
 import {
   DropdownMenu,
@@ -23,9 +26,18 @@ interface HeaderProps {
 
 export function Header({ onMenuClick }: HeaderProps) {
   const router = useRouter();
+  const { currencyCode, currencySymbol, setCurrencyCode } = useCurrency();
   const [user, setUser] = useState<{ firstName: string; lastName: string; email: string; avatarUrl?: string } | null>(null);
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+
+  // Region / localization state
+  const [currentCountry, setCurrentCountry] = useState('IN');
+  const [currentLanguage, setCurrentLanguage] = useState('en');
+  const [countriesList, setCountriesList] = useState<any[]>([]);
+  const [currenciesList, setCurrenciesList] = useState<any[]>([]);
+  const [languagesList, setLanguagesList] = useState<any[]>([]);
+  const [isUpdatingRegion, setIsUpdatingRegion] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -43,6 +55,119 @@ export function Header({ onMenuClick }: HeaderProps) {
       }
     }
   }, []);
+
+  // Fetch store region coordinates on mount
+  useEffect(() => {
+    const fetchRegionData = async () => {
+      try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+        const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+
+        const resSettings = await fetch(`${API_BASE}/api/settings`, { headers });
+        if (resSettings.ok) {
+          const json = await resSettings.json();
+          const s = json?.data || json;
+          if (s.country) setCurrentCountry(s.country);
+          if (s.language) setCurrentLanguage(s.language);
+          if (s.currency) setCurrencyCode(s.currency);
+        }
+
+        const resCountries = await fetch(`${API_BASE}/api/settings/countries`, { headers });
+        if (resCountries.ok) {
+          const cJson = await resCountries.json();
+          if (cJson?.data) setCountriesList(cJson.data);
+        }
+
+        const resCurrencies = await fetch(`${API_BASE}/api/settings/currencies`, { headers });
+        if (resCurrencies.ok) {
+          const curJson = await resCurrencies.json();
+          if (curJson?.data) setCurrenciesList(curJson.data);
+        }
+
+        const resLangs = await fetch(`${API_BASE}/api/settings/languages`, { headers });
+        if (resLangs.ok) {
+          const lJson = await resLangs.json();
+          if (lJson?.data) setLanguagesList(lJson.data);
+        }
+      } catch (e) {
+        console.error('Failed to load header region settings:', e);
+      }
+    };
+
+    fetchRegionData();
+  }, [setCurrencyCode]);
+
+  const handleQuickCountryChange = async (countryCode: string) => {
+    setIsUpdatingRegion(true);
+    let autoCurrency = getCurrencyForCountry(countryCode);
+    let autoLanguage = getLanguageForCountry(countryCode);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/settings/country-info/${countryCode}`);
+      const json = await res.json();
+      if (res.ok && json.data) {
+        if (json.data.currencyCode) autoCurrency = json.data.currencyCode;
+        if (json.data.languageCode) autoLanguage = json.data.languageCode;
+      }
+    } catch {}
+
+    setCurrentCountry(countryCode);
+    setCurrentLanguage(autoLanguage);
+    setCurrencyCode(autoCurrency);
+
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+      await fetch(`${API_BASE}/api/settings`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          country: countryCode,
+          currency: autoCurrency,
+          language: autoLanguage,
+        }),
+      });
+      toast.success(`Region updated to ${countryCode}. Currency: ${autoCurrency}, Language: ${autoLanguage.toUpperCase()}`);
+    } catch {
+      toast.error('Failed to persist region settings');
+    } finally {
+      setIsUpdatingRegion(false);
+    }
+  };
+
+  const handleQuickCurrencyChange = async (newCurrency: string) => {
+    setCurrencyCode(newCurrency);
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+      await fetch(`${API_BASE}/api/settings`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ currency: newCurrency }),
+      });
+      toast.success(`Active currency updated to ${newCurrency}`);
+    } catch {}
+  };
+
+  const handleQuickLanguageChange = async (newLanguage: string) => {
+    setCurrentLanguage(newLanguage);
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+      await fetch(`${API_BASE}/api/settings`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ language: newLanguage }),
+      });
+      toast.success(`System language updated to ${newLanguage.toUpperCase()}`);
+    } catch {}
+  };
 
   const getInitials = () => {
     if (!user) return 'AD';
@@ -78,6 +203,122 @@ export function Header({ onMenuClick }: HeaderProps) {
 
       {/* Header Actions */}
       <div className="flex items-center gap-3">
+        {/* Quick Region, Currency & Language Action Button */}
+        <DropdownMenu>
+          <DropdownMenuTrigger render={
+            <div suppressHydrationWarning className="flex items-center gap-2 rounded-full border border-border/40 bg-muted/30 hover:bg-muted/60 hover:border-[#14b8a6]/40 px-3 py-1.5 text-xs font-semibold text-foreground transition-all cursor-pointer shadow-xs">
+              <Globe className="h-3.5 w-3.5 text-[#14b8a6]" />
+              <span suppressHydrationWarning className="font-mono font-bold text-primary">{currentCountry}</span>
+              <span className="text-muted-foreground/40">•</span>
+              <span suppressHydrationWarning>{currencySymbol} {currencyCode}</span>
+              <span className="text-muted-foreground/40">•</span>
+              <span suppressHydrationWarning className="uppercase text-[10px] font-bold bg-[#14b8a6]/10 text-[#14b8a6] px-1.5 py-0.5 rounded">
+                {currentLanguage}
+              </span>
+              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground ml-0.5" />
+            </div>
+          } />
+          <DropdownMenuContent align="end" className="w-72 p-3.5 rounded-xl bg-card/95 border border-border/40 backdrop-blur-xl shadow-xl space-y-3">
+            <div className="flex items-center justify-between px-1">
+              <div className="flex items-center gap-1.5">
+                <Globe className="h-4 w-4 text-[#14b8a6]" />
+                <span className="text-xs font-bold text-foreground uppercase tracking-wider">Quick Localization</span>
+              </div>
+              <Badge variant="outline" className="text-[10px] bg-[#14b8a6]/10 text-[#14b8a6] border-[#14b8a6]/20 font-mono font-bold">
+                Active
+              </Badge>
+            </div>
+            <DropdownMenuSeparator className="bg-border/20" />
+
+            {/* Country Selector */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-muted-foreground uppercase flex items-center gap-1">
+                <MapPin className="h-3 w-3 text-primary" /> Store Country Region
+              </label>
+              <select
+                value={currentCountry}
+                disabled={isUpdatingRegion}
+                onChange={(e) => handleQuickCountryChange(e.target.value)}
+                className="w-full h-9 rounded-lg border border-border/50 bg-background px-2.5 text-xs font-bold text-primary outline-none focus:border-[#14b8a6] cursor-pointer"
+              >
+                {countriesList.length > 0 ? (
+                  countriesList.map((c: any) => (
+                    <option key={c.code} value={c.code}>
+                      {c.name} ({c.code})
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value="IN">India (IN)</option>
+                    <option value="US">United States (US)</option>
+                    <option value="GB">United Kingdom (GB)</option>
+                    <option value="AE">UAE (AE)</option>
+                    <option value="CA">Canada (CA)</option>
+                    <option value="DE">Germany (DE)</option>
+                    <option value="FR">France (FR)</option>
+                    <option value="ES">Spain (ES)</option>
+                    <option value="MY">Malaysia (MY)</option>
+                  </>
+                )}
+              </select>
+            </div>
+
+            {/* Currency Selector */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-muted-foreground uppercase flex items-center gap-1">
+                <DollarSign className="h-3 w-3 text-emerald-500" /> Active Currency
+              </label>
+              <select
+                value={currencyCode}
+                onChange={(e) => handleQuickCurrencyChange(e.target.value)}
+                className="w-full h-9 rounded-lg border border-border/50 bg-background px-2.5 text-xs font-semibold outline-none focus:border-[#14b8a6] cursor-pointer"
+              >
+                {currenciesList.length > 0 ? (
+                  currenciesList.map((c: any) => (
+                    <option key={c.code || c.id} value={c.code}>
+                      {c.code} ({c.symbol || ''}) - {c.name}
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value="INR">INR (₹) - Indian Rupee</option>
+                    <option value="USD">USD ($) - US Dollar</option>
+                    <option value="EUR">EUR (€) - Euro</option>
+                    <option value="GBP">GBP (£) - British Pound</option>
+                  </>
+                )}
+              </select>
+            </div>
+
+            {/* Language Selector */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-muted-foreground uppercase flex items-center gap-1">
+                <Globe className="h-3 w-3 text-blue-500" /> System Language
+              </label>
+              <select
+                value={currentLanguage}
+                onChange={(e) => handleQuickLanguageChange(e.target.value)}
+                className="w-full h-9 rounded-lg border border-border/50 bg-background px-2.5 text-xs font-semibold outline-none focus:border-[#14b8a6] cursor-pointer"
+              >
+                {languagesList.length > 0 ? (
+                  languagesList.map((l: any) => (
+                    <option key={l.code || l.id} value={l.code}>
+                      {l.flag || ''} {l.name} ({l.code})
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value="en">English (en)</option>
+                    <option value="hi">Hindi (hi)</option>
+                    <option value="es">Spanish (es)</option>
+                    <option value="fr">French (fr)</option>
+                  </>
+                )}
+              </select>
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         {/* Theme Toggle */}
         <Button
           variant="ghost"
@@ -98,7 +339,6 @@ export function Header({ onMenuClick }: HeaderProps) {
           <DropdownMenuTrigger render={
             <div className="relative rounded-md p-2 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors cursor-pointer border-none bg-transparent">
               <Bell className="h-5 w-5" />
-              {/* Badge rendered outside Button so it's always visible */}
               <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#14b8a6] text-black text-[10px] font-black leading-none px-1 border-2 border-background">
                 3
               </span>
@@ -158,7 +398,6 @@ export function Header({ onMenuClick }: HeaderProps) {
             </div>
           } />
           <DropdownMenuContent align="end" className="w-60 p-2 rounded-lg bg-card/95 border border-border/30 backdrop-blur-lg">
-            {/* User mini-profile block */}
             <DropdownMenuLabel className="px-2 py-2">
               <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10 rounded-full border border-[#14b8a6]/20 flex-shrink-0">

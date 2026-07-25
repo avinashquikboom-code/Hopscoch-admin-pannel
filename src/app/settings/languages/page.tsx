@@ -42,7 +42,9 @@ import {
   Trash2,
   Globe,
   DollarSign,
-  MapPin
+  MapPin,
+  Star,
+  CheckCircle2
 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 
@@ -169,6 +171,174 @@ export default function LanguagesAndCurrencyPage() {
     }
   };
 
+  // Metadata dictionaries for auto-creation
+  const CURRENCY_METADATA: Record<string, { symbol: string; name: string }> = {
+    INR: { symbol: '₹', name: 'Indian Rupee' },
+    USD: { symbol: '$', name: 'US Dollar' },
+    EUR: { symbol: '€', name: 'Euro' },
+    GBP: { symbol: '£', name: 'British Pound' },
+    AED: { symbol: 'AED', name: 'UAE Dirham' },
+    SAR: { symbol: 'SAR', name: 'Saudi Riyal' },
+    BHD: { symbol: 'BD', name: 'Bahraini Dinar' },
+    MYR: { symbol: 'RM', name: 'Malaysian Ringgit' },
+    CAD: { symbol: 'CA$', name: 'Canadian Dollar' },
+    AUD: { symbol: 'A$', name: 'Australian Dollar' },
+    SGD: { symbol: 'S$', name: 'Singapore Dollar' },
+    JPY: { symbol: '¥', name: 'Japanese Yen' },
+    CNY: { symbol: '¥', name: 'Chinese Yuan' },
+  };
+
+  const LANGUAGE_METADATA: Record<string, { name: string; flag: string }> = {
+    en: { name: 'English', flag: '🇺🇸' },
+    hi: { name: 'Hindi', flag: '🇮🇳' },
+    es: { name: 'Spanish', flag: '🇪🇸' },
+    fr: { name: 'French', flag: '🇫🇷' },
+    de: { name: 'German', flag: '🇩🇪' },
+    ar: { name: 'Arabic', flag: '🇸🇦' },
+    ms: { name: 'Bahasa Melayu', flag: '🇲🇾' },
+    nl: { name: 'Nederlands', flag: '🇳🇱' },
+    it: { name: 'Italian', flag: '🇮🇹' },
+    ja: { name: 'Japanese', flag: '🇯🇵' },
+    zh: { name: 'Chinese', flag: '🇨🇳' },
+  };
+
+  // Explicit Set Default Handlers
+  const handleSetDefaultCountry = async (code: string) => {
+    let autoCurrency = getCurrencyForCountry(code);
+    let autoLanguage = getLanguageForCountry(code);
+
+    // Fetch API for precise info if available
+    try {
+      const res = await fetch(`${API_BASE}/api/settings/country-info/${code}`);
+      const json = await res.json();
+      if (res.ok && json.data) {
+        if (json.data.currencyCode) autoCurrency = json.data.currencyCode;
+        if (json.data.languageCode) autoLanguage = json.data.languageCode;
+      }
+    } catch {}
+
+    const updatedCountries = countries.map((c) => ({
+      ...c,
+      isDefault: c.code === code,
+    }));
+    setCountries(updatedCountries);
+    await saveCountries(updatedCountries);
+
+    // 1. Update/Add Default Currency
+    let foundCurr = false;
+    let updatedCurrs = currencies.map((curr) => {
+      if (curr.code === autoCurrency) {
+        foundCurr = true;
+        return { ...curr, isDefault: true, isEnabled: true };
+      }
+      return { ...curr, isDefault: false };
+    });
+
+    if (!foundCurr) {
+      const meta = CURRENCY_METADATA[autoCurrency] || { symbol: '$', name: autoCurrency };
+      const newCurr = {
+        id: String(Date.now()),
+        code: autoCurrency,
+        symbol: meta.symbol,
+        name: meta.name,
+        exchangeRate: 1.0,
+        isDefault: true,
+        isEnabled: true,
+      };
+      updatedCurrs.push(newCurr);
+    }
+    setCurrencies(updatedCurrs);
+    await saveCurrencies(updatedCurrs);
+
+    // 2. Update/Add Default Language
+    let foundLang = false;
+    let updatedLangs = languages.map((l) => {
+      if (l.code === autoLanguage) {
+        foundLang = true;
+        return { ...l, isDefault: true, isEnabled: true };
+      }
+      return { ...l, isDefault: false };
+    });
+
+    if (!foundLang) {
+      const meta = LANGUAGE_METADATA[autoLanguage] || { name: autoLanguage.toUpperCase(), flag: '🌐' };
+      const newLang = {
+        id: String(Date.now()),
+        code: autoLanguage,
+        name: meta.name,
+        flag: meta.flag,
+        isDefault: true,
+        isEnabled: true,
+      };
+      updatedLangs.push(newLang);
+    }
+    setLanguages(updatedLangs);
+    await saveLanguages(updatedLangs);
+
+    // 3. Persist to store settings
+    await fetch(`${API_BASE}/api/settings`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({
+        country: code,
+        currency: autoCurrency,
+        language: autoLanguage,
+      }),
+    }).catch(() => {});
+
+    setCurrencyCode(autoCurrency);
+    toast.success(`Default country updated to ${code}. Auto-set Currency to ${autoCurrency} and Language to ${autoLanguage.toUpperCase()}`);
+  };
+
+  const handleSetDefaultCurrency = async (id: string) => {
+    let targetCode = '';
+    const updatedCurrs = currencies.map((c) => {
+      if (c.id === id) {
+        targetCode = c.code;
+        return { ...c, isDefault: true, isEnabled: true };
+      }
+      return { ...c, isDefault: false };
+    });
+
+    setCurrencies(updatedCurrs);
+    await saveCurrencies(updatedCurrs);
+
+    if (targetCode) {
+      setCurrencyCode(targetCode);
+      await fetch(`${API_BASE}/api/settings`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify({ currency: targetCode }),
+      }).catch(() => {});
+      toast.success(`${targetCode} is now the default store currency`);
+    }
+  };
+
+  const handleSetDefaultLanguage = async (id: string) => {
+    let targetCode = '';
+    let targetName = '';
+    const updatedLangs = languages.map((l) => {
+      if (l.id === id) {
+        targetCode = l.code;
+        targetName = l.name;
+        return { ...l, isDefault: true, isEnabled: true };
+      }
+      return { ...l, isDefault: false };
+    });
+
+    setLanguages(updatedLangs);
+    await saveLanguages(updatedLangs);
+
+    if (targetCode) {
+      await fetch(`${API_BASE}/api/settings`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify({ language: targetCode }),
+      }).catch(() => {});
+      toast.success(`${targetName} (${targetCode}) is now the default system language`);
+    }
+  };
+
   // Dialog & Form states for Language
   const [isLangDialogOpen, setIsLangDialogOpen] = useState(false);
   const [editingLangId, setEditingLangId] = useState<string | null>(null);
@@ -182,7 +352,7 @@ export default function LanguagesAndCurrencyPage() {
   // Dialog & Form states for Country
   const [isCountryDialogOpen, setIsCountryDialogOpen] = useState(false);
   const [editingCountryCode, setEditingCountryCode] = useState<string | null>(null);
-  const [countryForm, setCountryForm] = useState({ name: '', code: '' });
+  const [countryForm, setCountryForm] = useState({ name: '', code: '', isDefault: false });
 
   // Open Handlers
   const openCreateLanguage = () => {
@@ -222,7 +392,7 @@ export default function LanguagesAndCurrencyPage() {
 
   const openCreateCountry = () => {
     setEditingCountryCode(null);
-    setCountryForm({ name: '', code: '' });
+    setCountryForm({ name: '', code: '', isDefault: false });
     setIsCountryDialogOpen(true);
   };
 
@@ -231,6 +401,7 @@ export default function LanguagesAndCurrencyPage() {
     setCountryForm({
       name: country.name || '',
       code: country.code || '',
+      isDefault: !!country.isDefault,
     });
     setIsCountryDialogOpen(true);
   };
@@ -358,19 +529,28 @@ export default function LanguagesAndCurrencyPage() {
     const code = countryForm.code.toUpperCase().trim();
     const name = countryForm.name.trim();
 
+    if (countryForm.isDefault) {
+      updatedCountries = updatedCountries.map((c) => ({ ...c, isDefault: false }));
+    }
+
     if (editingCountryCode) {
-      updatedCountries = updatedCountries.map((c) => (c.code === editingCountryCode ? { code, name } : c));
+      updatedCountries = updatedCountries.map((c) => (c.code === editingCountryCode ? { code, name, isDefault: countryForm.isDefault } : c));
     } else {
       if (updatedCountries.some((c) => c.code === code)) {
         toast.error(`Country with ISO code ${code} already exists`);
         return;
       }
-      updatedCountries.push({ code, name });
+      updatedCountries.push({ code, name, isDefault: countryForm.isDefault });
     }
 
     setCountries(updatedCountries);
     saveCountries(updatedCountries);
-    setCountryForm({ name: '', code: '' });
+
+    if (countryForm.isDefault) {
+      handleSetDefaultCountry(code);
+    }
+
+    setCountryForm({ name: '', code: '', isDefault: false });
     setEditingCountryCode(null);
     setIsCountryDialogOpen(false);
   };
@@ -388,7 +568,7 @@ export default function LanguagesAndCurrencyPage() {
           titlePart1="Settings"
           titlePart2="Languages, Currencies & Countries"
           badgeText="Store Configuration"
-          subtitle="Manage multi-lingual store configurations, global country regions, currencies, and exchange rates."
+          subtitle="Manage multi-lingual store configurations, global country regions, default currencies, and exchange rates."
         />
 
         <Tabs defaultValue="countries" className="space-y-6">
@@ -446,6 +626,18 @@ export default function LanguagesAndCurrencyPage() {
                           className="h-11 rounded-lg border-border/60 focus:border-primary focus:ring-1 focus:ring-primary/40 uppercase"
                         />
                       </div>
+                      <div className="flex items-center gap-2.5 pt-2">
+                        <input
+                          id="countryDefault"
+                          type="checkbox"
+                          checked={countryForm.isDefault}
+                          onChange={(e) => setCountryForm({ ...countryForm, isDefault: e.target.checked })}
+                          className="rounded border-border/60 accent-primary h-4 w-4"
+                        />
+                        <Label htmlFor="countryDefault" className="text-sm text-muted-foreground select-none cursor-pointer">
+                          Set as default store country
+                        </Label>
+                      </div>
                     </div>
                     <SheetFooter className="p-6 bg-muted/15 border-t border-border/20 flex gap-3 justify-end">
                       <Button type="button" variant="ghost" onClick={() => setIsCountryDialogOpen(false)} className="rounded-lg">
@@ -470,7 +662,8 @@ export default function LanguagesAndCurrencyPage() {
                         <TableHead>ISO Code</TableHead>
                         <TableHead>Mapped Currency</TableHead>
                         <TableHead>Mapped Language</TableHead>
-                        <TableHead className="w-24 text-right">Actions</TableHead>
+                        <TableHead className="text-center">Default</TableHead>
+                        <TableHead className="w-28 text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -493,23 +686,46 @@ export default function LanguagesAndCurrencyPage() {
                                 {mappedLanguage.toUpperCase()}
                               </Badge>
                             </TableCell>
-                            <TableCell className="text-right flex items-center justify-end gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => openEditCountry(c)}
-                                className="h-8 w-8 text-foreground/70 hover:bg-muted rounded-lg"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDeleteCountry(c.code)}
-                                className="h-8 w-8 text-destructive hover:bg-destructive/10 rounded-lg"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                            <TableCell className="text-center">
+                              {c.isDefault ? (
+                                <Badge className="bg-teal-500/10 text-teal-600 dark:text-teal-400 font-bold border-transparent rounded-full px-2.5 py-0.5">
+                                  Default
+                                </Badge>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleSetDefaultCountry(c.code)}
+                                  className="h-7 text-[11px] px-2 text-muted-foreground hover:text-foreground hover:bg-muted/80 rounded-md"
+                                >
+                                  Set Default
+                                </Button>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger render={
+                                  <div className="h-8 w-8 rounded-lg hover:bg-muted/60 flex items-center justify-center cursor-pointer ml-auto">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </div>
+                                } />
+                                <DropdownMenuContent align="end" className="w-40 p-1 rounded-md bg-card border border-border/60 shadow-lg">
+                                  {!c.isDefault && (
+                                    <DropdownMenuItem onClick={() => handleSetDefaultCountry(c.code)} className="p-2 rounded-lg hover:bg-muted/50 cursor-pointer text-xs font-semibold flex items-center gap-2">
+                                      <Star className="h-3.5 w-3.5 text-amber-500" /> Set as Default
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuItem onClick={() => openEditCountry(c)} className="p-2 rounded-lg hover:bg-muted/50 cursor-pointer text-xs font-semibold flex items-center gap-2">
+                                    <Edit className="h-3.5 w-3.5" /> Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleDeleteCountry(c.code)}
+                                    className="p-2 rounded-lg text-destructive hover:bg-destructive/10 cursor-pointer text-xs font-semibold flex items-center gap-2"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" /> Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </TableCell>
                           </TableRow>
                         );
@@ -641,7 +857,14 @@ export default function LanguagesAndCurrencyPage() {
                                 Default
                               </Badge>
                             ) : (
-                              <span className="text-xs text-muted-foreground/60 font-light">-</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleSetDefaultCurrency(c.id)}
+                                className="h-7 text-[11px] px-2 text-muted-foreground hover:text-foreground hover:bg-muted/80 rounded-md"
+                              >
+                                Set Default
+                              </Button>
                             )}
                           </TableCell>
                           <TableCell className="text-center">
@@ -653,11 +876,16 @@ export default function LanguagesAndCurrencyPage() {
                           <TableCell>
                             <DropdownMenu>
                               <DropdownMenuTrigger render={
-                                <div className="h-8 w-8 rounded-lg hover:bg-muted/60 flex items-center justify-center cursor-pointer">
+                                <div className="h-8 w-8 rounded-lg hover:bg-muted/60 flex items-center justify-center cursor-pointer ml-auto">
                                   <MoreVertical className="h-4 w-4" />
                                 </div>
                               } />
-                              <DropdownMenuContent align="end" className="w-36 p-1 rounded-md bg-card border border-border/60 shadow-lg">
+                              <DropdownMenuContent align="end" className="w-40 p-1 rounded-md bg-card border border-border/60 shadow-lg">
+                                {!c.isDefault && (
+                                  <DropdownMenuItem onClick={() => handleSetDefaultCurrency(c.id)} className="p-2 rounded-lg hover:bg-muted/50 cursor-pointer text-xs font-semibold flex items-center gap-2">
+                                    <Star className="h-3.5 w-3.5 text-amber-500" /> Set as Default
+                                  </DropdownMenuItem>
+                                )}
                                 <DropdownMenuItem onClick={() => openEditCurrency(c)} className="p-2 rounded-lg hover:bg-muted/50 cursor-pointer text-xs font-semibold flex items-center gap-2">
                                   <Edit className="h-3.5 w-3.5" /> Edit
                                 </DropdownMenuItem>
@@ -786,7 +1014,14 @@ export default function LanguagesAndCurrencyPage() {
                                 Default
                               </Badge>
                             ) : (
-                              <span className="text-xs text-muted-foreground/60 font-light">-</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleSetDefaultLanguage(l.id)}
+                                className="h-7 text-[11px] px-2 text-muted-foreground hover:text-foreground hover:bg-muted/80 rounded-md"
+                              >
+                                Set Default
+                              </Button>
                             )}
                           </TableCell>
                           <TableCell className="text-center">
@@ -798,11 +1033,16 @@ export default function LanguagesAndCurrencyPage() {
                           <TableCell>
                             <DropdownMenu>
                               <DropdownMenuTrigger render={
-                                <div className="h-8 w-8 rounded-lg hover:bg-muted/60 flex items-center justify-center cursor-pointer">
+                                <div className="h-8 w-8 rounded-lg hover:bg-muted/60 flex items-center justify-center cursor-pointer ml-auto">
                                   <MoreVertical className="h-4 w-4" />
                                 </div>
                               } />
-                              <DropdownMenuContent align="end" className="w-36 p-1 rounded-md bg-card border border-border/60 shadow-lg">
+                              <DropdownMenuContent align="end" className="w-40 p-1 rounded-md bg-card border border-border/60 shadow-lg">
+                                {!l.isDefault && (
+                                  <DropdownMenuItem onClick={() => handleSetDefaultLanguage(l.id)} className="p-2 rounded-lg hover:bg-muted/50 cursor-pointer text-xs font-semibold flex items-center gap-2">
+                                    <Star className="h-3.5 w-3.5 text-amber-500" /> Set as Default
+                                  </DropdownMenuItem>
+                                )}
                                 <DropdownMenuItem onClick={() => openEditLanguage(l)} className="p-2 rounded-lg hover:bg-muted/50 cursor-pointer text-xs font-semibold flex items-center gap-2">
                                   <Edit className="h-3.5 w-3.5" /> Edit
                                 </DropdownMenuItem>

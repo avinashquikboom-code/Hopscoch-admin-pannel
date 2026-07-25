@@ -113,12 +113,16 @@ const CurrencyContext = createContext<CurrencyContextValue>({
 const LS_KEY = 'admin_currency';
 
 export function CurrencyProvider({ children }: { children: React.ReactNode }) {
-  const [currencyCode, setCurrencyCodeState] = useState<string>(() => {
+  const [currencyCode, setCurrencyCodeState] = useState<string>('INR');
+
+  useEffect(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem(LS_KEY) || 'INR';
+      const stored = localStorage.getItem(LS_KEY);
+      if (stored) {
+        setCurrencyCodeState(stored);
+      }
     }
-    return 'INR';
-  });
+  }, []);
 
   // Fetch currency from settings API on mount
   useEffect(() => {

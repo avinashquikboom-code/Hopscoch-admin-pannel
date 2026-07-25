@@ -4,7 +4,7 @@
  */
 
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.fciseller.com';
-// export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.102:5001';
+//export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.102:5001';
 export const APP_TYPE = 'admin'; // Admin panel specific app type
 
 /**
