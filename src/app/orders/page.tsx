@@ -6,6 +6,7 @@ import { useCurrency } from '@/context/currency-context';
 import { AdminLayout } from '@/components/layout/admin-layout';
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
+import { toast } from '@/components/ui/toast';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -103,15 +104,31 @@ function normalizeOrder(raw: any) {
 }
 
 // Map statuses to styling
-const statusConfig = {
+const statusConfig: Record<string, { label: string; icon: any; color: string }> = {
   pending: { label: 'Pending', icon: Clock, color: 'bg-amber-500/10 text-amber-500 dark:bg-amber-500/5 dark:text-amber-400 border-amber-500/20' },
   processing: { label: 'Processing', icon: Package, color: 'bg-blue-500/10 text-blue-500 dark:bg-blue-500/5 dark:text-blue-400 border-blue-500/20' },
+  confirmed: { label: 'Confirmed', icon: Package, color: 'bg-blue-500/10 text-blue-500 dark:bg-blue-500/5 dark:text-blue-400 border-blue-500/20' },
+  placed: { label: 'Placed', icon: Clock, color: 'bg-amber-500/10 text-amber-500 dark:bg-amber-500/5 dark:text-amber-400 border-amber-500/20' },
   shipped: { label: 'Shipped', icon: Truck, color: 'bg-cyan-500/10 text-cyan-500 dark:bg-cyan-500/5 dark:text-cyan-400 border-cyan-500/20' },
+  dispatched: { label: 'Dispatched', icon: Truck, color: 'bg-cyan-500/10 text-cyan-500 dark:bg-cyan-500/5 dark:text-cyan-400 border-cyan-500/20' },
+  out_for_delivery: { label: 'Out for Delivery', icon: Truck, color: 'bg-indigo-500/10 text-indigo-500 dark:bg-indigo-500/5 dark:text-indigo-400 border-indigo-500/20' },
   delivered: { label: 'Delivered', icon: CheckCircle, color: 'bg-emerald-500/10 text-emerald-500 dark:bg-emerald-500/5 dark:text-emerald-400 border-emerald-500/20' },
+  completed: { label: 'Completed', icon: CheckCircle, color: 'bg-emerald-500/10 text-emerald-500 dark:bg-emerald-500/5 dark:text-emerald-400 border-emerald-500/20' },
   cancelled: { label: 'Cancelled', icon: XCircle, color: 'bg-rose-500/10 text-rose-500 dark:bg-rose-500/5 dark:text-rose-400 border-rose-500/20' },
+  failed: { label: 'Failed', icon: XCircle, color: 'bg-rose-500/10 text-rose-500 dark:bg-rose-500/5 dark:text-rose-400 border-rose-500/20' },
   returned: { label: 'Returned', icon: RefreshCw, color: 'bg-indigo-500/10 text-indigo-500 dark:bg-indigo-500/5 dark:text-indigo-400 border-indigo-500/20' },
   refunded: { label: 'Refunded', icon: RefreshCw, color: 'bg-gray-500/10 text-gray-500 dark:bg-gray-500/5 dark:text-gray-400 border-gray-500/20' },
+  on_hold: { label: 'On Hold', icon: AlertCircle, color: 'bg-orange-500/10 text-orange-500 dark:bg-orange-500/5 dark:text-orange-400 border-orange-500/20' },
 };
+
+function getStatusInfo(status?: string) {
+  const key = (status || 'pending').toLowerCase().trim();
+  return statusConfig[key] || {
+    label: (status || 'Pending').replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
+    icon: Clock,
+    color: 'bg-muted text-muted-foreground border-border/40',
+  };
+}
 
 // Extract order items from the real API shape
 function getOrderItems(order: any) {
@@ -125,6 +142,235 @@ function getOrderItems(order: any) {
     size: item.selectedSize || item.variant?.size || item.size || '—',
     color: item.selectedColor || item.variant?.color || item.color || '—',
   }));
+}
+
+function numberToWords(num: number): string {
+  if (!num || isNaN(num)) return 'Zero';
+  const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
+  const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+  const inWords = (n: number): string => {
+    if (n < 20) return a[n];
+    if (n < 100) return b[Math.floor(n / 10)] + (n % 10 ? ' ' + a[n % 10] : '');
+    if (n < 1000) return a[Math.floor(n / 100)] + 'Hundred ' + (n % 100 ? inWords(n % 100) : '');
+    if (n < 100000) return inWords(Math.floor(n / 1000)) + 'Thousand ' + (n % 1000 ? inWords(n % 1000) : '');
+    if (n < 10000000) return inWords(Math.floor(n / 100000)) + 'Lakh ' + (n % 100000 ? inWords(n % 100000) : '');
+    return inWords(Math.floor(n / 10000000)) + 'Crore ' + (n % 10000000 ? inWords(n % 10000000) : '');
+  };
+
+  const whole = Math.floor(num);
+  const decimal = Math.round((num - whole) * 100);
+  let str = inWords(whole).trim() + ' Only';
+  if (decimal > 0) {
+    str = inWords(whole).trim() + ' and ' + inWords(decimal).trim() + ' Paise Only';
+  }
+  return str;
+}
+
+function generateFciSellerInvoiceHtml(order: any, currencySymbol: string = '₹'): string {
+  const items = getOrderItems(order);
+  const dateStr = order.date || new Date().toLocaleDateString('en-IN');
+  const invoiceNo = `INV-FCI-${(order.id || '').replace(/[^a-zA-Z0-9]/g, '')}`;
+  const totalAmt = Number(order.amount || 0);
+
+  const taxableTotal = totalAmt / 1.18;
+  const totalGst = totalAmt - taxableTotal;
+  const cgst = totalGst / 2;
+  const sgst = totalGst / 2;
+
+  const itemsRowsHtml = items.map((item: any, idx: number) => {
+    const qty = Number(item.quantity || 1);
+    const itemTotal = Number(item.price || 0) * qty;
+    const itemTaxable = itemTotal / 1.18;
+    const itemCgst = (itemTotal - itemTaxable) / 2;
+    const itemSgst = itemCgst;
+
+    return `
+      <tr>
+        <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: center; font-size: 12px; color: #475569;">${idx + 1}</td>
+        <td style="padding: 10px; border: 1px solid #cbd5e1; font-size: 12px; font-weight: 600; color: #0f172a;">
+          ${item.name}
+          ${item.size && item.size !== '—' ? `<br/><span style="font-size:11px; color:#64748b; font-weight: normal;">Size: ${item.size}</span>` : ''}
+          ${item.color && item.color !== '—' ? `<span style="font-size:11px; color:#64748b; font-weight: normal;"> | Color: ${item.color}</span>` : ''}
+        </td>
+        <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: center; font-size: 12px; color: #475569;">${qty}</td>
+        <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; font-size: 12px; color: #475569;">${currencySymbol}${itemTaxable.toFixed(2)}</td>
+        <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; font-size: 12px; color: #475569;">9% (${currencySymbol}${itemCgst.toFixed(2)})</td>
+        <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; font-size: 12px; color: #475569;">9% (${currencySymbol}${itemSgst.toFixed(2)})</td>
+        <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; font-size: 12px; font-weight: 700; color: #0f172a;">${currencySymbol}${itemTotal.toFixed(2)}</td>
+      </tr>
+    `;
+  }).join('');
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Tax Invoice - FCI SELLER #${order.id}</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #fff; color: #1e293b; margin: 0; padding: 24px; }
+    .invoice-card { max-width: 850px; margin: 0 auto; border: 1px solid #cbd5e1; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #14b8a6; padding-bottom: 16px; margin-bottom: 20px; }
+    .logo { font-size: 26px; font-weight: 900; color: #14b8a6; letter-spacing: -0.5px; text-transform: uppercase; }
+    .logo span { color: #0f172a; }
+    .invoice-title { font-size: 20px; font-weight: 800; text-align: right; text-transform: uppercase; color: #0f172a; }
+    .sub-title { font-size: 11px; text-align: right; color: #64748b; font-weight: 600; text-transform: uppercase; margin-top: 4px; }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    .box { border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 16px; background: #f8fafc; }
+    .box-title { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #14b8a6; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+    .box p { font-size: 12px; margin: 3px 0; color: #334155; line-height: 1.4; }
+    .box p strong { color: #0f172a; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th { background: #0f172a; color: #fff; font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 10px; border: 1px solid #0f172a; text-align: left; }
+    th.text-center { text-align: center; }
+    th.text-right { text-align: right; }
+    .totals-table { width: 320px; margin-left: auto; border: none; }
+    .totals-table td { padding: 6px 12px; font-size: 12px; border: none; }
+    .totals-table tr.grand-total td { font-size: 14px; font-weight: 900; color: #0f172a; border-top: 2px solid #14b8a6; border-bottom: 2px solid #14b8a6; background: #f0fdf4; }
+    .footer { margin-top: 30px; border-top: 1px dashed #cbd5e1; padding-top: 16px; display: flex; justify-content: space-between; align-items: flex-end; }
+    .terms { font-size: 10px; color: #64748b; max-width: 450px; line-height: 1.5; }
+    .signatory { text-align: right; font-size: 12px; font-weight: 700; color: #0f172a; }
+    .signatory-space { height: 40px; margin: 8px 0; border-bottom: 1px dashed #cbd5e1; width: 160px; margin-left: auto; }
+    @media print {
+      body { padding: 0; background: #fff; }
+      .invoice-card { border: none; box-shadow: none; padding: 0; width: 100%; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="no-print" style="max-width: 850px; margin: 0 auto 16px auto; display: flex; justify-content: flex-end; gap: 10px;">
+    <button onclick="window.print()" style="background: #14b8a6; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; items-center; gap: 6px;">🖨️ Print Invoice / Save as PDF</button>
+  </div>
+
+  <div class="invoice-card">
+    <!-- Header -->
+    <div class="header">
+      <div>
+        <div class="logo">FCI <span>SELLER</span></div>
+        <p style="font-size: 12px; color: #0f172a; margin: 4px 0 0 0; font-weight: 700;">FCI Seller Retail Pvt. Ltd.</p>
+        <p style="font-size: 11px; color: #64748b; margin: 2px 0 0 0;">Official E-Commerce Marketplace Partner</p>
+      </div>
+      <div>
+        <div class="invoice-title">Tax Invoice</div>
+        <div class="sub-title">Original for Recipient</div>
+      </div>
+    </div>
+
+    <!-- Seller & Order Info -->
+    <div class="info-grid">
+      <div class="box">
+        <div class="box-title">Sold By (Seller Details)</div>
+        <p><strong>FCI SELLER Retail Pvt. Ltd.</strong></p>
+        <p>Plot No. 42, E-Commerce Corridor, Tech City</p>
+        <p>Karnataka - 560100, India</p>
+        <p><strong>GSTIN:</strong> 29AAACF9988F1Z5</p>
+        <p><strong>PAN:</strong> AAACF9988F | <strong>CIN:</strong> U74999KA2024PTC188888</p>
+      </div>
+      <div class="box">
+        <div class="box-title">Invoice & Order Summary</div>
+        <p><strong>Invoice No:</strong> ${invoiceNo}</p>
+        <p><strong>Invoice Date:</strong> ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+        <p><strong>Order ID:</strong> #${order.id}</p>
+        <p><strong>Order Date:</strong> ${dateStr}</p>
+        <p><strong>Place of Supply:</strong> Karnataka (29)</p>
+      </div>
+    </div>
+
+    <!-- Billing & Shipping Addresses -->
+    <div class="info-grid">
+      <div class="box">
+        <div class="box-title">Billing Address</div>
+        <p><strong>${order.customer}</strong></p>
+        <p>${order.address}</p>
+        <p><strong>Phone:</strong> ${order.phone || 'N/A'}</p>
+        <p><strong>Email:</strong> ${order.email || 'N/A'}</p>
+      </div>
+      <div class="box">
+        <div class="box-title">Shipping & Delivery Details</div>
+        <p><strong>${order.customer}</strong></p>
+        <p>${order.address}</p>
+        <p><strong>Logistics Carrier:</strong> Express Delivery</p>
+        <p><strong>Tracking AWB:</strong> ${order.trackingNumber || 'Awaiting Dispatch'}</p>
+      </div>
+    </div>
+
+    <!-- Items Table -->
+    <table>
+      <thead>
+        <tr>
+          <th class="text-center" style="width: 40px;">#</th>
+          <th>Item Description & Specification</th>
+          <th class="text-center" style="width: 50px;">Qty</th>
+          <th class="text-right" style="width: 100px;">Taxable Val</th>
+          <th class="text-right" style="width: 90px;">CGST</th>
+          <th class="text-right" style="width: 90px;">SGST</th>
+          <th class="text-right" style="width: 100px;">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${itemsRowsHtml}
+      </tbody>
+    </table>
+
+    <!-- Summary & Totals -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+      <div style="max-width: 480px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 16px;">
+        <p style="font-size: 11px; font-weight: 700; color: #14b8a6; margin: 0 0 4px 0; text-transform: uppercase;">Amount in Words</p>
+        <p style="font-size: 13px; font-weight: 800; color: #0f172a; margin: 0 0 10px 0;">${numberToWords(totalAmt)}</p>
+        
+        <p style="font-size: 11px; font-weight: 700; color: #14b8a6; margin: 8px 0 4px 0; text-transform: uppercase;">Payment Mode & Status</p>
+        <p style="font-size: 12px; color: #334155; margin: 0;">
+          <strong>Mode:</strong> ${order.paymentStatus === 'paid' ? 'Prepaid (UPI / Card / NetBanking)' : 'Cash On Delivery (COD)'} &nbsp;|&nbsp;
+          <strong>Status:</strong> <span style="color: ${order.paymentStatus === 'paid' ? '#059669' : '#d97706'}; font-weight: 800;">${(order.paymentStatus || 'pending').toUpperCase()}</span>
+        </p>
+      </div>
+
+      <table class="totals-table">
+        <tr>
+          <td style="color: #64748b;">Subtotal (Excl. Tax):</td>
+          <td style="text-align: right; font-weight: 600;">${currencySymbol}${taxableTotal.toFixed(2)}</td>
+        </tr>
+        <tr>
+          <td style="color: #64748b;">CGST (9%):</td>
+          <td style="text-align: right; font-weight: 600;">${currencySymbol}${cgst.toFixed(2)}</td>
+        </tr>
+        <tr>
+          <td style="color: #64748b;">SGST (9%):</td>
+          <td style="text-align: right; font-weight: 600;">${currencySymbol}${sgst.toFixed(2)}</td>
+        </tr>
+        <tr>
+          <td style="color: #64748b;">Shipping Charges:</td>
+          <td style="text-align: right; font-weight: 600; color: #059669;">FREE</td>
+        </tr>
+        <tr class="grand-total">
+          <td>Grand Total:</td>
+          <td style="text-align: right;">${currencySymbol}${totalAmt.toFixed(2)}</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Declaration & Signatory -->
+    <div class="footer">
+      <div class="terms">
+        <p style="font-weight: 700; color: #0f172a; margin-bottom: 4px;">Terms & Conditions / Declaration:</p>
+        <p style="margin: 2px 0;">1. Goods once sold are eligible for return as per FCI Seller Return Policy.</p>
+        <p style="margin: 2px 0;">2. All disputes are subject to Bangalore jurisdiction only.</p>
+        <p style="margin: 2px 0;">3. This is a computer-generated tax invoice for FCI Seller and requires no physical signature.</p>
+      </div>
+      <div class="signatory">
+        <p style="margin: 0; color: #64748b; font-size: 11px;">For <strong>FCI SELLER Retail Pvt. Ltd.</strong></p>
+        <div class="signatory-space"></div>
+        <p style="margin: 0; font-size: 11px;">Authorized Signatory</p>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
+  `;
 }
 
 const getAvatarFallback = (name: string) => {
@@ -148,10 +394,44 @@ const getAvatarColor = (name: string) => {
 };
 
 export default function OrdersPage() {
-  const { fmt: fmtPrice } = useCurrency();
+  const { fmt: fmtPrice, currencySymbol } = useCurrency();
   const [ordersList, setOrdersList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const handlePrintInvoice = (order: any) => {
+    if (!order) return;
+    const html = generateFciSellerInvoiceHtml(order, currencySymbol);
+    const printWin = window.open('', '_blank', 'width=900,height=900');
+    if (printWin) {
+      printWin.document.write(html);
+      printWin.document.close();
+      printWin.focus();
+      setTimeout(() => {
+        printWin.print();
+      }, 300);
+    } else {
+      toast.error('Popup blocked! Please allow popups to print invoices.');
+    }
+  };
+
+  const handleDownloadInvoice = (order: any) => {
+    if (!order) return;
+    const html = generateFciSellerInvoiceHtml(order, currencySymbol);
+
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `FCI_SELLER_Tax_Invoice_${(order.id || 'Order').replace(/[^a-zA-Z0-9]/g, '_')}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    handlePrintInvoice(order);
+    toast.success(`Downloading Tax Invoice for Order #${order.id}`);
+  };
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
 
@@ -613,7 +893,7 @@ export default function OrdersPage() {
                         </TableRow>
                       ) : (
                         filteredOrders.map((order) => {
-                          const statusInfo = statusConfig[order.status as keyof typeof statusConfig];
+                          const statusInfo = getStatusInfo(order.status);
                           const avatarColor = getAvatarColor(order.customer);
                           
                           return (
@@ -710,9 +990,13 @@ export default function OrdersPage() {
                                       <Eye className="mr-2 h-4 w-4 text-[#14b8a6]" />
                                       Quick Preview
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem className="p-2 rounded-md hover:bg-muted cursor-pointer text-sm font-medium">
+                                    <DropdownMenuItem onClick={() => handleDownloadInvoice(order)} className="p-2 rounded-md hover:bg-muted cursor-pointer text-sm font-medium">
                                       <Download className="mr-2 h-4 w-4 text-[#14b8a6]" />
-                                      Download Invoice
+                                      Download Tax Invoice
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handlePrintInvoice(order)} className="p-2 rounded-md hover:bg-muted cursor-pointer text-sm font-medium">
+                                      <Printer className="mr-2 h-4 w-4 text-[#14b8a6]" />
+                                      Print Invoice / PDF
                                     </DropdownMenuItem>
                                     <Separator className="my-1 border-border/10" />
                                     
@@ -767,16 +1051,21 @@ export default function OrdersPage() {
                       <span className="font-mono font-black text-sm bg-muted/60 border border-border/40 px-3 py-1 rounded-lg select-all">
                         {selectedOrder.id}
                       </span>
-                      <Badge className={`rounded-md border px-2.5 py-0.5 text-xs font-semibold ${statusConfig[selectedOrder.status as keyof typeof statusConfig].color}`}>
-                        {statusConfig[selectedOrder.status as keyof typeof statusConfig].label}
-                      </Badge>
+                      {(() => {
+                        const sInfo = getStatusInfo(selectedOrder.status);
+                        return (
+                          <Badge className={`rounded-md border px-2.5 py-0.5 text-xs font-semibold ${sInfo.color}`}>
+                            {sInfo.label}
+                          </Badge>
+                        );
+                      })()}
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <Button variant="outline" size="icon" className="h-9 w-9 rounded-lg" title="Print Invoice">
-                        <Printer className="h-4.5 w-4.5" />
+                      <Button onClick={() => handlePrintInvoice(selectedOrder)} variant="outline" size="icon" className="h-9 w-9 rounded-lg cursor-pointer hover:bg-muted" title="Print Tax Invoice">
+                        <Printer className="h-4.5 w-4.5 text-[#14b8a6]" />
                       </Button>
-                      <Button variant="outline" size="icon" className="h-9 w-9 rounded-lg" title="Download receipt">
-                        <Download className="h-4.5 w-4.5" />
+                      <Button onClick={() => handleDownloadInvoice(selectedOrder)} variant="outline" size="icon" className="h-9 w-9 rounded-lg cursor-pointer hover:bg-muted" title="Download Tax Invoice">
+                        <Download className="h-4.5 w-4.5 text-[#14b8a6]" />
                       </Button>
                     </div>
                   </div>
@@ -978,6 +1267,13 @@ export default function OrdersPage() {
                   </div>
                   
                   <div className="flex gap-2">
+                    <Button 
+                      onClick={() => handleDownloadInvoice(selectedOrder)}
+                      variant="outline"
+                      className="border-[#14b8a6]/40 text-[#14b8a6] hover:bg-[#14b8a6]/10 rounded-lg h-10 px-3.5 font-semibold text-xs flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Download className="h-4 w-4" /> Download Tax Invoice
+                    </Button>
                     {/* Stepper dynamic button triggers */}
                     {selectedOrder.status === 'pending' && (
                       <Button 
