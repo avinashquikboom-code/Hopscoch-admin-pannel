@@ -305,6 +305,8 @@ export const api = {
     get: () => apiRequest<any>('/api/settings'),
     update: (body: Record<string, any>) =>
       apiRequest<any>('/api/settings', { method: 'PUT', body: JSON.stringify(body) }),
+    getCountryInfo: (countryCode: string) =>
+      apiRequest<any>(`/api/settings/country-info/${countryCode}`),
   },
 
   // Notifications

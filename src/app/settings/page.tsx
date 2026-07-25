@@ -190,9 +190,18 @@ export default function SettingsPage() {
     } catch {}
   }, []);
 
-  const handleCountryChange = (countryCode: string) => {
-    const autoCurrency = getCurrencyForCountry(countryCode);
-    const autoLanguage = getLanguageForCountry(countryCode);
+  const handleCountryChange = async (countryCode: string) => {
+    let autoCurrency = getCurrencyForCountry(countryCode);
+    let autoLanguage = getLanguageForCountry(countryCode);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/settings/country-info/${countryCode}`);
+      const json = await res.json();
+      if (res.ok && json.data) {
+        if (json.data.currencyCode) autoCurrency = json.data.currencyCode;
+        if (json.data.languageCode) autoLanguage = json.data.languageCode;
+      }
+    } catch {}
 
     setConfig(prev => ({
       ...prev,
@@ -201,7 +210,7 @@ export default function SettingsPage() {
       language: autoLanguage,
     }));
     setCurrencyCode(autoCurrency);
-    toast.info(`Auto-selected currency (${autoCurrency}) and language (${autoLanguage}) for ${countryCode}`);
+    toast.info(`Auto-selected currency (${autoCurrency}) and language (${autoLanguage}) via API for ${countryCode}`);
   };
 
   const fetchNotifications = useCallback(async () => {
