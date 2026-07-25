@@ -2,7 +2,7 @@
 import { API_BASE } from '@/lib/api';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useCurrency } from '@/context/currency-context';
+import { useCurrency, getCurrencyForCountry, getLanguageForCountry } from '@/context/currency-context';
 import { AdminLayout } from '@/components/layout/admin-layout';
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
@@ -89,7 +89,8 @@ export default function SettingsPage() {
     storeEmail: 'admin@fciseller.com',
     storePhone: '+1 234 567 8900',
     storeAddress: '123 Fashion Street, New York, NY 10001',
-    currency: 'USD',
+    country: 'IN',
+    currency: 'INR',
     language: 'en',
     timezone: 'UTC',
     metaTitle: 'FCI Seller - Luxury Fashion Store',
@@ -151,6 +152,10 @@ export default function SettingsPage() {
     }
   };
 
+  const [availableCurrencies, setAvailableCurrencies] = useState<any[]>([]);
+  const [availableLanguages, setAvailableLanguages] = useState<any[]>([]);
+  const [availableCountries, setAvailableCountries] = useState<any[]>([]);
+
   const fetchSettings = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/api/settings`, { headers: authHeaders() });
@@ -159,7 +164,45 @@ export default function SettingsPage() {
         setConfig(prev => ({ ...prev, ...json.data }));
       }
     } catch {}
+
+    try {
+      const curRes = await fetch(`${API_BASE}/api/settings/currencies`, { headers: authHeaders() });
+      const curJson = await curRes.json();
+      if (curRes.ok && curJson.data) {
+        setAvailableCurrencies(curJson.data);
+      }
+    } catch {}
+
+    try {
+      const langRes = await fetch(`${API_BASE}/api/settings/languages`, { headers: authHeaders() });
+      const langJson = await langRes.json();
+      if (langRes.ok && langJson.data) {
+        setAvailableLanguages(langJson.data);
+      }
+    } catch {}
+
+    try {
+      const cRes = await fetch(`${API_BASE}/api/settings/countries`, { headers: authHeaders() });
+      const cJson = await cRes.json();
+      if (cRes.ok && cJson.data) {
+        setAvailableCountries(cJson.data);
+      }
+    } catch {}
   }, []);
+
+  const handleCountryChange = (countryCode: string) => {
+    const autoCurrency = getCurrencyForCountry(countryCode);
+    const autoLanguage = getLanguageForCountry(countryCode);
+
+    setConfig(prev => ({
+      ...prev,
+      country: countryCode,
+      currency: autoCurrency,
+      language: autoLanguage,
+    }));
+    setCurrencyCode(autoCurrency);
+    toast.info(`Auto-selected currency (${autoCurrency}) and language (${autoLanguage}) for ${countryCode}`);
+  };
 
   const fetchNotifications = useCallback(async () => {
     setNotifLoading(true);
@@ -191,9 +234,14 @@ export default function SettingsPage() {
       if (res.ok) {
         setIsSaved(true);
         setCurrencyCode(config.currency);
+        toast.success('Store configuration saved successfully');
         setTimeout(() => setIsSaved(false), 2500);
+      } else {
+        toast.error('Failed to save store configuration');
       }
-    } catch {} finally {
+    } catch {
+      toast.error('Network error saving store configuration');
+    } finally {
       setIsLoading(false);
     }
   };
@@ -325,7 +373,37 @@ export default function SettingsPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="storeCountry" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Store Country Region</Label>
+                    <select
+                      id="storeCountry"
+                      value={config.country || 'IN'}
+                      onChange={e => handleCountryChange(e.target.value)}
+                      className="w-full h-10 rounded-lg border border-border/50 bg-background px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none cursor-pointer font-bold text-primary"
+                    >
+                      {availableCountries.length > 0 ? (
+                        availableCountries.map((c: any) => (
+                          <option key={c.code} value={c.code}>
+                            {c.name} ({c.code})
+                          </option>
+                        ))
+                      ) : (
+                        <>
+                          <option value="IN">India (IN)</option>
+                          <option value="US">United States (US)</option>
+                          <option value="GB">United Kingdom (GB)</option>
+                          <option value="AE">UAE (AE)</option>
+                          <option value="CA">Canada (CA)</option>
+                          <option value="DE">Germany (DE)</option>
+                          <option value="FR">France (FR)</option>
+                          <option value="ES">Spain (ES)</option>
+                          <option value="MY">Malaysia (MY)</option>
+                          <option value="AU">Australia (AU)</option>
+                        </>
+                      )}
+                    </select>
+                  </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="currency" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Default Currency</Label>
                     <select
@@ -334,9 +412,20 @@ export default function SettingsPage() {
                       onChange={e => setConfig(prev => ({ ...prev, currency: e.target.value }))}
                       className="w-full h-10 rounded-lg border border-border/50 bg-background px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none cursor-pointer"
                     >
-                      <option value="USD">USD ($)</option>
-                      <option value="EUR">EUR (€)</option>
-                      <option value="GBP">GBP (£)</option>
+                      {availableCurrencies.length > 0 ? (
+                        availableCurrencies.map((c: any) => (
+                          <option key={c.code || c.id} value={c.code}>
+                            {c.code} ({c.symbol || ''}) - {c.name}
+                          </option>
+                        ))
+                      ) : (
+                        <>
+                          <option value="INR">INR (₹) - Indian Rupee</option>
+                          <option value="USD">USD ($) - US Dollar</option>
+                          <option value="EUR">EUR (€) - Euro</option>
+                          <option value="GBP">GBP (£) - British Pound</option>
+                        </>
+                      )}
                     </select>
                   </div>
                   <div className="space-y-1.5">
@@ -347,9 +436,20 @@ export default function SettingsPage() {
                       onChange={e => setConfig(prev => ({ ...prev, language: e.target.value }))}
                       className="w-full h-10 rounded-lg border border-border/50 bg-background px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none cursor-pointer"
                     >
-                      <option value="en">English</option>
-                      <option value="es">Spanish</option>
-                      <option value="fr">French</option>
+                      {availableLanguages.length > 0 ? (
+                        availableLanguages.map((l: any) => (
+                          <option key={l.code || l.id} value={l.code}>
+                            {l.flag || ''} {l.name} ({l.code})
+                          </option>
+                        ))
+                      ) : (
+                        <>
+                          <option value="en">English (en)</option>
+                          <option value="hi">Hindi (hi)</option>
+                          <option value="es">Spanish (es)</option>
+                          <option value="fr">French (fr)</option>
+                        </>
+                      )}
                     </select>
                   </div>
                   <div className="space-y-1.5">

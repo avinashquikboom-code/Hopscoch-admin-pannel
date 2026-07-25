@@ -43,11 +43,53 @@ const CURRENCY_LOCALES: Record<string, string> = {
   TTD: 'en-TT',
 };
 
+const COUNTRY_TO_LANGUAGE: Record<string, string> = {
+  IN: 'en',
+  US: 'en',
+  GB: 'en',
+  CA: 'en',
+  AU: 'en',
+  NZ: 'en',
+  SG: 'en',
+  MU: 'en',
+  FJ: 'en',
+  GY: 'en',
+  TT: 'en',
+  ES: 'es',
+  MX: 'es',
+  BR: 'es',
+  AR: 'es',
+  CO: 'es',
+  CL: 'es',
+  FR: 'fr',
+  DE: 'de',
+  AT: 'de',
+  CH: 'de',
+  IT: 'it',
+  AE: 'ar',
+  SA: 'ar',
+  QA: 'ar',
+  KW: 'ar',
+  OM: 'ar',
+  BH: 'ar',
+  MY: 'ms',
+  NL: 'nl',
+  SR: 'nl',
+  JP: 'ja',
+  CN: 'zh',
+};
+
 export function getCurrencyForCountry(countryIsoCode: string): string {
   if (!countryIsoCode) return 'INR';
   const cleanCode = countryIsoCode.trim().toUpperCase();
   const map = (countryToCurrency as any) || {};
-  return map[cleanCode] || (cleanCode === 'IN' ? 'INR' : 'INR');
+  return map[cleanCode] || (cleanCode === 'IN' ? 'INR' : 'USD');
+}
+
+export function getLanguageForCountry(countryIsoCode: string): string {
+  if (!countryIsoCode) return 'en';
+  const cleanCode = countryIsoCode.trim().toUpperCase();
+  return COUNTRY_TO_LANGUAGE[cleanCode] || 'en';
 }
 
 interface CurrencyContextValue {
@@ -56,6 +98,7 @@ interface CurrencyContextValue {
   fmt: (value: number) => string;
   setCurrencyCode: (code: string) => void;
   getCurrencyFromCountry: (countryCode: string) => string;
+  getLanguageFromCountry: (countryCode: string) => string;
 }
 
 const CurrencyContext = createContext<CurrencyContextValue>({
@@ -64,6 +107,7 @@ const CurrencyContext = createContext<CurrencyContextValue>({
   fmt: (v) => `₹${(v || 0).toFixed(2)}`,
   setCurrencyCode: () => {},
   getCurrencyFromCountry: (c) => getCurrencyForCountry(c),
+  getLanguageFromCountry: (c) => getLanguageForCountry(c),
 });
 
 const LS_KEY = 'admin_currency';
@@ -121,7 +165,7 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <CurrencyContext.Provider value={{ currencyCode, currencySymbol, fmt, setCurrencyCode, getCurrencyFromCountry: getCurrencyForCountry }}>
+    <CurrencyContext.Provider value={{ currencyCode, currencySymbol, fmt, setCurrencyCode, getCurrencyFromCountry: getCurrencyForCountry, getLanguageFromCountry: getLanguageForCountry }}>
       {children}
     </CurrencyContext.Provider>
   );

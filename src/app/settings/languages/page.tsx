@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { API_BASE } from '@/lib/api';
-import { getCurrencyForCountry } from '@/context/currency-context';
+import { getCurrencyForCountry, getLanguageForCountry, useCurrency } from '@/context/currency-context';
 import { AdminLayout } from '@/components/layout/admin-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { toast } from '@/components/ui/toast';
 import {
   Table,
   TableBody,
@@ -46,6 +47,7 @@ import {
 import { PageHeader } from '@/components/layout/page-header';
 
 export default function LanguagesAndCurrencyPage() {
+  const { setCurrencyCode } = useCurrency();
   const [languages, setLanguages] = useState<any[]>([]);
   const [currencies, setCurrencies] = useState<any[]>([]);
   const [countries, setCountries] = useState<any[]>([]);
@@ -57,9 +59,17 @@ export default function LanguagesAndCurrencyPage() {
     fetchCountries();
   }, []);
 
+  const getHeaders = () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    return {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+  };
+
   const fetchLanguages = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/settings/languages`);
+      const res = await fetch(`${API_BASE}/api/settings/languages`, { headers: getHeaders() });
       const json = await res.json();
       if (res.ok && json.data) {
         setLanguages(json.data);
@@ -71,7 +81,7 @@ export default function LanguagesAndCurrencyPage() {
 
   const fetchCurrencies = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/settings/currencies`);
+      const res = await fetch(`${API_BASE}/api/settings/currencies`, { headers: getHeaders() });
       const json = await res.json();
       if (res.ok && json.data) {
         setCurrencies(json.data);
@@ -83,7 +93,7 @@ export default function LanguagesAndCurrencyPage() {
 
   const fetchCountries = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/settings/countries`);
+      const res = await fetch(`${API_BASE}/api/settings/countries`, { headers: getHeaders() });
       const json = await res.json();
       if (res.ok && json.data) {
         setCountries(json.data);
@@ -95,86 +105,177 @@ export default function LanguagesAndCurrencyPage() {
 
   const saveLanguages = async (updatedLangs: any[]) => {
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
-      await fetch(`${API_BASE}/api/settings/languages`, {
+      const res = await fetch(`${API_BASE}/api/settings/languages`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        headers: getHeaders(),
         body: JSON.stringify({ languages: updatedLangs }),
       });
+      if (res.ok) {
+        toast.success('Languages configuration saved');
+      } else {
+        toast.error('Failed to save languages configuration');
+      }
     } catch (e) {
       console.error('Failed to save languages:', e);
+      toast.error('Network error saving languages');
     }
   };
 
   const saveCurrencies = async (updatedCurrs: any[]) => {
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
-      await fetch(`${API_BASE}/api/settings/currencies`, {
+      const res = await fetch(`${API_BASE}/api/settings/currencies`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        headers: getHeaders(),
         body: JSON.stringify({ currencies: updatedCurrs }),
       });
+
+      if (res.ok) {
+        toast.success('Currencies configuration saved');
+
+        // Sync default currency with store settings if default currency changed
+        const defaultCurr = updatedCurrs.find((c: any) => c.isDefault);
+        if (defaultCurr) {
+          setCurrencyCode(defaultCurr.code);
+          await fetch(`${API_BASE}/api/settings`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify({ currency: defaultCurr.code }),
+          }).catch(() => {});
+        }
+      } else {
+        toast.error('Failed to save currencies configuration');
+      }
     } catch (e) {
       console.error('Failed to save currencies:', e);
+      toast.error('Network error saving currencies');
     }
   };
 
   const saveCountries = async (updatedCountries: any[]) => {
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
-      await fetch(`${API_BASE}/api/settings/countries`, {
+      const res = await fetch(`${API_BASE}/api/settings/countries`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        headers: getHeaders(),
         body: JSON.stringify({ countries: updatedCountries }),
       });
+      if (res.ok) {
+        toast.success('Countries configuration saved');
+      } else {
+        toast.error('Failed to save countries configuration');
+      }
     } catch (e) {
       console.error('Failed to save countries:', e);
+      toast.error('Network error saving countries');
     }
   };
 
   // Dialog & Form states for Language
   const [isLangDialogOpen, setIsLangDialogOpen] = useState(false);
+  const [editingLangId, setEditingLangId] = useState<string | null>(null);
   const [langForm, setLangForm] = useState({ name: '', code: '', flag: '🌐', isDefault: false });
 
   // Dialog & Form states for Currency
   const [isCurrDialogOpen, setIsCurrDialogOpen] = useState(false);
+  const [editingCurrId, setEditingCurrId] = useState<string | null>(null);
   const [currForm, setCurrForm] = useState({ name: '', code: '', symbol: '₹', exchangeRate: 1.0, isDefault: false });
 
   // Dialog & Form states for Country
   const [isCountryDialogOpen, setIsCountryDialogOpen] = useState(false);
+  const [editingCountryCode, setEditingCountryCode] = useState<string | null>(null);
   const [countryForm, setCountryForm] = useState({ name: '', code: '' });
 
-  // Language Handlers
-  const handleCreateLanguage = (e: React.FormEvent) => {
+  // Open Handlers
+  const openCreateLanguage = () => {
+    setEditingLangId(null);
+    setLangForm({ name: '', code: '', flag: '🌐', isDefault: false });
+    setIsLangDialogOpen(true);
+  };
+
+  const openEditLanguage = (lang: any) => {
+    setEditingLangId(lang.id);
+    setLangForm({
+      name: lang.name || '',
+      code: lang.code || '',
+      flag: lang.flag || '🌐',
+      isDefault: !!lang.isDefault,
+    });
+    setIsLangDialogOpen(true);
+  };
+
+  const openCreateCurrency = () => {
+    setEditingCurrId(null);
+    setCurrForm({ name: '', code: '', symbol: '₹', exchangeRate: 1.0, isDefault: false });
+    setIsCurrDialogOpen(true);
+  };
+
+  const openEditCurrency = (curr: any) => {
+    setEditingCurrId(curr.id);
+    setCurrForm({
+      name: curr.name || '',
+      code: curr.code || '',
+      symbol: curr.symbol || '$',
+      exchangeRate: curr.exchangeRate ?? 1.0,
+      isDefault: !!curr.isDefault,
+    });
+    setIsCurrDialogOpen(true);
+  };
+
+  const openCreateCountry = () => {
+    setEditingCountryCode(null);
+    setCountryForm({ name: '', code: '' });
+    setIsCountryDialogOpen(true);
+  };
+
+  const openEditCountry = (country: any) => {
+    setEditingCountryCode(country.code);
+    setCountryForm({
+      name: country.name || '',
+      code: country.code || '',
+    });
+    setIsCountryDialogOpen(true);
+  };
+
+  // Save/Submit Handlers
+  const handleSaveLanguage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!langForm.name || !langForm.code) return;
 
-    const newLang = {
-      id: String(languages.length + 1),
-      code: langForm.code.toLowerCase(),
-      name: langForm.name,
-      flag: langForm.flag,
-      isDefault: langForm.isDefault,
-      isEnabled: true,
-    };
-
     let updatedLangs = [...languages];
-    if (newLang.isDefault) {
-      updatedLangs = updatedLangs.map((l) => ({ ...l, isDefault: false }));
+
+    if (editingLangId) {
+      if (langForm.isDefault) {
+        updatedLangs = updatedLangs.map((l) => ({ ...l, isDefault: false }));
+      }
+      updatedLangs = updatedLangs.map((l) =>
+        l.id === editingLangId
+          ? {
+              ...l,
+              name: langForm.name.trim(),
+              code: langForm.code.toLowerCase().trim(),
+              flag: langForm.flag.trim(),
+              isDefault: langForm.isDefault,
+            }
+          : l
+      );
+    } else {
+      const newLang = {
+        id: String(Date.now()),
+        code: langForm.code.toLowerCase().trim(),
+        name: langForm.name.trim(),
+        flag: langForm.flag.trim(),
+        isDefault: langForm.isDefault,
+        isEnabled: true,
+      };
+      if (newLang.isDefault) {
+        updatedLangs = updatedLangs.map((l) => ({ ...l, isDefault: false }));
+      }
+      updatedLangs.push(newLang);
     }
-    const finalLangs = [...updatedLangs, newLang];
-    setLanguages(finalLangs);
-    saveLanguages(finalLangs);
+
+    setLanguages(updatedLangs);
+    saveLanguages(updatedLangs);
     setLangForm({ name: '', code: '', flag: '🌐', isDefault: false });
+    setEditingLangId(null);
     setIsLangDialogOpen(false);
   };
 
@@ -191,28 +292,48 @@ export default function LanguagesAndCurrencyPage() {
   };
 
   // Currency Handlers
-  const handleCreateCurrency = (e: React.FormEvent) => {
+  const handleSaveCurrency = (e: React.FormEvent) => {
     e.preventDefault();
     if (!currForm.name || !currForm.code) return;
 
-    const newCurr = {
-      id: String(currencies.length + 1),
-      code: currForm.code.toUpperCase(),
-      symbol: currForm.symbol,
-      name: currForm.name,
-      exchangeRate: currForm.exchangeRate,
-      isDefault: currForm.isDefault,
-      isEnabled: true,
-    };
-
     let updatedCurrs = [...currencies];
-    if (newCurr.isDefault) {
-      updatedCurrs = updatedCurrs.map((c) => ({ ...c, isDefault: false }));
+
+    if (editingCurrId) {
+      if (currForm.isDefault) {
+        updatedCurrs = updatedCurrs.map((c) => ({ ...c, isDefault: false }));
+      }
+      updatedCurrs = updatedCurrs.map((c) =>
+        c.id === editingCurrId
+          ? {
+              ...c,
+              name: currForm.name.trim(),
+              code: currForm.code.toUpperCase().trim(),
+              symbol: currForm.symbol.trim(),
+              exchangeRate: Number(currForm.exchangeRate),
+              isDefault: currForm.isDefault,
+            }
+          : c
+      );
+    } else {
+      const newCurr = {
+        id: String(Date.now()),
+        code: currForm.code.toUpperCase().trim(),
+        symbol: currForm.symbol.trim(),
+        name: currForm.name.trim(),
+        exchangeRate: Number(currForm.exchangeRate),
+        isDefault: currForm.isDefault,
+        isEnabled: true,
+      };
+      if (newCurr.isDefault) {
+        updatedCurrs = updatedCurrs.map((c) => ({ ...c, isDefault: false }));
+      }
+      updatedCurrs.push(newCurr);
     }
-    const finalCurrs = [...updatedCurrs, newCurr];
-    setCurrencies(finalCurrs);
-    saveCurrencies(finalCurrs);
+
+    setCurrencies(updatedCurrs);
+    saveCurrencies(updatedCurrs);
     setCurrForm({ name: '', code: '', symbol: '₹', exchangeRate: 1.0, isDefault: false });
+    setEditingCurrId(null);
     setIsCurrDialogOpen(false);
   };
 
@@ -229,19 +350,28 @@ export default function LanguagesAndCurrencyPage() {
   };
 
   // Country Handlers
-  const handleCreateCountry = (e: React.FormEvent) => {
+  const handleSaveCountry = (e: React.FormEvent) => {
     e.preventDefault();
     if (!countryForm.name || !countryForm.code) return;
 
-    const newCountry = {
-      code: countryForm.code.toUpperCase().trim(),
-      name: countryForm.name.trim(),
-    };
+    let updatedCountries = [...countries];
+    const code = countryForm.code.toUpperCase().trim();
+    const name = countryForm.name.trim();
 
-    const finalCountries = [...countries, newCountry];
-    setCountries(finalCountries);
-    saveCountries(finalCountries);
+    if (editingCountryCode) {
+      updatedCountries = updatedCountries.map((c) => (c.code === editingCountryCode ? { code, name } : c));
+    } else {
+      if (updatedCountries.some((c) => c.code === code)) {
+        toast.error(`Country with ISO code ${code} already exists`);
+        return;
+      }
+      updatedCountries.push({ code, name });
+    }
+
+    setCountries(updatedCountries);
+    saveCountries(updatedCountries);
     setCountryForm({ name: '', code: '' });
+    setEditingCountryCode(null);
     setIsCountryDialogOpen(false);
   };
 
@@ -280,18 +410,18 @@ export default function LanguagesAndCurrencyPage() {
               <h2 className="text-lg font-bold text-foreground">Supported Countries & Shipping Regions</h2>
               <Sheet open={isCountryDialogOpen} onOpenChange={setIsCountryDialogOpen}>
                 <SheetTrigger render={
-                  <Button className="rounded-md flex items-center gap-2 cursor-pointer bg-primary text-white hover:bg-primary/95 shadow-md shadow-primary/10">
+                  <Button onClick={openCreateCountry} className="rounded-md flex items-center gap-2 cursor-pointer bg-primary text-white hover:bg-primary/95 shadow-md shadow-primary/10">
                     <Plus className="h-4 w-4" /> Add Country
                   </Button>
                 } />
                 <SheetContent side="right" className="w-full sm:max-w-[480px] p-0 overflow-hidden flex flex-col h-full bg-card border-l border-border/30 backdrop-blur-xl">
                   <SheetHeader className="p-6 border-b border-border/20">
-                    <SheetTitle className="text-xl font-bold">Add New Country</SheetTitle>
+                    <SheetTitle className="text-xl font-bold">{editingCountryCode ? 'Edit Country' : 'Add New Country'}</SheetTitle>
                     <SheetDescription className="text-sm text-muted-foreground">
-                      Configure a new country region for customer shipping and currency mapping.
+                      Configure a country region for customer shipping and currency mapping.
                     </SheetDescription>
                   </SheetHeader>
-                  <form onSubmit={handleCreateCountry} className="flex flex-col flex-1 overflow-hidden">
+                  <form onSubmit={handleSaveCountry} className="flex flex-col flex-1 overflow-hidden">
                     <div className="flex-1 overflow-y-auto p-6 space-y-6">
                       <div className="space-y-3">
                         <Label htmlFor="countryName" className="text-sm font-semibold">Country Name</Label>
@@ -322,7 +452,7 @@ export default function LanguagesAndCurrencyPage() {
                         Cancel
                       </Button>
                       <Button type="submit" className="rounded-lg bg-primary text-white hover:bg-primary/95">
-                        Save Country
+                        {editingCountryCode ? 'Update Country' : 'Save Country'}
                       </Button>
                     </SheetFooter>
                   </form>
@@ -338,13 +468,15 @@ export default function LanguagesAndCurrencyPage() {
                       <TableRow>
                         <TableHead>Country Name</TableHead>
                         <TableHead>ISO Code</TableHead>
-                        <TableHead>Mapped Currency (via package)</TableHead>
-                        <TableHead className="w-20 text-right">Actions</TableHead>
+                        <TableHead>Mapped Currency</TableHead>
+                        <TableHead>Mapped Language</TableHead>
+                        <TableHead className="w-24 text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {countries.map((c) => {
                         const mappedCurrency = getCurrencyForCountry(c.code);
+                        const mappedLanguage = getLanguageForCountry(c.code);
                         return (
                           <TableRow key={c.code} className="hover:bg-muted/10">
                             <TableCell className="font-semibold text-sm text-foreground">
@@ -352,11 +484,24 @@ export default function LanguagesAndCurrencyPage() {
                             </TableCell>
                             <TableCell className="text-sm font-mono font-bold text-primary">{c.code}</TableCell>
                             <TableCell className="text-sm text-muted-foreground">
-                              <Badge variant="outline" className="font-bold text-xs bg-muted/20">
+                              <Badge variant="outline" className="font-bold text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
                                 {mappedCurrency}
                               </Badge>
                             </TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="text-sm text-muted-foreground">
+                              <Badge variant="outline" className="font-bold text-xs bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">
+                                {mappedLanguage.toUpperCase()}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => openEditCountry(c)}
+                                className="h-8 w-8 text-foreground/70 hover:bg-muted rounded-lg"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -382,18 +527,18 @@ export default function LanguagesAndCurrencyPage() {
               <h2 className="text-lg font-bold text-foreground">Supported Currencies</h2>
               <Sheet open={isCurrDialogOpen} onOpenChange={setIsCurrDialogOpen}>
                 <SheetTrigger render={
-                  <Button className="rounded-md flex items-center gap-2 cursor-pointer bg-primary text-white hover:bg-primary/95 shadow-md shadow-primary/10">
+                  <Button onClick={openCreateCurrency} className="rounded-md flex items-center gap-2 cursor-pointer bg-primary text-white hover:bg-primary/95 shadow-md shadow-primary/10">
                     <Plus className="h-4 w-4" /> Add Currency
                   </Button>
                 } />
                 <SheetContent side="right" className="w-full sm:max-w-[480px] p-0 overflow-hidden flex flex-col h-full bg-card border-l border-border/30 backdrop-blur-xl">
                   <SheetHeader className="p-6 border-b border-border/20">
-                    <SheetTitle className="text-xl font-bold">Add Currency</SheetTitle>
+                    <SheetTitle className="text-xl font-bold">{editingCurrId ? 'Edit Currency' : 'Add Currency'}</SheetTitle>
                     <SheetDescription className="text-sm text-muted-foreground">
-                      Configure a new currency option and standard exchange rates.
+                      Configure currency options and exchange rates.
                     </SheetDescription>
                   </SheetHeader>
-                  <form onSubmit={handleCreateCurrency} className="flex flex-col flex-1 overflow-hidden">
+                  <form onSubmit={handleSaveCurrency} className="flex flex-col flex-1 overflow-hidden">
                     <div className="flex-1 overflow-y-auto p-6 space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
@@ -460,7 +605,7 @@ export default function LanguagesAndCurrencyPage() {
                         Cancel
                       </Button>
                       <Button type="submit" className="rounded-lg bg-primary text-white hover:bg-primary/95">
-                        Save Currency
+                        {editingCurrId ? 'Update Currency' : 'Save Currency'}
                       </Button>
                     </SheetFooter>
                   </form>
@@ -489,7 +634,7 @@ export default function LanguagesAndCurrencyPage() {
                           <TableCell className="font-semibold text-sm text-foreground">{c.code}</TableCell>
                           <TableCell className="text-sm font-mono font-semibold text-muted-foreground">{c.symbol}</TableCell>
                           <TableCell className="text-sm text-muted-foreground">{c.name}</TableCell>
-                          <TableCell className="text-right text-sm font-semibold">{c.exchangeRate.toFixed(4)}</TableCell>
+                          <TableCell className="text-right text-sm font-semibold">{(c.exchangeRate || 1.0).toFixed(4)}</TableCell>
                           <TableCell className="text-center">
                             {c.isDefault ? (
                               <Badge className="bg-teal-500/10 text-teal-600 dark:text-teal-400 font-bold border-transparent rounded-full px-2.5 py-0.5">
@@ -513,7 +658,7 @@ export default function LanguagesAndCurrencyPage() {
                                 </div>
                               } />
                               <DropdownMenuContent align="end" className="w-36 p-1 rounded-md bg-card border border-border/60 shadow-lg">
-                                <DropdownMenuItem className="p-2 rounded-lg hover:bg-muted/50 cursor-pointer text-xs font-semibold flex items-center gap-2">
+                                <DropdownMenuItem onClick={() => openEditCurrency(c)} className="p-2 rounded-lg hover:bg-muted/50 cursor-pointer text-xs font-semibold flex items-center gap-2">
                                   <Edit className="h-3.5 w-3.5" /> Edit
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
@@ -540,18 +685,18 @@ export default function LanguagesAndCurrencyPage() {
               <h2 className="text-lg font-bold text-foreground">Supported Languages</h2>
               <Sheet open={isLangDialogOpen} onOpenChange={setIsLangDialogOpen}>
                 <SheetTrigger render={
-                  <Button className="rounded-md flex items-center gap-2 cursor-pointer bg-primary text-white hover:bg-primary/95 shadow-md shadow-primary/10">
+                  <Button onClick={openCreateLanguage} className="rounded-md flex items-center gap-2 cursor-pointer bg-primary text-white hover:bg-primary/95 shadow-md shadow-primary/10">
                     <Plus className="h-4 w-4" /> Add Language
                   </Button>
                 } />
                 <SheetContent side="right" className="w-full sm:max-w-[480px] p-0 overflow-hidden flex flex-col h-full bg-card border-l border-border/30 backdrop-blur-xl">
                   <SheetHeader className="p-6 border-b border-border/20">
-                    <SheetTitle className="text-xl font-bold">Add Language</SheetTitle>
+                    <SheetTitle className="text-xl font-bold">{editingLangId ? 'Edit Language' : 'Add Language'}</SheetTitle>
                     <SheetDescription className="text-sm text-muted-foreground">
-                      Configure a new language locale option for users.
+                      Configure language locale options for users.
                     </SheetDescription>
                   </SheetHeader>
-                  <form onSubmit={handleCreateLanguage} className="flex flex-col flex-1 overflow-hidden">
+                  <form onSubmit={handleSaveLanguage} className="flex flex-col flex-1 overflow-hidden">
                     <div className="flex-1 overflow-y-auto p-6 space-y-6">
                       <div className="space-y-3">
                         <Label htmlFor="langName" className="text-sm font-semibold">Language Name</Label>
@@ -606,7 +751,7 @@ export default function LanguagesAndCurrencyPage() {
                         Cancel
                       </Button>
                       <Button type="submit" className="rounded-lg bg-primary text-white hover:bg-primary/95">
-                        Save Language
+                        {editingLangId ? 'Update Language' : 'Save Language'}
                       </Button>
                     </SheetFooter>
                   </form>
@@ -658,7 +803,7 @@ export default function LanguagesAndCurrencyPage() {
                                 </div>
                               } />
                               <DropdownMenuContent align="end" className="w-36 p-1 rounded-md bg-card border border-border/60 shadow-lg">
-                                <DropdownMenuItem className="p-2 rounded-lg hover:bg-muted/50 cursor-pointer text-xs font-semibold flex items-center gap-2">
+                                <DropdownMenuItem onClick={() => openEditLanguage(l)} className="p-2 rounded-lg hover:bg-muted/50 cursor-pointer text-xs font-semibold flex items-center gap-2">
                                   <Edit className="h-3.5 w-3.5" /> Edit
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
