@@ -119,7 +119,7 @@ export default function ProductsPage() {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [addSheetOpen, setAddSheetOpen] = useState(false);
   const [shippingType, setShippingType] = useState<'free' | 'paid'>('free');
-  const [formData, setFormData] = useState({ name: '', sku: '', price: '', shippingCharge: '0.00', stock: '', category: '', subCategory: '', brand: '', colors: [] as string[], sizes: [] as string[], description: '', status: 'PUBLISHED', taxType: 'GST', taxPercent: '', selectedTaxRuleId: '' });
+  const [formData, setFormData] = useState({ name: '', sku: '', price: '', shippingCharge: '0.00', isGiftWrapAvailable: true, giftWrapCharge: '0.00', stock: '', category: '', subCategory: '', brand: '', colors: [] as string[], sizes: [] as string[], description: '', status: 'PUBLISHED', taxType: 'GST', taxPercent: '', selectedTaxRuleId: '' });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [editImageFiles, setEditImageFiles] = useState<File[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -303,6 +303,8 @@ export default function ProductsPage() {
   const [editName, setEditName] = useState('');
   const [editPrice, setEditPrice] = useState('');
   const [editShippingCharge, setEditShippingCharge] = useState('');
+  const [editIsGiftWrapAvailable, setEditIsGiftWrapAvailable] = useState(true);
+  const [editGiftWrapCharge, setEditGiftWrapCharge] = useState('0.00');
   const [editBrand, setEditBrand] = useState('');
   const [editDesc, setEditDesc] = useState('');
   const [editStatus, setEditStatus] = useState('PUBLISHED');
@@ -430,6 +432,8 @@ export default function ProductsPage() {
       sku: formData.sku && formData.sku.trim() !== '' ? formData.sku.trim() : undefined,
       price: parseFloat(formData.price) || 0,
       shippingCharge: finalShippingCharge,
+      isGiftWrapAvailable: formData.isGiftWrapAvailable,
+      giftWrapCharge: formData.isGiftWrapAvailable ? (parseFloat(formData.giftWrapCharge) || 0) : 0,
       stock: parseInt(formData.stock) || 0,
       category: formData.category,
       subCategory: formData.subCategory || undefined,
@@ -541,6 +545,8 @@ export default function ProductsPage() {
         name: editName,
         price: parseFloat(editPrice) || 0,
         shippingCharge: parseFloat(editShippingCharge) || 0,
+        isGiftWrapAvailable: editIsGiftWrapAvailable,
+        giftWrapCharge: editIsGiftWrapAvailable ? (parseFloat(editGiftWrapCharge) || 0) : 0,
         brand: editBrand,
         description: editDesc,
         status: editStatus,
@@ -1579,6 +1585,66 @@ export default function ProductsPage() {
                   )}
                 </div>
 
+                {/* Gift Wrapping Configuration */}
+                <div className="space-y-3 p-4 rounded-xl border border-border/50 bg-muted/20">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                      🎁 Gift Wrapping Option
+                    </Label>
+                    <span className="text-xs font-bold text-foreground">
+                      {formData.isGiftWrapAvailable ? (
+                        <span className="text-emerald-600 dark:text-emerald-400">Available (₹{formData.giftWrapCharge || '0.00'})</span>
+                      ) : (
+                        <span className="text-muted-foreground">Disabled</span>
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, isGiftWrapAvailable: true }))}
+                      className={`h-11 rounded-lg border text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                        formData.isGiftWrapAvailable
+                          ? 'border-emerald-500/60 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-sm ring-1 ring-emerald-500/30'
+                          : 'border-border/50 text-muted-foreground hover:border-border/80 bg-background'
+                      }`}
+                    >
+                      <span className="text-base">🎀</span> Enable Gift Wrap
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, isGiftWrapAvailable: false, giftWrapCharge: '0.00' }))}
+                      className={`h-11 rounded-lg border text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                        !formData.isGiftWrapAvailable
+                          ? 'border-rose-500/60 bg-rose-500/10 text-rose-600 dark:text-rose-400 shadow-sm ring-1 ring-rose-500/30'
+                          : 'border-border/50 text-muted-foreground hover:border-border/80 bg-background'
+                      }`}
+                    >
+                      <span className="text-base">🚫</span> Not Available
+                    </button>
+                  </div>
+
+                  {formData.isGiftWrapAvailable && (
+                    <div className="space-y-1.5 pt-1">
+                      <Label htmlFor="giftWrapChargeAmount" className="text-xs font-semibold text-muted-foreground">
+                        Gift Wrapping Charge (₹)
+                      </Label>
+                      <Input
+                        id="giftWrapChargeAmount"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.giftWrapCharge}
+                        onChange={(e) => setFormData({ ...formData, giftWrapCharge: e.target.value })}
+                        placeholder="Enter wrapping fee (e.g. 50.00)"
+                        className="h-11 rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20 bg-background"
+                      />
+                    </div>
+                  )}
+                </div>
+
                 <div className="space-y-1.5">
                   <Label htmlFor="status" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Publishing Status</Label>
                   <div className="grid grid-cols-3 gap-2">
@@ -1849,7 +1915,7 @@ export default function ProductsPage() {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-4 gap-3">
                     <Card className="border-border/30 bg-muted/10 shadow-sm rounded-lg">
                       <CardContent className="p-3">
                         <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
@@ -1872,6 +1938,23 @@ export default function ProductsPage() {
                           <Input type="number" step="0.01" value={editShippingCharge} onChange={e => setEditShippingCharge(e.target.value)} className="h-9 rounded-md border-border/50 mt-1.5 font-mono text-sm focus:border-primary" />
                         ) : (
                           <h4 className="text-xl font-black text-foreground mt-1.5">{fmtPrice(selectedProduct.shippingCharge || 0)}</h4>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-border/30 bg-muted/10 shadow-sm rounded-lg">
+                      <CardContent className="p-3">
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                          🎁 Gift Wrap Fee
+                        </span>
+                        {isEditing ? (
+                          <Input type="number" step="0.01" value={editGiftWrapCharge} onChange={e => setEditGiftWrapCharge(e.target.value)} className="h-9 rounded-md border-border/50 mt-1.5 font-mono text-sm focus:border-primary" />
+                        ) : (
+                          <h4 className="text-xl font-black text-foreground mt-1.5">
+                            {selectedProduct.isGiftWrapAvailable !== false
+                              ? fmtPrice(selectedProduct.giftWrapCharge || 0)
+                              : 'N/A'}
+                          </h4>
                         )}
                       </CardContent>
                     </Card>
