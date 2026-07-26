@@ -116,18 +116,14 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
   const [currencyCode, setCurrencyCodeState] = useState<string>('INR');
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem(LS_KEY);
-      if (stored) {
-        setCurrencyCodeState(stored);
-      }
-    }
-  }, []);
-
-  // Fetch currency from settings API on mount
-  useEffect(() => {
     const load = async () => {
       try {
+        const stored = typeof window !== 'undefined' ? localStorage.getItem(LS_KEY) : null;
+        if (stored) {
+          setCurrencyCodeState(stored);
+          return;
+        }
+
         const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
         const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
         const res = await fetch(`${API_BASE}/api/settings`, { headers });
@@ -136,7 +132,7 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
           const code: string = json?.data?.currency || json?.currency;
           if (code) {
             setCurrencyCodeState(code);
-            localStorage.setItem(LS_KEY, code);
+            if (typeof window !== 'undefined') localStorage.setItem(LS_KEY, code);
           }
         }
       } catch {}

@@ -69,7 +69,8 @@ export function Header({ onMenuClick }: HeaderProps) {
           const s = json?.data || json;
           if (s.country) setCurrentCountry(s.country);
           if (s.language) setCurrentLanguage(s.language);
-          if (s.currency) setCurrencyCode(s.currency);
+          const hasLocalCurrency = typeof window !== 'undefined' && localStorage.getItem('admin_currency');
+          if (s.currency && !hasLocalCurrency) setCurrencyCode(s.currency);
         }
 
         const resCountries = await fetch(`${API_BASE}/api/settings/countries`, { headers });
