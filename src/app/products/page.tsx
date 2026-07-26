@@ -211,9 +211,11 @@ export default function ProductsPage() {
             setEditStock(String(raw.stock ?? (raw.variants && raw.variants[0]?.stock) ?? 0));
             setEditShippingCharge(String(raw.shippingCharge ?? raw.shipping_charge ?? 0));
             setEditIsGiftWrapAvailable(raw.isGiftWrapAvailable ?? raw.is_gift_wrap_available ?? true);
-            setEditGiftWrapCharge(String(raw.giftWrapCharge ?? raw.gift_wrap_charge ?? 0));
+            const catName = raw.categoryName || raw.category?.parent?.name || raw.category?.name || raw.category || '';
+            const subCatName = raw.subCategory || raw.subCategoryName || (raw.category?.parent ? raw.category?.name : '') || '';
             setEditBrand(raw.brand?.name || raw.brandName || raw.brand || '');
-            setEditCategory(raw.category?.name || raw.categoryName || raw.category || '');
+            setEditCategory(catName);
+            setEditSubCategory(subCatName);
             setEditDesc(raw.description || '');
             setEditStatus((raw.status || 'PUBLISHED').toUpperCase());
             setEditHsnCode(raw.hsnCode || raw.hsn_code || '');
@@ -276,9 +278,10 @@ export default function ProductsPage() {
   const displayedSubCategories = useMemo(() => {
     if (!categories || categories.length === 0) return [];
 
+    const activeCatName = isEditing ? editCategory : formData.category;
     // If a specific parent category is selected
-    if (formData.category) {
-      const parent = categories.find((c: any) => c.name.toLowerCase() === formData.category.toLowerCase());
+    if (activeCatName) {
+      const parent = categories.find((c: any) => c.name.toLowerCase() === activeCatName.toLowerCase());
       if (parent && Array.isArray(parent.children) && parent.children.length > 0) {
         return parent.children.filter((c: any) => !c.deletedAt);
       }
@@ -296,7 +299,7 @@ export default function ProductsPage() {
       }
     });
     return allSubs;
-  }, [categories, formData.category]);
+  }, [categories, formData.category, isEditing, editCategory]);
 
   const fetchBrands = useCallback(async () => {
     try {
