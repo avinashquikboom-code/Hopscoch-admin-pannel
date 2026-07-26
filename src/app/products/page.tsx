@@ -73,6 +73,7 @@ function authHeaders(): HeadersInit {
 
 function normalizeProduct(raw: any) {
   const stockFromVariant = raw.variants && raw.variants.length > 0 ? raw.variants[0].stock : undefined;
+  const skuFromVariant = raw.variants && raw.variants.length > 0 ? raw.variants[0].sku : undefined;
   let imgs: any[] = [];
   if (Array.isArray(raw.images) && raw.images.length > 0) {
     imgs = raw.images.map((img: any) => {
@@ -91,16 +92,29 @@ function normalizeProduct(raw: any) {
   return {
     id: String(raw.id || raw._id || Math.random()),
     name: raw.name || raw.title || 'Unnamed Product',
-    sku: raw.sku || (raw.variants && raw.variants[0]?.sku) || raw.code || `SKU-${raw.id ? String(raw.id).slice(0, 6) : '000'}`,
+    sku: raw.sku || skuFromVariant || raw.code || `SKU-${raw.id ? String(raw.id).slice(0, 6) : '000'}`,
     price: Number(raw.basePrice || raw.price || raw.sellingPrice || raw.mrp || 0),
-    shippingCharge: Number(raw.shippingCharge || raw.shipping_charge || 0),
+    shippingCharge: Number(raw.shippingCharge ?? raw.shipping_charge ?? 0),
+    isGiftWrapAvailable: raw.isGiftWrapAvailable ?? raw.is_gift_wrap_available ?? true,
+    giftWrapCharge: Number(raw.giftWrapCharge ?? raw.gift_wrap_charge ?? 0),
     stock: Number(raw.stock ?? stockFromVariant ?? raw.stockQuantity ?? raw.inventory?.quantity ?? 0),
     category: raw.category?.name || raw.categoryName || raw.category || 'General',
+    categoryId: raw.categoryId || raw.category?.id,
+    subCategory: raw.subCategory?.name || raw.subCategory || '',
     brand: raw.brand?.name || raw.brandName || raw.brand || 'Unbranded',
+    brandId: raw.brandId || raw.brand?.id,
+    hsnCode: raw.hsnCode || raw.hsn_code || '',
+    gender: raw.gender || 'UNISEX',
+    ageGroup: raw.ageGroup || raw.age_group || 'ADULT',
+    taxRuleId: raw.taxRuleId || raw.tax_rule_id,
+    taxRule: raw.taxRule,
+    taxType: raw.taxType || raw.taxRule?.taxType || 'GST',
+    taxPercent: raw.taxPercent ?? raw.taxRule?.rate ?? '',
     status: (raw.status || (raw.isActive ? 'published' : 'draft')).toLowerCase(),
     isFeatured: raw.isFeatured ?? false,
     isTrending: raw.isTrending ?? false,
     isBestSeller: raw.isBestSeller ?? false,
+    isNewArrival: raw.isNewArrival ?? false,
     description: raw.description || raw.shortDescription || '',
     images: imgs,
     thumbnailUrl: raw.thumbnailUrl || (imgs.length > 0 ? imgs[0].url : null),
@@ -131,6 +145,96 @@ export default function ProductsPage() {
   const [fetchedTaxTypes, setFetchedTaxTypes] = useState<string[]>(['GST', 'IGST', 'VAT', 'EXCLUSIVE', 'INCLUSIVE', 'NONE']);
   const [subCategoryLoading, setSubCategoryLoading] = useState(false);
   const [taxLoading, setTaxLoading] = useState(false);
+
+  const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
+  const [adjustQtyInput, setAdjustQtyInput] = useState('');
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editSku, setEditSku] = useState('');
+  const [editPrice, setEditPrice] = useState('');
+  const [editStock, setEditStock] = useState('');
+  const [editShippingCharge, setEditShippingCharge] = useState('');
+  const [editIsGiftWrapAvailable, setEditIsGiftWrapAvailable] = useState(true);
+  const [editGiftWrapCharge, setEditGiftWrapCharge] = useState('0.00');
+  const [editBrand, setEditBrand] = useState('');
+  const [editCategory, setEditCategory] = useState('');
+  const [editSubCategory, setEditSubCategory] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+  const [editStatus, setEditStatus] = useState('PUBLISHED');
+  const [editHsnCode, setEditHsnCode] = useState('');
+  const [editGender, setEditGender] = useState('UNISEX');
+  const [editAgeGroup, setEditAgeGroup] = useState('ADULT');
+  const [editTaxType, setEditTaxType] = useState('GST');
+  const [editTaxPercent, setEditTaxPercent] = useState('');
+  const [editSelectedTaxRuleId, setEditSelectedTaxRuleId] = useState('');
+  const [editIsFeatured, setEditIsFeatured] = useState(false);
+  const [editIsTrending, setEditIsTrending] = useState(false);
+  const [editIsNewArrival, setEditIsNewArrival] = useState(false);
+  const [editIsBestSeller, setEditIsBestSeller] = useState(false);
+
+  const startEditingProduct = useCallback((product: any) => {
+    setSelectedProduct(product);
+    setEditName(product.name || '');
+    setEditSku(product.sku || '');
+    setEditPrice(String(product.price ?? 0));
+    setEditStock(String(product.stock ?? 0));
+    setEditShippingCharge(String(product.shippingCharge ?? 0));
+    setEditIsGiftWrapAvailable(product.isGiftWrapAvailable !== false);
+    setEditGiftWrapCharge(String(product.giftWrapCharge ?? 0));
+    setEditBrand(product.brand || '');
+    setEditCategory(product.category || '');
+    setEditSubCategory(product.subCategory || '');
+    setEditDesc(product.description || '');
+    setEditStatus(product.status?.toUpperCase() || 'PUBLISHED');
+    setEditHsnCode(product.hsnCode || '');
+    setEditGender(product.gender || 'UNISEX');
+    setEditAgeGroup(product.ageGroup || 'ADULT');
+    setEditTaxType(product.taxType || product.taxRule?.taxType || 'GST');
+    setEditTaxPercent(product.taxPercent !== undefined && product.taxPercent !== null && product.taxPercent !== '' ? String(product.taxPercent) : (product.taxRule?.rate !== undefined ? String(product.taxRule.rate) : ''));
+    setEditSelectedTaxRuleId(product.taxRuleId ? String(product.taxRuleId) : '');
+    setEditIsFeatured(product.isFeatured ?? false);
+    setEditIsTrending(product.isTrending ?? false);
+    setEditIsNewArrival(product.isNewArrival ?? false);
+    setEditIsBestSeller(product.isBestSeller ?? false);
+    setIsEditing(true);
+
+    if (product.id) {
+      fetch(`${API_BASE}/api/admin/products/${product.id}`, { headers: authHeaders() })
+        .then(res => res.ok ? res.json() : null)
+        .then(json => {
+          if (json?.data) {
+            const raw = json.data;
+            setEditName(raw.name || '');
+            setEditSku(raw.sku || (raw.variants && raw.variants[0]?.sku) || '');
+            setEditPrice(String(raw.basePrice ?? raw.price ?? 0));
+            setEditStock(String(raw.stock ?? (raw.variants && raw.variants[0]?.stock) ?? 0));
+            setEditShippingCharge(String(raw.shippingCharge ?? raw.shipping_charge ?? 0));
+            setEditIsGiftWrapAvailable(raw.isGiftWrapAvailable ?? raw.is_gift_wrap_available ?? true);
+            setEditGiftWrapCharge(String(raw.giftWrapCharge ?? raw.gift_wrap_charge ?? 0));
+            setEditBrand(raw.brand?.name || raw.brandName || raw.brand || '');
+            setEditCategory(raw.category?.name || raw.categoryName || raw.category || '');
+            setEditDesc(raw.description || '');
+            setEditStatus((raw.status || 'PUBLISHED').toUpperCase());
+            setEditHsnCode(raw.hsnCode || raw.hsn_code || '');
+            setEditGender(raw.gender || 'UNISEX');
+            setEditAgeGroup(raw.ageGroup || raw.age_group || 'ADULT');
+            if (raw.taxRuleId || raw.tax_rule_id) {
+              setEditSelectedTaxRuleId(String(raw.taxRuleId || raw.tax_rule_id));
+            }
+            if (raw.taxRule) {
+              setEditTaxType(raw.taxRule.taxType || raw.taxRule.type || 'GST');
+              setEditTaxPercent(String(raw.taxRule.rate || ''));
+            }
+            setEditIsFeatured(raw.isFeatured ?? false);
+            setEditIsTrending(raw.isTrending ?? false);
+            setEditIsNewArrival(raw.isNewArrival ?? false);
+            setEditIsBestSeller(raw.isBestSeller ?? false);
+          }
+        })
+        .catch(err => console.error('Error loading product details:', err));
+    }
+  }, []);
 
   const fetchCategories = useCallback(async (triggerSubCatFetch?: string) => {
     try {
@@ -296,18 +400,6 @@ export default function ProductsPage() {
   const [brandFilter, setBrandFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [stockLevelFilter, setStockLevelFilter] = useState('all');
-  const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
-  const [adjustQtyInput, setAdjustQtyInput] = useState('');
-
-  const [isEditing, setIsEditing] = useState(false);
-  const [editName, setEditName] = useState('');
-  const [editPrice, setEditPrice] = useState('');
-  const [editShippingCharge, setEditShippingCharge] = useState('');
-  const [editIsGiftWrapAvailable, setEditIsGiftWrapAvailable] = useState(true);
-  const [editGiftWrapCharge, setEditGiftWrapCharge] = useState('0.00');
-  const [editBrand, setEditBrand] = useState('');
-  const [editDesc, setEditDesc] = useState('');
-  const [editStatus, setEditStatus] = useState('PUBLISHED');
 
   const [newVarColor, setNewVarColor] = useState('');
   const [newVarSize, setNewVarSize] = useState('');
@@ -526,10 +618,24 @@ export default function ProductsPage() {
     const updated = {
       ...selectedProduct,
       name: editName,
+      sku: editSku,
       price: parseFloat(editPrice) || 0,
+      stock: editStock !== '' ? parseInt(editStock) : selectedProduct.stock,
+      shippingCharge: parseFloat(editShippingCharge) || 0,
+      isGiftWrapAvailable: editIsGiftWrapAvailable,
+      giftWrapCharge: editIsGiftWrapAvailable ? (parseFloat(editGiftWrapCharge) || 0) : 0,
       brand: editBrand,
+      category: editCategory,
+      subCategory: editSubCategory,
       description: editDesc,
       status: editStatus.toLowerCase(),
+      hsnCode: editHsnCode,
+      gender: editGender,
+      ageGroup: editAgeGroup,
+      isFeatured: editIsFeatured,
+      isTrending: editIsTrending,
+      isNewArrival: editIsNewArrival,
+      isBestSeller: editIsBestSeller,
       images: updatedImages,
     };
     
@@ -538,21 +644,32 @@ export default function ProductsPage() {
     setIsEditing(false);
 
     try {
-      const isSavedRule = formData.selectedTaxRuleId && formData.selectedTaxRuleId !== '__custom__' && formData.selectedTaxRuleId !== '__none__';
-      const isExemptRule = formData.selectedTaxRuleId === '__none__';
+      const isSavedRule = editSelectedTaxRuleId && editSelectedTaxRuleId !== '__custom__' && editSelectedTaxRuleId !== '__none__';
+      const isExemptRule = editSelectedTaxRuleId === '__none__';
 
       const body: any = {
         name: editName,
+        sku: editSku || undefined,
         price: parseFloat(editPrice) || 0,
+        stock: editStock !== '' ? parseInt(editStock) : undefined,
         shippingCharge: parseFloat(editShippingCharge) || 0,
         isGiftWrapAvailable: editIsGiftWrapAvailable,
         giftWrapCharge: editIsGiftWrapAvailable ? (parseFloat(editGiftWrapCharge) || 0) : 0,
         brand: editBrand,
+        category: editCategory,
+        subCategory: editSubCategory,
         description: editDesc,
         status: editStatus,
-        taxRuleId: isSavedRule ? Number(formData.selectedTaxRuleId) : (isExemptRule ? null : undefined),
-        taxType: !isSavedRule ? (isExemptRule ? 'NONE' : (formData.taxType || 'GST')) : undefined,
-        taxPercent: !isSavedRule ? (isExemptRule ? 0 : (formData.taxPercent ? parseFloat(formData.taxPercent) : undefined)) : undefined,
+        hsnCode: editHsnCode || undefined,
+        gender: editGender,
+        ageGroup: editAgeGroup,
+        isFeatured: editIsFeatured,
+        isTrending: editIsTrending,
+        isNewArrival: editIsNewArrival,
+        isBestSeller: editIsBestSeller,
+        taxRuleId: isSavedRule ? Number(editSelectedTaxRuleId) : (isExemptRule ? null : undefined),
+        taxType: !isSavedRule ? (isExemptRule ? 'NONE' : (editTaxType || 'GST')) : undefined,
+        taxPercent: !isSavedRule ? (isExemptRule ? 0 : (editTaxPercent ? parseFloat(editTaxPercent) : undefined)) : undefined,
       };
       console.log('📌 [handleSaveProduct] PUT /api/admin/products/' + selectedProduct.id, body);
       const res = await fetch(`${API_BASE}/api/admin/products/${selectedProduct.id}`, {
@@ -588,8 +705,9 @@ export default function ProductsPage() {
           })
         );
         setEditImageFiles([]);
-        fetchProducts();
       }
+
+      fetchProducts();
     } catch (err: any) {
       console.error('❌ [handleSaveProduct] Error:', err);
       toast.error(err.message || 'Failed to update product');
@@ -902,12 +1020,7 @@ export default function ProductsPage() {
                             const selectedId = selectedProducts[0];
                             const product = productsList.find(p => p.id === selectedId);
                             if (product) {
-                              setSelectedProduct(product);
-                              setIsEditing(true);
-                              setEditName(product.name);
-                              setEditPrice(String(product.price));
-                              setEditBrand(product.brand);
-                              setEditDesc(product.description || '');
+                              startEditingProduct(product);
                             }
                           }}
                         >
@@ -1253,6 +1366,10 @@ export default function ProductsPage() {
                                 <DropdownMenuItem onClick={() => setSelectedProduct(product)} className="p-2 rounded-md hover:bg-muted cursor-pointer text-sm font-medium">
                                   <Eye className="mr-2 h-4 w-4 text-[#14b8a6]" />
                                   Quick Preview
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => startEditingProduct(product)} className="p-2 rounded-md hover:bg-muted cursor-pointer text-sm font-medium">
+                                  <Edit className="mr-2 h-4 w-4 text-[#0d9488]" />
+                                  Edit Product
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleToggleFeatured(product.id)} className="p-2 rounded-md hover:bg-muted cursor-pointer text-sm font-medium">
                                   <Star className="mr-2 h-4 w-4 text-amber-500" />
@@ -1806,20 +1923,190 @@ export default function ProductsPage() {
                   </div>
                   <div>
                     {isEditing ? (
-                      <div className="space-y-3 mt-2">
-                        <div className="space-y-1">
-                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Product Name</Label>
-                          <Input value={editName} onChange={e => setEditName(e.target.value)} className="h-10 rounded-lg border-border/50 focus:border-primary" />
+                      <div className="space-y-4 mt-2 p-4 rounded-xl border border-primary/20 bg-primary/5">
+                        <div className="flex items-center justify-between border-b border-primary/20 pb-2">
+                          <span className="text-xs font-extrabold uppercase tracking-wider text-primary">Editing Product Details</span>
+                          <Button size="sm" onClick={handleSaveProduct} className="h-7 text-xs bg-primary text-white rounded-md flex items-center gap-1">
+                            <Save className="h-3.5 w-3.5" /> Save Changes
+                          </Button>
                         </div>
-                        <div className="space-y-1">
-                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Brand Label</Label>
-                          <Input value={editBrand} onChange={e => setEditBrand(e.target.value)} className="h-10 rounded-lg border-border/50 focus:border-primary" />
+                        
+                        {/* Name & SKU */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Product Name</Label>
+                            <Input value={editName} onChange={e => setEditName(e.target.value)} className="h-9 rounded-lg border-border/50 bg-background focus:border-primary text-xs" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">SKU</Label>
+                            <Input value={editSku} onChange={e => setEditSku(e.target.value)} className="h-9 rounded-lg border-border/50 bg-background font-mono text-xs focus:border-primary" />
+                          </div>
                         </div>
+
+                        {/* Category & SubCategory */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Category</Label>
+                            <select
+                              value={editCategory}
+                              onChange={(e) => setEditCategory(e.target.value)}
+                              className="w-full h-9 rounded-lg border border-border/50 bg-background px-2.5 text-xs outline-none focus:border-primary cursor-pointer"
+                            >
+                              <option value="">Select Category</option>
+                              {categories.map((c: any) => (
+                                <option key={c.id} value={c.name}>{c.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Sub-Category</Label>
+                            <select
+                              value={editSubCategory}
+                              onChange={(e) => setEditSubCategory(e.target.value)}
+                              className="w-full h-9 rounded-lg border border-border/50 bg-background px-2.5 text-xs outline-none focus:border-primary cursor-pointer"
+                            >
+                              <option value="">Select Sub-Category</option>
+                              {displayedSubCategories.map((sub: any) => (
+                                <option key={sub.id} value={sub.name}>{sub.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* Brand */}
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Brand</Label>
+                          <Input value={editBrand} onChange={e => setEditBrand(e.target.value)} placeholder="Brand Name" className="h-9 rounded-lg border-border/50 bg-background text-xs focus:border-primary" />
+                        </div>
+
+                        {/* Demographics: Gender & Age Group */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Gender</Label>
+                            <select
+                              value={editGender}
+                              onChange={(e) => setEditGender(e.target.value)}
+                              className="w-full h-9 rounded-lg border border-border/50 bg-background px-2.5 text-xs outline-none focus:border-primary cursor-pointer"
+                            >
+                              <option value="UNISEX">Unisex</option>
+                              <option value="MEN">Men</option>
+                              <option value="WOMEN">Women</option>
+                              <option value="KIDS">Kids</option>
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Age Group</Label>
+                            <select
+                              value={editAgeGroup}
+                              onChange={(e) => setEditAgeGroup(e.target.value)}
+                              className="w-full h-9 rounded-lg border border-border/50 bg-background px-2.5 text-xs outline-none focus:border-primary cursor-pointer"
+                            >
+                              <option value="ADULT">Adult</option>
+                              <option value="TEEN">Teen</option>
+                              <option value="KIDS">Kids</option>
+                              <option value="INFANT">Infant</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* Gift Wrap Settings */}
+                        <div className="p-3 rounded-lg border border-border/40 bg-background space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-xs font-bold cursor-pointer flex items-center gap-1.5">
+                              <input
+                                type="checkbox"
+                                checked={editIsGiftWrapAvailable}
+                                onChange={(e) => setEditIsGiftWrapAvailable(e.target.checked)}
+                                className="rounded text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+                              />
+                              Gift Wrapping Available
+                            </Label>
+                            {editIsGiftWrapAvailable && (
+                              <span className="text-[10px] font-medium text-emerald-600">Active Option</span>
+                            )}
+                          </div>
+                          {editIsGiftWrapAvailable && (
+                            <div className="space-y-1 pt-1">
+                              <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Gift Wrap Charge (₹)</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={editGiftWrapCharge}
+                                onChange={(e) => setEditGiftWrapCharge(e.target.value)}
+                                className="h-8 text-xs font-mono rounded-md border-border/50"
+                              />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Tax & HSN Settings */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Tax Type</Label>
+                            <select
+                              value={editTaxType}
+                              onChange={(e) => setEditTaxType(e.target.value)}
+                              className="w-full h-9 rounded-lg border border-border/50 bg-background px-2.5 text-xs outline-none focus:border-primary cursor-pointer"
+                            >
+                              <option value="GST">GST</option>
+                              <option value="IGST">IGST</option>
+                              <option value="VAT">VAT</option>
+                              <option value="EXCLUSIVE">Exclusive</option>
+                              <option value="INCLUSIVE">Inclusive</option>
+                              <option value="NONE">Tax Exempt (None)</option>
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Tax Rate (%)</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={editTaxPercent}
+                              onChange={(e) => setEditTaxPercent(e.target.value)}
+                              placeholder="e.g. 18"
+                              className="h-9 rounded-lg border-border/50 bg-background text-xs focus:border-primary"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">HSN Code</Label>
+                          <Input
+                            value={editHsnCode}
+                            onChange={(e) => setEditHsnCode(e.target.value)}
+                            placeholder="e.g. 6204"
+                            className="h-9 rounded-lg border-border/50 bg-background font-mono text-xs focus:border-primary"
+                          />
+                        </div>
+
+                        {/* Storefront Badges */}
+                        <div className="space-y-1.5 pt-1">
+                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Storefront Badges</Label>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <label className="flex items-center gap-1.5 p-2 rounded-lg border border-border/40 bg-background cursor-pointer">
+                              <input type="checkbox" checked={editIsFeatured} onChange={e => setEditIsFeatured(e.target.checked)} className="rounded text-purple-600" />
+                              <span className="font-semibold text-purple-600">Featured</span>
+                            </label>
+                            <label className="flex items-center gap-1.5 p-2 rounded-lg border border-border/40 bg-background cursor-pointer">
+                              <input type="checkbox" checked={editIsTrending} onChange={e => setEditIsTrending(e.target.checked)} className="rounded text-cyan-600" />
+                              <span className="font-semibold text-cyan-600">Trending</span>
+                            </label>
+                            <label className="flex items-center gap-1.5 p-2 rounded-lg border border-border/40 bg-background cursor-pointer">
+                              <input type="checkbox" checked={editIsNewArrival} onChange={e => setEditIsNewArrival(e.target.checked)} className="rounded text-blue-600" />
+                              <span className="font-semibold text-blue-600">New Arrival</span>
+                            </label>
+                            <label className="flex items-center gap-1.5 p-2 rounded-lg border border-border/40 bg-background cursor-pointer">
+                              <input type="checkbox" checked={editIsBestSeller} onChange={e => setEditIsBestSeller(e.target.checked)} className="rounded text-emerald-600" />
+                              <span className="font-semibold text-emerald-600">Best Seller</span>
+                            </label>
+                          </div>
+                        </div>
+
                       </div>
                     ) : (
                       <>
                         <h2 className="text-xl font-bold text-foreground">{selectedProduct.name}</h2>
-                        <p className="text-xs text-muted-foreground mt-0.5 font-light">Brand: {selectedProduct.brand}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 font-light">Brand: {selectedProduct.brand} | SKU: {selectedProduct.sku}</p>
                       </>
                     )}
                   </div>
