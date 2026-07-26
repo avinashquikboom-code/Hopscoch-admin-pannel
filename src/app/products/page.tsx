@@ -502,7 +502,7 @@ export default function ProductsPage() {
       setShippingType('free');
       setImageFiles([]);
       setSubCategories([]);
-      setFormData({ name: '', sku: '', price: '', shippingCharge: '0.00', stock: '', category: categories[0]?.name || '', subCategory: '', brand: brands[0]?.name || '', colors: [], sizes: [], description: '', status: 'PUBLISHED', taxType: 'GST', taxPercent: '', selectedTaxRuleId: '' });
+      setFormData({ name: '', sku: '', price: '', shippingCharge: '0.00', isGiftWrapAvailable: true, giftWrapCharge: '0.00', stock: '', category: categories[0]?.name || '', subCategory: '', brand: brands[0]?.name || '', colors: [], sizes: [], description: '', status: 'PUBLISHED', taxType: 'GST', taxPercent: '', selectedTaxRuleId: '' });
       
       fetchProducts();
       fetchCategories();
