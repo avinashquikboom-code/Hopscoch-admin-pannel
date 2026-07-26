@@ -61,12 +61,27 @@ function normalizeInventory(raw: any) {
   const category = product?.category;
   const warehouse = raw.warehouse;
 
+  // Build a display name that includes variant attributes so multiple variants
+  // of the same product are clearly distinct (not "duplicate") in the table.
+  const productName = raw.name || raw.productName || product?.name || variant?.name || 'Item';
+  const color = variant?.color;
+  const size = variant?.size;
+  const variantParts = [
+    color && color !== 'Default' ? color : null,
+    size && size !== 'One Size' ? size : null,
+  ].filter(Boolean) as string[];
+  const displayName = variantParts.length > 0
+    ? `${productName} · ${variantParts.join(' / ')}`
+    : productName;
+
   return {
     id: raw.id || raw._id || String(Math.random()),
     variantId: raw.variantId || variant?.id,
     warehouseId: raw.warehouseId || warehouse?.id,
     sku: raw.sku || variant?.sku || `INV-${String(raw.id || '').slice(0, 6) || '000'}`,
-    name: raw.name || raw.productName || product?.name || variant?.name || 'Item',
+    name: displayName,
+    color: color || null,
+    size: size || null,
     category: raw.category || category?.name || 'General',
     stock: Number(raw.availableStock ?? raw.stock ?? raw.quantity ?? raw.quantityOnHand ?? 0),
     minStock: Number(raw.minimumStock ?? raw.minStock ?? raw.reorderPoint ?? raw.threshold ?? 5),

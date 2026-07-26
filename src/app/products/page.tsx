@@ -155,6 +155,7 @@ export default function ProductsPage() {
   const [editPrice, setEditPrice] = useState('');
   const [editStock, setEditStock] = useState('');
   const [editShippingCharge, setEditShippingCharge] = useState('');
+  const [editShippingType, setEditShippingType] = useState<'free' | 'paid'>('free');
   const [editIsGiftWrapAvailable, setEditIsGiftWrapAvailable] = useState(true);
   const [editGiftWrapCharge, setEditGiftWrapCharge] = useState('0.00');
   const [editBrand, setEditBrand] = useState('');
@@ -180,6 +181,7 @@ export default function ProductsPage() {
     setEditPrice(String(product.price ?? 0));
     setEditStock(String(product.stock ?? 0));
     setEditShippingCharge(String(product.shippingCharge ?? 0));
+    setEditShippingType(Number(product.shippingCharge ?? 0) > 0 ? 'paid' : 'free');
     setEditIsGiftWrapAvailable(product.isGiftWrapAvailable !== false);
     setEditGiftWrapCharge(String(product.giftWrapCharge ?? 0));
     setEditBrand(product.brand || '');
@@ -209,7 +211,9 @@ export default function ProductsPage() {
             setEditSku(raw.sku || (raw.variants && raw.variants[0]?.sku) || '');
             setEditPrice(String(raw.basePrice ?? raw.price ?? 0));
             setEditStock(String(raw.stock ?? (raw.variants && raw.variants[0]?.stock) ?? 0));
-            setEditShippingCharge(String(raw.shippingCharge ?? raw.shipping_charge ?? 0));
+            const rawShipCharge = raw.shippingCharge ?? raw.shipping_charge ?? 0;
+            setEditShippingCharge(String(rawShipCharge));
+            setEditShippingType(Number(rawShipCharge) > 0 ? 'paid' : 'free');
             setEditIsGiftWrapAvailable(raw.isGiftWrapAvailable ?? raw.is_gift_wrap_available ?? true);
             const catName = raw.categoryName || raw.category?.parent?.name || raw.category?.name || raw.category || '';
             const subCatName = raw.subCategory || raw.subCategoryName || (raw.category?.parent ? raw.category?.name : '') || '';
@@ -469,8 +473,8 @@ export default function ProductsPage() {
   const fetchProducts = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      console.log('📌 [fetchProducts] GET /api/admin/products');
-      const res = await fetch(`${API_BASE}/api/admin/products`, { headers: authHeaders() });
+      console.log('📌 [fetchProducts] GET /api/admin/products?limit=1000');
+      const res = await fetch(`${API_BASE}/api/admin/products?limit=1000`, { headers: authHeaders() });
       const json = await res.json();
       console.log('📥 [fetchProducts] Server Response:', res.status, json);
       if (!res.ok) throw new Error(json.message || 'Failed to load products');
@@ -2004,7 +2008,19 @@ export default function ProductsPage() {
                       {/* Brand */}
                       <div className="space-y-1">
                         <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Brand</Label>
-                        <Input value={editBrand} onChange={e => setEditBrand(e.target.value)} placeholder="Brand Name" className="h-9 rounded-lg border-border/50 bg-background text-xs focus:border-primary" />
+                        <select
+                          value={editBrand}
+                          onChange={(e) => setEditBrand(e.target.value)}
+                          className="w-full h-9 rounded-lg border border-border/50 bg-background px-2.5 text-xs outline-none focus:border-primary cursor-pointer"
+                        >
+                          <option value="">Select Brand</option>
+                          {brands.map((b: any) => (
+                            <option key={b.id} value={b.name}>{b.name}</option>
+                          ))}
+                          {editBrand && !brands.some((b: any) => b.name === editBrand) && (
+                            <option value={editBrand}>{editBrand} (current)</option>
+                          )}
+                        </select>
                       </div>
 
                       {/* Demographics: Gender & Age Group */}
@@ -2037,8 +2053,8 @@ export default function ProductsPage() {
                         </div>
                       </div>
 
-                      {/* Pricing, Stock & Shipping */}
-                      <div className="grid grid-cols-3 gap-3">
+                      {/* Pricing & Stock */}
+                      <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
                           <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Price (₹)</Label>
                           <Input type="number" step="0.01" value={editPrice} onChange={e => setEditPrice(e.target.value)} className="h-9 rounded-lg border-border/50 bg-background font-mono text-xs focus:border-primary" />
@@ -2047,10 +2063,58 @@ export default function ProductsPage() {
                           <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Stock Qty</Label>
                           <Input type="number" value={editStock} onChange={e => setEditStock(e.target.value)} className="h-9 rounded-lg border-border/50 bg-background font-mono text-xs focus:border-primary" />
                         </div>
-                        <div className="space-y-1">
-                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Shipping (₹)</Label>
-                          <Input type="number" step="0.01" value={editShippingCharge} onChange={e => setEditShippingCharge(e.target.value)} className="h-9 rounded-lg border-border/50 bg-background font-mono text-xs focus:border-primary" />
+                      </div>
+
+                      {/* Shipping Configuration */}
+                      <div className="p-3 rounded-xl border border-border/40 bg-muted/10 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">🚚 Shipping</Label>
+                          <span className="text-xs font-bold">
+                            {editShippingType === 'free' ? (
+                              <span className="text-emerald-600 dark:text-emerald-400">Free Delivery</span>
+                            ) : (
+                              <span className="text-primary">₹{editShippingCharge || '0.00'}</span>
+                            )}
+                          </span>
                         </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => { setEditShippingType('free'); setEditShippingCharge('0'); }}
+                            className={`h-9 rounded-lg border text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                              editShippingType === 'free'
+                                ? 'border-emerald-500/60 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-sm ring-1 ring-emerald-500/30'
+                                : 'border-border/50 text-muted-foreground hover:border-border/80 bg-background'
+                            }`}
+                          >
+                            <span>🎁</span> Free Shipping
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setEditShippingType('paid'); if (!editShippingCharge || editShippingCharge === '0') setEditShippingCharge(''); }}
+                            className={`h-9 rounded-lg border text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                              editShippingType === 'paid'
+                                ? 'border-primary/60 bg-primary/10 text-primary shadow-sm ring-1 ring-primary/30'
+                                : 'border-border/50 text-muted-foreground hover:border-border/80 bg-background'
+                            }`}
+                          >
+                            <span>💳</span> Paid Shipping
+                          </button>
+                        </div>
+                        {editShippingType === 'paid' && (
+                          <div className="space-y-1 pt-1">
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Shipping Charge (₹)</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={editShippingCharge}
+                              onChange={e => setEditShippingCharge(e.target.value)}
+                              placeholder="e.g. 50.00"
+                              className="h-9 rounded-lg border-border/50 bg-background font-mono text-xs focus:border-primary"
+                            />
+                          </div>
+                        )}
                       </div>
 
                       {/* Gift Wrap Settings */}
