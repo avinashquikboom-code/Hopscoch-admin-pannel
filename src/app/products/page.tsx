@@ -1851,18 +1851,18 @@ export default function ProductsPage() {
           </SheetContent>
         </Sheet>
 
-        {/* Quick View Product Details Drawer */}
+        {/* Quick View & Edit Product Details Drawer */}
         <Sheet open={selectedProduct !== null} onOpenChange={(open) => { if (!open) { setSelectedProduct(null); setIsEditing(false); } }}>
           <SheetTrigger nativeButton={false} render={<span />} />
           <SheetContent side="right" className="w-full sm:max-w-xl p-0 overflow-hidden flex flex-col h-full bg-card border-l border-border/30 backdrop-blur-xl">
             {selectedProduct && (
               <>
-                {/* Header */}
-                <div className="p-6 border-b border-border/20 flex flex-col gap-3">
+                {/* Header (Fixed Top Bar) */}
+                <div className="p-6 border-b border-border/20 flex flex-col gap-3 flex-shrink-0 bg-muted/10">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
                       <span className="font-mono font-black text-sm bg-muted/60 border border-border/40 px-3 py-1 rounded-lg select-all">
-                        {selectedProduct.sku}
+                        {isEditing ? editSku || selectedProduct.sku : selectedProduct.sku}
                       </span>
                       <button
                         type="button"
@@ -1881,25 +1881,19 @@ export default function ProductsPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Button 
-                        variant="outline" 
-                        size="icon" 
-                        className={`h-9 w-9 rounded-lg transition-colors ${isEditing ? 'text-primary border-primary/40 bg-primary/5' : ''}`} 
+                        variant={isEditing ? "default" : "outline"}
+                        size="sm" 
+                        className={`h-9 px-3 text-xs font-bold gap-1.5 rounded-lg transition-colors cursor-pointer ${isEditing ? 'bg-primary text-white hover:bg-primary-dark' : ''}`} 
                         onClick={() => {
                           if (isEditing) {
                             handleSaveProduct();
                           } else {
-                            setEditName(selectedProduct.name);
-                            setEditPrice(String(selectedProduct.price));
-                            setEditShippingCharge(String(selectedProduct.shippingCharge || 0));
-                            setEditBrand(selectedProduct.brand);
-                            setEditDesc(selectedProduct.description);
-                            setEditStatus(selectedProduct.status?.toUpperCase() || 'PUBLISHED');
-                            setIsEditing(true);
+                            startEditingProduct(selectedProduct);
                           }
                         }}
                         title={isEditing ? "Save Product Details" : "Edit Product Details"}
                       >
-                        {isEditing ? <Save className="h-4.5 w-4.5" /> : <Edit className="h-4.5 w-4.5" />}
+                        {isEditing ? <><Save className="h-4 w-4" /> Save</> : <><Edit className="h-4 w-4" /> Edit</>}
                       </Button>
                       <Button 
                         variant="outline" 
@@ -1923,185 +1917,9 @@ export default function ProductsPage() {
                   </div>
                   <div>
                     {isEditing ? (
-                      <div className="space-y-4 mt-2 p-4 rounded-xl border border-primary/20 bg-primary/5">
-                        <div className="flex items-center justify-between border-b border-primary/20 pb-2">
-                          <span className="text-xs font-extrabold uppercase tracking-wider text-primary">Editing Product Details</span>
-                          <Button size="sm" onClick={handleSaveProduct} className="h-7 text-xs bg-primary text-white rounded-md flex items-center gap-1">
-                            <Save className="h-3.5 w-3.5" /> Save Changes
-                          </Button>
-                        </div>
-                        
-                        {/* Name & SKU */}
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Product Name</Label>
-                            <Input value={editName} onChange={e => setEditName(e.target.value)} className="h-9 rounded-lg border-border/50 bg-background focus:border-primary text-xs" />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">SKU</Label>
-                            <Input value={editSku} onChange={e => setEditSku(e.target.value)} className="h-9 rounded-lg border-border/50 bg-background font-mono text-xs focus:border-primary" />
-                          </div>
-                        </div>
-
-                        {/* Category & SubCategory */}
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Category</Label>
-                            <select
-                              value={editCategory}
-                              onChange={(e) => setEditCategory(e.target.value)}
-                              className="w-full h-9 rounded-lg border border-border/50 bg-background px-2.5 text-xs outline-none focus:border-primary cursor-pointer"
-                            >
-                              <option value="">Select Category</option>
-                              {categories.map((c: any) => (
-                                <option key={c.id} value={c.name}>{c.name}</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Sub-Category</Label>
-                            <select
-                              value={editSubCategory}
-                              onChange={(e) => setEditSubCategory(e.target.value)}
-                              className="w-full h-9 rounded-lg border border-border/50 bg-background px-2.5 text-xs outline-none focus:border-primary cursor-pointer"
-                            >
-                              <option value="">Select Sub-Category</option>
-                              {displayedSubCategories.map((sub: any) => (
-                                <option key={sub.id} value={sub.name}>{sub.name}</option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-
-                        {/* Brand */}
-                        <div className="space-y-1">
-                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Brand</Label>
-                          <Input value={editBrand} onChange={e => setEditBrand(e.target.value)} placeholder="Brand Name" className="h-9 rounded-lg border-border/50 bg-background text-xs focus:border-primary" />
-                        </div>
-
-                        {/* Demographics: Gender & Age Group */}
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Gender</Label>
-                            <select
-                              value={editGender}
-                              onChange={(e) => setEditGender(e.target.value)}
-                              className="w-full h-9 rounded-lg border border-border/50 bg-background px-2.5 text-xs outline-none focus:border-primary cursor-pointer"
-                            >
-                              <option value="UNISEX">Unisex</option>
-                              <option value="MEN">Men</option>
-                              <option value="WOMEN">Women</option>
-                              <option value="KIDS">Kids</option>
-                            </select>
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Age Group</Label>
-                            <select
-                              value={editAgeGroup}
-                              onChange={(e) => setEditAgeGroup(e.target.value)}
-                              className="w-full h-9 rounded-lg border border-border/50 bg-background px-2.5 text-xs outline-none focus:border-primary cursor-pointer"
-                            >
-                              <option value="ADULT">Adult</option>
-                              <option value="TEEN">Teen</option>
-                              <option value="KIDS">Kids</option>
-                              <option value="INFANT">Infant</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        {/* Gift Wrap Settings */}
-                        <div className="p-3 rounded-lg border border-border/40 bg-background space-y-2">
-                          <div className="flex items-center justify-between">
-                            <Label className="text-xs font-bold cursor-pointer flex items-center gap-1.5">
-                              <input
-                                type="checkbox"
-                                checked={editIsGiftWrapAvailable}
-                                onChange={(e) => setEditIsGiftWrapAvailable(e.target.checked)}
-                                className="rounded text-primary focus:ring-primary h-4 w-4 cursor-pointer"
-                              />
-                              Gift Wrapping Available
-                            </Label>
-                            {editIsGiftWrapAvailable && (
-                              <span className="text-[10px] font-medium text-emerald-600">Active Option</span>
-                            )}
-                          </div>
-                          {editIsGiftWrapAvailable && (
-                            <div className="space-y-1 pt-1">
-                              <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Gift Wrap Charge (₹)</Label>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                value={editGiftWrapCharge}
-                                onChange={(e) => setEditGiftWrapCharge(e.target.value)}
-                                className="h-8 text-xs font-mono rounded-md border-border/50"
-                              />
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Tax & HSN Settings */}
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Tax Type</Label>
-                            <select
-                              value={editTaxType}
-                              onChange={(e) => setEditTaxType(e.target.value)}
-                              className="w-full h-9 rounded-lg border border-border/50 bg-background px-2.5 text-xs outline-none focus:border-primary cursor-pointer"
-                            >
-                              <option value="GST">GST</option>
-                              <option value="IGST">IGST</option>
-                              <option value="VAT">VAT</option>
-                              <option value="EXCLUSIVE">Exclusive</option>
-                              <option value="INCLUSIVE">Inclusive</option>
-                              <option value="NONE">Tax Exempt (None)</option>
-                            </select>
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Tax Rate (%)</Label>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              value={editTaxPercent}
-                              onChange={(e) => setEditTaxPercent(e.target.value)}
-                              placeholder="e.g. 18"
-                              className="h-9 rounded-lg border-border/50 bg-background text-xs focus:border-primary"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="space-y-1">
-                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">HSN Code</Label>
-                          <Input
-                            value={editHsnCode}
-                            onChange={(e) => setEditHsnCode(e.target.value)}
-                            placeholder="e.g. 6204"
-                            className="h-9 rounded-lg border-border/50 bg-background font-mono text-xs focus:border-primary"
-                          />
-                        </div>
-
-                        {/* Storefront Badges */}
-                        <div className="space-y-1.5 pt-1">
-                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Storefront Badges</Label>
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            <label className="flex items-center gap-1.5 p-2 rounded-lg border border-border/40 bg-background cursor-pointer">
-                              <input type="checkbox" checked={editIsFeatured} onChange={e => setEditIsFeatured(e.target.checked)} className="rounded text-purple-600" />
-                              <span className="font-semibold text-purple-600">Featured</span>
-                            </label>
-                            <label className="flex items-center gap-1.5 p-2 rounded-lg border border-border/40 bg-background cursor-pointer">
-                              <input type="checkbox" checked={editIsTrending} onChange={e => setEditIsTrending(e.target.checked)} className="rounded text-cyan-600" />
-                              <span className="font-semibold text-cyan-600">Trending</span>
-                            </label>
-                            <label className="flex items-center gap-1.5 p-2 rounded-lg border border-border/40 bg-background cursor-pointer">
-                              <input type="checkbox" checked={editIsNewArrival} onChange={e => setEditIsNewArrival(e.target.checked)} className="rounded text-blue-600" />
-                              <span className="font-semibold text-blue-600">New Arrival</span>
-                            </label>
-                            <label className="flex items-center gap-1.5 p-2 rounded-lg border border-border/40 bg-background cursor-pointer">
-                              <input type="checkbox" checked={editIsBestSeller} onChange={e => setEditIsBestSeller(e.target.checked)} className="rounded text-emerald-600" />
-                              <span className="font-semibold text-emerald-600">Best Seller</span>
-                            </label>
-                          </div>
-                        </div>
-
+                      <div className="flex items-center justify-between">
+                        <h2 className="text-lg font-extrabold text-primary uppercase tracking-wider">Editing Product</h2>
+                        <span className="text-xs text-muted-foreground font-medium">Scroll down to modify all fields</span>
                       </div>
                     ) : (
                       <>
@@ -2112,11 +1930,11 @@ export default function ProductsPage() {
                   </div>
                 </div>
 
-                {/* Content */}
-                <ScrollArea className="flex-1 p-6 space-y-6 h-full overflow-y-auto">
+                {/* Content (Scrollable Container) */}
+                <ScrollArea className="flex-1 p-6 space-y-6 overflow-y-auto">
                   {/* Visual Product card image/placeholder */}
                   {selectedProduct.images && selectedProduct.images.length > 0 ? (
-                    <div className="w-full h-44 rounded-xl border border-border/30 overflow-hidden relative group">
+                    <div className="w-full h-44 rounded-xl border border-border/30 overflow-hidden relative group flex-shrink-0">
                       <img 
                         src={getImageUrl(selectedProduct.images[0]?.url || selectedProduct.images[0])} 
                         alt={selectedProduct.name} 
@@ -2127,7 +1945,7 @@ export default function ProductsPage() {
                       </span>
                     </div>
                   ) : (
-                    <div className={`w-full h-44 rounded-xl bg-gradient-to-tr ${getProductGradient(selectedProduct.name)} flex items-center justify-center shadow-inner relative overflow-hidden group`}>
+                    <div className={`w-full h-44 rounded-xl bg-gradient-to-tr ${getProductGradient(selectedProduct.name)} flex items-center justify-center shadow-inner relative overflow-hidden group flex-shrink-0`}>
                       <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                       <Package className="h-16 w-16 opacity-30 group-hover:scale-110 transition-transform duration-300" />
                       <span className="absolute bottom-3 right-3 text-xs font-bold bg-background/80 px-2 py-0.5 rounded-md backdrop-blur border border-border/20">
@@ -2136,46 +1954,195 @@ export default function ProductsPage() {
                     </div>
                   )}
 
-                  {isEditing && (
-                    <div className="space-y-4 mt-4">
-                      <Label htmlFor="edit-images" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Upload New Images</Label>
-                      <div className="space-y-3">
-                        <Input
-                          id="edit-images"
-                          type="file"
-                          multiple
-                          accept="image/*"
-                          onChange={(e) => {
-                            if (e.target.files) {
-                              setEditImageFiles(Array.from(e.target.files));
-                            }
-                          }}
-                          className="h-11 rounded-lg border-border/50 focus:border-primary pt-2 cursor-pointer"
-                        />
-                        {editImageFiles.length > 0 && (
-                          <div className="flex flex-wrap gap-2 pt-1">
-                            {editImageFiles.map((file, idx) => (
-                              <div key={idx} className="w-12 h-12 rounded-lg border border-border/40 overflow-hidden relative group flex-shrink-0">
-                                <img
-                                  src={URL.createObjectURL(file)}
-                                  alt={`edit-preview-${idx}`}
-                                  className="w-full h-full object-cover"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setEditImageFiles(prev => prev.filter((_, i) => i !== idx));
-                                  }}
-                                  className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
-                                >
-                                  <X className="h-3.5 w-3.5" />
-                                </button>
-                              </div>
+                  {isEditing ? (
+                    <div className="space-y-5">
+                      {/* Name & SKU */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Product Name</Label>
+                          <Input value={editName} onChange={e => setEditName(e.target.value)} className="h-9 rounded-lg border-border/50 bg-background focus:border-primary text-xs" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">SKU</Label>
+                          <Input value={editSku} onChange={e => setEditSku(e.target.value)} className="h-9 rounded-lg border-border/50 bg-background font-mono text-xs focus:border-primary" />
+                        </div>
+                      </div>
+
+                      {/* Category & SubCategory */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Category</Label>
+                          <select
+                            value={editCategory}
+                            onChange={(e) => setEditCategory(e.target.value)}
+                            className="w-full h-9 rounded-lg border border-border/50 bg-background px-2.5 text-xs outline-none focus:border-primary cursor-pointer"
+                          >
+                            <option value="">Select Category</option>
+                            {categories.map((c: any) => (
+                              <option key={c.id} value={c.name}>{c.name}</option>
                             ))}
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Sub-Category</Label>
+                          <select
+                            value={editSubCategory}
+                            onChange={(e) => setEditSubCategory(e.target.value)}
+                            className="w-full h-9 rounded-lg border border-border/50 bg-background px-2.5 text-xs outline-none focus:border-primary cursor-pointer"
+                          >
+                            <option value="">Select Sub-Category</option>
+                            {displayedSubCategories.map((sub: any) => (
+                              <option key={sub.id} value={sub.name}>{sub.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Brand */}
+                      <div className="space-y-1">
+                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Brand</Label>
+                        <Input value={editBrand} onChange={e => setEditBrand(e.target.value)} placeholder="Brand Name" className="h-9 rounded-lg border-border/50 bg-background text-xs focus:border-primary" />
+                      </div>
+
+                      {/* Demographics: Gender & Age Group */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Gender</Label>
+                          <select
+                            value={editGender}
+                            onChange={(e) => setEditGender(e.target.value)}
+                            className="w-full h-9 rounded-lg border border-border/50 bg-background px-2.5 text-xs outline-none focus:border-primary cursor-pointer"
+                          >
+                            <option value="UNISEX">Unisex</option>
+                            <option value="MEN">Men</option>
+                            <option value="WOMEN">Women</option>
+                            <option value="KIDS">Kids</option>
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Age Group</Label>
+                          <select
+                            value={editAgeGroup}
+                            onChange={(e) => setEditAgeGroup(e.target.value)}
+                            className="w-full h-9 rounded-lg border border-border/50 bg-background px-2.5 text-xs outline-none focus:border-primary cursor-pointer"
+                          >
+                            <option value="ADULT">Adult</option>
+                            <option value="TEEN">Teen</option>
+                            <option value="KIDS">Kids</option>
+                            <option value="INFANT">Infant</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Pricing, Stock & Shipping */}
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Price (₹)</Label>
+                          <Input type="number" step="0.01" value={editPrice} onChange={e => setEditPrice(e.target.value)} className="h-9 rounded-lg border-border/50 bg-background font-mono text-xs focus:border-primary" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Stock Qty</Label>
+                          <Input type="number" value={editStock} onChange={e => setEditStock(e.target.value)} className="h-9 rounded-lg border-border/50 bg-background font-mono text-xs focus:border-primary" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Shipping (₹)</Label>
+                          <Input type="number" step="0.01" value={editShippingCharge} onChange={e => setEditShippingCharge(e.target.value)} className="h-9 rounded-lg border-border/50 bg-background font-mono text-xs focus:border-primary" />
+                        </div>
+                      </div>
+
+                      {/* Gift Wrap Settings */}
+                      <div className="p-3 rounded-xl border border-border/40 bg-muted/10 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-bold cursor-pointer flex items-center gap-1.5">
+                            <input
+                              type="checkbox"
+                              checked={editIsGiftWrapAvailable}
+                              onChange={(e) => setEditIsGiftWrapAvailable(e.target.checked)}
+                              className="rounded text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+                            />
+                            Gift Wrapping Available
+                          </Label>
+                          {editIsGiftWrapAvailable && (
+                            <span className="text-[10px] font-bold text-emerald-600">Enabled</span>
+                          )}
+                        </div>
+                        {editIsGiftWrapAvailable && (
+                          <div className="space-y-1 pt-1">
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Gift Wrap Fee (₹)</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={editGiftWrapCharge}
+                              onChange={(e) => setEditGiftWrapCharge(e.target.value)}
+                              className="h-8 text-xs font-mono rounded-md border-border/50 bg-background"
+                            />
                           </div>
                         )}
                       </div>
 
+                      {/* Tax & HSN Settings */}
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Tax Type</Label>
+                          <select
+                            value={editTaxType}
+                            onChange={(e) => setEditTaxType(e.target.value)}
+                            className="w-full h-9 rounded-lg border border-border/50 bg-background px-2.5 text-xs outline-none focus:border-primary cursor-pointer"
+                          >
+                            <option value="GST">GST</option>
+                            <option value="IGST">IGST</option>
+                            <option value="VAT">VAT</option>
+                            <option value="EXCLUSIVE">Exclusive</option>
+                            <option value="INCLUSIVE">Inclusive</option>
+                            <option value="NONE">Exempt</option>
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Tax Rate (%)</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={editTaxPercent}
+                            onChange={(e) => setEditTaxPercent(e.target.value)}
+                            placeholder="18"
+                            className="h-9 rounded-lg border-border/50 bg-background text-xs focus:border-primary"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">HSN Code</Label>
+                          <Input
+                            value={editHsnCode}
+                            onChange={(e) => setEditHsnCode(e.target.value)}
+                            placeholder="6204"
+                            className="h-9 rounded-lg border-border/50 bg-background font-mono text-xs focus:border-primary"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Storefront Badges */}
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Storefront Highlights</Label>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <label className="flex items-center gap-1.5 p-2.5 rounded-lg border border-border/40 bg-background cursor-pointer">
+                            <input type="checkbox" checked={editIsFeatured} onChange={e => setEditIsFeatured(e.target.checked)} className="rounded text-purple-600" />
+                            <span className="font-semibold text-purple-600">Featured</span>
+                          </label>
+                          <label className="flex items-center gap-1.5 p-2.5 rounded-lg border border-border/40 bg-background cursor-pointer">
+                            <input type="checkbox" checked={editIsTrending} onChange={e => setEditIsTrending(e.target.checked)} className="rounded text-cyan-600" />
+                            <span className="font-semibold text-cyan-600">Trending</span>
+                          </label>
+                          <label className="flex items-center gap-1.5 p-2.5 rounded-lg border border-border/40 bg-background cursor-pointer">
+                            <input type="checkbox" checked={editIsNewArrival} onChange={e => setEditIsNewArrival(e.target.checked)} className="rounded text-blue-600" />
+                            <span className="font-semibold text-blue-600">New Arrival</span>
+                          </label>
+                          <label className="flex items-center gap-1.5 p-2.5 rounded-lg border border-border/40 bg-background cursor-pointer">
+                            <input type="checkbox" checked={editIsBestSeller} onChange={e => setEditIsBestSeller(e.target.checked)} className="rounded text-emerald-600" />
+                            <span className="font-semibold text-emerald-600">Best Seller</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Publishing Status */}
                       <div className="space-y-1.5">
                         <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Publishing Status</Label>
                         <div className="grid grid-cols-3 gap-2">
@@ -2199,62 +2166,164 @@ export default function ProductsPage() {
                           ))}
                         </div>
                       </div>
+
+                      {/* Description */}
+                      <div className="space-y-1">
+                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Catalog Description</Label>
+                        <textarea
+                          rows={4}
+                          value={editDesc}
+                          onChange={(e) => setEditDesc(e.target.value)}
+                          className="w-full p-3 rounded-lg border border-border/50 bg-background text-xs focus:border-primary outline-none resize-none"
+                        />
+                      </div>
+
+                      {/* Upload New Images */}
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-images" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Upload New Images</Label>
+                        <Input
+                          id="edit-images"
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          onChange={(e) => {
+                            if (e.target.files) {
+                              setEditImageFiles(Array.from(e.target.files));
+                            }
+                          }}
+                          className="h-10 rounded-lg border-border/50 focus:border-primary pt-1.5 text-xs cursor-pointer"
+                        />
+                        {editImageFiles.length > 0 && (
+                          <div className="flex flex-wrap gap-2 pt-1">
+                            {editImageFiles.map((file, idx) => (
+                              <div key={idx} className="w-12 h-12 rounded-lg border border-border/40 overflow-hidden relative group flex-shrink-0">
+                                <img
+                                  src={URL.createObjectURL(file)}
+                                  alt={`edit-preview-${idx}`}
+                                  className="w-full h-full object-cover"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setEditImageFiles(prev => prev.filter((_, i) => i !== idx))}
+                                  className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="pt-3">
+                        <Button onClick={handleSaveProduct} className="w-full h-10 bg-primary hover:bg-primary-dark text-white text-xs font-bold rounded-lg flex items-center justify-center gap-2 cursor-pointer shadow-md">
+                          <Save className="h-4 w-4" /> Save All Changes
+                        </Button>
+                      </div>
+
                     </div>
-                  )}
+                  ) : (
+                    <>
+                      {/* Read-Only Product Overview Grid */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <Card className="border-border/30 bg-muted/10 shadow-sm rounded-lg">
+                          <CardContent className="p-3">
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                              <DollarSign className="h-3.5 w-3.5 text-primary" /> Listing Price
+                            </span>
+                            <h4 className="text-xl font-black text-foreground mt-1">{fmtPrice(selectedProduct.price)}</h4>
+                          </CardContent>
+                        </Card>
 
-                  <div className="grid grid-cols-4 gap-3">
-                    <Card className="border-border/30 bg-muted/10 shadow-sm rounded-lg">
-                      <CardContent className="p-3">
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
-                          <DollarSign className="h-3.5 w-3.5 text-primary" /> Listing Price
-                        </span>
-                        {isEditing ? (
-                          <Input type="number" step="0.01" value={editPrice} onChange={e => setEditPrice(e.target.value)} className="h-9 rounded-md border-border/50 mt-1.5 font-mono text-sm focus:border-primary" />
-                        ) : (
-                          <h4 className="text-xl font-black text-foreground mt-1.5">{fmtPrice(selectedProduct.price)}</h4>
-                        )}
-                      </CardContent>
-                    </Card>
+                        <Card className="border-border/30 bg-muted/10 shadow-sm rounded-lg">
+                          <CardContent className="p-3">
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                              🚚 Shipping Fee
+                            </span>
+                            <h4 className="text-xl font-black text-foreground mt-1">
+                              {Number(selectedProduct.shippingCharge || 0) > 0 ? fmtPrice(selectedProduct.shippingCharge) : 'Free'}
+                            </h4>
+                          </CardContent>
+                        </Card>
 
-                    <Card className="border-border/30 bg-muted/10 shadow-sm rounded-lg">
-                      <CardContent className="p-3">
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
-                          🚚 Shipping Fee
-                        </span>
-                        {isEditing ? (
-                          <Input type="number" step="0.01" value={editShippingCharge} onChange={e => setEditShippingCharge(e.target.value)} className="h-9 rounded-md border-border/50 mt-1.5 font-mono text-sm focus:border-primary" />
-                        ) : (
-                          <h4 className="text-xl font-black text-foreground mt-1.5">{fmtPrice(selectedProduct.shippingCharge || 0)}</h4>
-                        )}
-                      </CardContent>
-                    </Card>
+                        <Card className="border-border/30 bg-muted/10 shadow-sm rounded-lg">
+                          <CardContent className="p-3">
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                              🎁 Gift Wrap Fee
+                            </span>
+                            <h4 className="text-xl font-black text-foreground mt-1">
+                              {selectedProduct.isGiftWrapAvailable !== false
+                                ? (Number(selectedProduct.giftWrapCharge || 0) > 0 ? fmtPrice(selectedProduct.giftWrapCharge) : 'Free')
+                                : 'Disabled'}
+                            </h4>
+                          </CardContent>
+                        </Card>
 
-                    <Card className="border-border/30 bg-muted/10 shadow-sm rounded-lg">
-                      <CardContent className="p-3">
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
-                          🎁 Gift Wrap Fee
-                        </span>
-                        {isEditing ? (
-                          <Input type="number" step="0.01" value={editGiftWrapCharge} onChange={e => setEditGiftWrapCharge(e.target.value)} className="h-9 rounded-md border-border/50 mt-1.5 font-mono text-sm focus:border-primary" />
-                        ) : (
-                          <h4 className="text-xl font-black text-foreground mt-1.5">
-                            {selectedProduct.isGiftWrapAvailable !== false
-                              ? fmtPrice(selectedProduct.giftWrapCharge || 0)
-                              : 'N/A'}
-                          </h4>
-                        )}
-                      </CardContent>
-                    </Card>
+                        <Card className="border-border/30 bg-muted/10 shadow-sm rounded-lg">
+                          <CardContent className="p-3">
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                              <Package className="h-3.5 w-3.5 text-primary" /> Total Stock
+                            </span>
+                            <h4 className={`text-xl font-black mt-1 ${selectedProduct.stock < 20 ? 'text-amber-500' : 'text-foreground'}`}>
+                              {selectedProduct.stock} Units
+                            </h4>
+                          </CardContent>
+                        </Card>
+                      </div>
 
-                    <Card className="border-border/30 bg-muted/10 shadow-sm rounded-lg">
-                      <CardContent className="p-3">
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
-                          <Layers className="h-3.5 w-3.5 text-primary" /> Category
-                        </span>
-                        <h4 className="text-sm font-bold text-foreground mt-2 truncate">{selectedProduct.category}</h4>
-                      </CardContent>
-                    </Card>
-                  </div>
+                      {/* Storefront Badges */}
+                      {(selectedProduct.isFeatured || selectedProduct.isTrending || selectedProduct.isNewArrival || selectedProduct.isBestSeller) && (
+                        <div className="flex items-center gap-2 flex-wrap p-3 rounded-lg border border-border/30 bg-muted/5">
+                          <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Active Badges:</span>
+                          {selectedProduct.isFeatured && (
+                            <Badge variant="outline" className="text-xs font-bold uppercase tracking-wider text-purple-600 border-purple-500/30 bg-purple-500/10 px-2.5 py-0.5">Featured</Badge>
+                          )}
+                          {selectedProduct.isTrending && (
+                            <Badge variant="outline" className="text-xs font-bold uppercase tracking-wider text-cyan-600 border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5">Trending</Badge>
+                          )}
+                          {selectedProduct.isNewArrival && (
+                            <Badge variant="outline" className="text-xs font-bold uppercase tracking-wider text-blue-600 border-blue-500/30 bg-blue-500/10 px-2.5 py-0.5">New Arrival</Badge>
+                          )}
+                          {selectedProduct.isBestSeller && (
+                            <Badge variant="outline" className="text-xs font-bold uppercase tracking-wider text-emerald-600 border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5">Best Seller</Badge>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Taxonomy & Specifications Card */}
+                      <Card className="border-border/30 bg-muted/5 rounded-xl">
+                        <CardContent className="p-4 space-y-3">
+                          <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Specifications & Metadata</h3>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                            <div className="p-2.5 rounded-lg bg-background border border-border/30 space-y-0.5">
+                              <span className="text-[10px] font-semibold text-muted-foreground uppercase block">Category</span>
+                              <span className="font-bold text-foreground block truncate">{selectedProduct.category || 'General'}</span>
+                            </div>
+                            <div className="p-2.5 rounded-lg bg-background border border-border/30 space-y-0.5">
+                              <span className="text-[10px] font-semibold text-muted-foreground uppercase block">Sub-Category</span>
+                              <span className="font-bold text-foreground block truncate">{selectedProduct.subCategory || 'N/A'}</span>
+                            </div>
+                            <div className="p-2.5 rounded-lg bg-background border border-border/30 space-y-0.5">
+                              <span className="text-[10px] font-semibold text-muted-foreground uppercase block">Brand</span>
+                              <span className="font-bold text-foreground block truncate">{selectedProduct.brand || 'Unbranded'}</span>
+                            </div>
+                            <div className="p-2.5 rounded-lg bg-background border border-border/30 space-y-0.5">
+                              <span className="text-[10px] font-semibold text-muted-foreground uppercase block">Gender Target</span>
+                              <span className="font-bold text-foreground block uppercase">{selectedProduct.gender || 'UNISEX'}</span>
+                            </div>
+                            <div className="p-2.5 rounded-lg bg-background border border-border/30 space-y-0.5">
+                              <span className="text-[10px] font-semibold text-muted-foreground uppercase block">Age Group</span>
+                              <span className="font-bold text-foreground block uppercase">{selectedProduct.ageGroup || 'ADULT'}</span>
+                            </div>
+                            <div className="p-2.5 rounded-lg bg-background border border-border/30 space-y-0.5">
+                              <span className="text-[10px] font-semibold text-muted-foreground uppercase block">Tax & HSN</span>
+                              <span className="font-bold text-foreground block font-mono">
+                                {selectedProduct.taxType || 'GST'} {selectedProduct.taxPercent ? `${selectedProduct.taxPercent}%` : ''} {selectedProduct.hsnCode ? `(HSN: ${selectedProduct.hsnCode})` : ''}
+                              </span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
 
                   {/* Color & Size Options Section */}
                   {((selectedProduct.colors && selectedProduct.colors.length > 0) || (selectedProduct.sizes && selectedProduct.sizes.length > 0) || (selectedProduct.variants && selectedProduct.variants.length > 0)) && (
@@ -2442,11 +2511,13 @@ export default function ProductsPage() {
                       </p>
                     )}
                   </div>
-                </ScrollArea>
-              </>
-            )}
-          </SheetContent>
-        </Sheet>
+                </>
+              )}
+            </ScrollArea>
+          </>
+        )}
+      </SheetContent>
+    </Sheet>
       </div>
     </AdminLayout>
   );
