@@ -2081,41 +2081,82 @@ export default function ProductsPage() {
                       </div>
 
                       {/* Tax & HSN Settings */}
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="p-3.5 rounded-xl border border-border/40 bg-muted/10 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                            🏷️ Tax & GST Configuration
+                          </Label>
+                        </div>
+
                         <div className="space-y-1">
-                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Tax Type</Label>
+                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Select Saved Tax Rule</Label>
                           <select
-                            value={editTaxType}
-                            onChange={(e) => setEditTaxType(e.target.value)}
+                            value={editSelectedTaxRuleId}
+                            onChange={(e) => {
+                              const ruleId = e.target.value;
+                              if (ruleId === '__custom__' || ruleId === '') {
+                                setEditSelectedTaxRuleId('');
+                                setEditTaxType('GST');
+                                setEditTaxPercent('');
+                              } else if (ruleId === '__none__') {
+                                setEditSelectedTaxRuleId('__none__');
+                                setEditTaxType('NONE');
+                                setEditTaxPercent('0');
+                              } else {
+                                const rule = existingTaxRules.find((t: any) => String(t.id) === ruleId);
+                                setEditSelectedTaxRuleId(ruleId);
+                                setEditTaxType((rule?.taxType || rule?.type || 'GST').toUpperCase());
+                                setEditTaxPercent(rule ? String(Number(rule.rate ?? rule.taxPercent ?? 0)) : '');
+                              }
+                            }}
                             className="w-full h-9 rounded-lg border border-border/50 bg-background px-2.5 text-xs outline-none focus:border-primary cursor-pointer"
                           >
-                            <option value="GST">GST</option>
-                            <option value="IGST">IGST</option>
-                            <option value="VAT">VAT</option>
-                            <option value="EXCLUSIVE">Exclusive</option>
-                            <option value="INCLUSIVE">Inclusive</option>
-                            <option value="NONE">Exempt</option>
+                            <option value="">— Select Saved Tax Rule —</option>
+                            {existingTaxRules.map((tax: any) => (
+                              <option key={tax.id} value={String(tax.id)}>
+                                {tax.name} — {tax.taxType || tax.type || 'GST'} @ {Number(tax.rate)}%
+                              </option>
+                            ))}
+                            <option value="__none__">None / Exempt (0%)</option>
+                            <option value="__custom__">+ Custom Tax Rate...</option>
                           </select>
                         </div>
-                        <div className="space-y-1">
-                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Tax Rate (%)</Label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={editTaxPercent}
-                            onChange={(e) => setEditTaxPercent(e.target.value)}
-                            placeholder="18"
-                            className="h-9 rounded-lg border-border/50 bg-background text-xs focus:border-primary"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">HSN Code</Label>
-                          <Input
-                            value={editHsnCode}
-                            onChange={(e) => setEditHsnCode(e.target.value)}
-                            placeholder="6204"
-                            className="h-9 rounded-lg border-border/50 bg-background font-mono text-xs focus:border-primary"
-                          />
+
+                        <div className="grid grid-cols-3 gap-3 pt-1">
+                          <div className="space-y-1">
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Tax Type</Label>
+                            <select
+                              value={editTaxType}
+                              onChange={(e) => setEditTaxType(e.target.value)}
+                              disabled={Boolean(editSelectedTaxRuleId && editSelectedTaxRuleId !== '__custom__')}
+                              className="w-full h-9 rounded-lg border border-border/50 bg-background px-2.5 text-xs outline-none focus:border-primary cursor-pointer disabled:opacity-75"
+                            >
+                              {fetchedTaxTypes.map((t) => (
+                                <option key={t} value={t.toUpperCase()}>{t}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Tax Rate (%)</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={editTaxPercent}
+                              onChange={(e) => setEditTaxPercent(e.target.value)}
+                              disabled={Boolean(editSelectedTaxRuleId && editSelectedTaxRuleId !== '__custom__')}
+                              placeholder="0.00"
+                              className="h-9 rounded-lg border-border/50 bg-background text-xs focus:border-primary disabled:opacity-75 font-mono"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">HSN Code</Label>
+                            <Input
+                              value={editHsnCode}
+                              onChange={(e) => setEditHsnCode(e.target.value)}
+                              placeholder="6204"
+                              className="h-9 rounded-lg border-border/50 bg-background font-mono text-xs focus:border-primary"
+                            />
+                          </div>
                         </div>
                       </div>
 
@@ -2178,46 +2219,97 @@ export default function ProductsPage() {
                         />
                       </div>
 
-                      {/* Upload New Images */}
+                      {/* Product Images (Existing + Upload New) */}
                       <div className="space-y-2">
-                        <Label htmlFor="edit-images" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Upload New Images</Label>
-                        <Input
-                          id="edit-images"
-                          type="file"
-                          multiple
-                          accept="image/*"
-                          onChange={(e) => {
-                            if (e.target.files) {
-                              setEditImageFiles(Array.from(e.target.files));
-                            }
-                          }}
-                          className="h-10 rounded-lg border-border/50 focus:border-primary pt-1.5 text-xs cursor-pointer"
-                        />
-                        {editImageFiles.length > 0 && (
-                          <div className="flex flex-wrap gap-2 pt-1">
-                            {editImageFiles.map((file, idx) => (
-                              <div key={idx} className="w-12 h-12 rounded-lg border border-border/40 overflow-hidden relative group flex-shrink-0">
-                                <img
-                                  src={URL.createObjectURL(file)}
-                                  alt={`edit-preview-${idx}`}
-                                  className="w-full h-full object-cover"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => setEditImageFiles(prev => prev.filter((_, i) => i !== idx))}
-                                  className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
-                                >
-                                  <X className="h-3.5 w-3.5" />
-                                </button>
-                              </div>
-                            ))}
+                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Product Images</Label>
+                        
+                        {/* Existing Product Images list */}
+                        {selectedProduct.images && selectedProduct.images.length > 0 && (
+                          <div className="space-y-1">
+                            <span className="text-[10px] text-muted-foreground">Current Images:</span>
+                            <div className="flex flex-wrap gap-2">
+                              {selectedProduct.images.map((img: any, idx: number) => {
+                                const imgId = img.id;
+                                const imgUrl = getImageUrl(img.url || img);
+                                return (
+                                  <div key={imgId || idx} className="w-14 h-14 rounded-lg border border-border/40 overflow-hidden relative group flex-shrink-0">
+                                    <img src={imgUrl} alt={`existing-img-${idx}`} className="w-full h-full object-cover" />
+                                    {imgId && (
+                                      <button
+                                        type="button"
+                                        title="Delete image from product"
+                                        onClick={async () => {
+                                          try {
+                                            const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+                                            const res = await fetch(`${API_BASE}/api/admin/images/${imgId}`, {
+                                              method: 'DELETE',
+                                              headers: token ? { Authorization: `Bearer ${token}` } : {},
+                                            });
+                                            if (res.ok) {
+                                              toast.success('Image deleted');
+                                              const remaining = selectedProduct.images.filter((i: any) => i.id !== imgId);
+                                              setSelectedProduct({ ...selectedProduct, images: remaining });
+                                              setProductsList(prev => prev.map(p => p.id === selectedProduct.id ? { ...p, images: remaining } : p));
+                                            } else {
+                                              toast.error('Failed to delete image');
+                                            }
+                                          } catch (e) {
+                                            toast.error('Error deleting image');
+                                          }
+                                        }}
+                                        className="absolute inset-0 bg-rose-900/70 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white cursor-pointer"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </button>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
                         )}
+
+                        {/* Upload New Images */}
+                        <div className="pt-1">
+                          <Label htmlFor="edit-images" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Upload Additional Images</Label>
+                          <Input
+                            id="edit-images"
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            onChange={(e) => {
+                              if (e.target.files) {
+                                setEditImageFiles(Array.from(e.target.files));
+                              }
+                            }}
+                            className="h-9 rounded-lg border-border/50 focus:border-primary pt-1 text-xs cursor-pointer"
+                          />
+                          {editImageFiles.length > 0 && (
+                            <div className="flex flex-wrap gap-2 pt-2">
+                              {editImageFiles.map((file, idx) => (
+                                <div key={idx} className="w-12 h-12 rounded-lg border border-border/40 overflow-hidden relative group flex-shrink-0">
+                                  <img
+                                    src={URL.createObjectURL(file)}
+                                    alt={`edit-preview-${idx}`}
+                                    className="w-full h-full object-cover"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditImageFiles(prev => prev.filter((_, i) => i !== idx))}
+                                    className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       <div className="pt-3">
                         <Button onClick={handleSaveProduct} className="w-full h-10 bg-primary hover:bg-primary-dark text-white text-xs font-bold rounded-lg flex items-center justify-center gap-2 cursor-pointer shadow-md">
-                          <Save className="h-4 w-4" /> Save All Changes
+                          <Save className="h-4 w-4" /> Save All Product Changes
                         </Button>
                       </div>
 
