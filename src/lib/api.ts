@@ -2,8 +2,8 @@
  * Shared API utility for admin panel.
  * All API calls use this helper — never hardcode data in pages.
  */
-export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.fciseller.com';
-//export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.100:5001';
+// export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.4:5001';
+ export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.fciseller.com';
 export const APP_TYPE = 'admin'; // Admin panel specific app type
 
 /**
