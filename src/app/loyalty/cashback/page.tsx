@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AdminLayout } from '@/components/layout/admin-layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { API_BASE } from '@/lib/api';
-import { RefreshCw, Plus, CheckCircle2, AlertCircle, ArrowLeft, Coins, Sparkles } from 'lucide-react';
+import { RefreshCw, Plus, CheckCircle2, AlertCircle, ArrowLeft, Coins, Sparkles, User } from 'lucide-react';
 import Link from 'next/link';
 
 import { PageHeader } from '@/components/layout/page-header';
@@ -16,13 +16,34 @@ export default function CashbackAdminPage() {
   const [userId, setUserId] = useState('');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
+  const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/users`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('auth_token') || localStorage.getItem('token') || localStorage.getItem('admin_token') || ''}`,
+          },
+        });
+        const json = await res.json();
+        const raw = json.data ?? json.users ?? (Array.isArray(json) ? json : []);
+        if (Array.isArray(raw)) {
+          setCustomers(raw);
+        }
+      } catch (err) {
+        console.error('Failed to fetch customers:', err);
+      }
+    };
+    fetchCustomers();
+  }, []);
 
   const handleIssueCashback = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userId || !amount || Number(amount) <= 0) {
-      setMessage({ type: 'error', text: 'Please enter valid User ID and Cashback Amount' });
+      setMessage({ type: 'error', text: 'Please select a customer and enter a valid cashback amount' });
       return;
     }
     setLoading(true);
@@ -43,18 +64,28 @@ export default function CashbackAdminPage() {
       });
       const json = await res.json();
       if (json.success) {
+        const targetCust = customers.find((c) => String(c.id) === String(userId));
+        const custName = targetCust ? `${targetCust.firstName || ''} ${targetCust.lastName || ''}`.trim() || targetCust.email : `User #${userId}`;
         setMessage({
           type: 'success',
-          text: `Cashback ₹${Number(amount).toFixed(2)} credited successfully to User #${userId}'s digital wallet!`,
+          text: `Cashback ₹${Number(amount).toFixed(2)} credited successfully to ${custName}'s digital wallet!`,
         });
         setUserId('');
         setAmount('');
         setDescription('');
       } else {
-        setMessage({ type: 'error', text: json.message || 'Cashback credit failed' });
+        const rawErr = json.message || 'Cashback credit failed';
+        const cleanMsg = rawErr.includes('Invocation') || rawErr.includes('Prisma') || rawErr.includes('create()')
+          ? 'Invalid parameters provided for cashback transaction. Please verify customer and amount inputs.'
+          : rawErr;
+        setMessage({ type: 'error', text: cleanMsg });
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.message || 'Server error' });
+      const rawErr = err.message || 'Server error';
+      const cleanMsg = rawErr.includes('Invocation') || rawErr.includes('Prisma') || rawErr.includes('create()')
+        ? 'Database transaction error occurred. Please try again.'
+        : rawErr;
+      setMessage({ type: 'error', text: cleanMsg });
     } finally {
       setLoading(false);
     }
@@ -95,15 +126,25 @@ export default function CashbackAdminPage() {
             <form onSubmit={handleIssueCashback} className="space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold">Target User ID</Label>
-                  <Input
-                    type="number"
-                    placeholder="e.g. 101"
+                  <Label className="text-xs font-bold flex items-center gap-1.5">
+                    <User className="h-3.5 w-3.5 text-emerald-500" /> Select Customer
+                  </Label>
+                  <select
                     value={userId}
                     onChange={(e) => setUserId(e.target.value)}
-                    className="bg-card border-border/80 font-semibold"
-                  />
-                  <p className="text-[11px] text-muted-foreground">Customer account ID</p>
+                    className="w-full h-10 rounded-lg border border-border/80 bg-card px-3 py-2 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer"
+                  >
+                    <option value="">-- Select Customer Name --</option>
+                    {customers.map((c: any) => {
+                      const name = `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.name || c.email || `User #${c.id}`;
+                      return (
+                        <option key={c.id} value={c.id}>
+                          {name} (ID: #{c.id}{c.email ? ` - ${c.email}` : ''})
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <p className="text-[11px] text-muted-foreground">Select registered customer account</p>
                 </div>
 
                 <div className="space-y-1.5">
