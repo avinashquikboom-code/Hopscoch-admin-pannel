@@ -132,7 +132,7 @@ export default function RewardPointsAdminPage() {
                 type="button"
                 className="bg-amber-600 hover:bg-amber-700 text-white font-bold shadow-lg shadow-amber-500/20 px-6 flex-1 h-11"
                 disabled={loading}
-                onClick={() => handleAdjust(true)}
+                onClick={() => handleAdjustPoints('ADD')}
               >
                 <Plus className="mr-2 h-5 w-5" /> Credit Reward Points
               </Button>
@@ -141,7 +141,7 @@ export default function RewardPointsAdminPage() {
                 variant="destructive"
                 className="font-bold shadow-lg shadow-red-500/20 px-6 flex-1 h-11"
                 disabled={loading}
-                onClick={() => handleAdjust(false)}
+                onClick={() => handleAdjustPoints('DEDUCT')}
               >
                 <Minus className="mr-2 h-5 w-5" /> Debit Reward Points
               </Button>
