@@ -173,67 +173,90 @@ export default function GiftCardsAdminPage() {
 
         {/* Generate Gift Card Sheet */}
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-          <SheetContent className="sm:max-w-md overflow-y-auto">
-            <SheetHeader className="border-b border-border/40 pb-4">
-              <SheetTitle className="text-base font-bold flex items-center gap-2">
-                <Gift className="h-5 w-5 text-amber-500" /> Generate Digital Gift Card
-              </SheetTitle>
-              <SheetDescription className="text-xs">
-                Issue a new gift voucher for wallet credit topup.
-              </SheetDescription>
+          <SheetContent className="sm:max-w-lg w-full bg-card/95 backdrop-blur-2xl border-l border-border/40 shadow-2xl p-0 overflow-y-auto flex flex-col">
+            {/* Header Banner */}
+            <SheetHeader className="relative overflow-hidden bg-gradient-to-r from-amber-500/20 via-emerald-600/15 to-amber-600/20 p-6 pr-12 border-b border-border/60 text-left space-y-0">
+              <div className="flex items-center gap-3.5">
+                <div className="h-12 w-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-500 flex items-center justify-center shrink-0 shadow-md">
+                  <Gift className="h-6 w-6" />
+                </div>
+                <div>
+                  <SheetTitle className="text-xl font-extrabold text-foreground tracking-tight">
+                    Generate Digital Gift Card
+                  </SheetTitle>
+                  <SheetDescription className="text-xs text-muted-foreground mt-1">
+                    Issue a new digital gift voucher for customer digital wallet topup
+                  </SheetDescription>
+                </div>
+              </div>
             </SheetHeader>
 
-            {message && (
-              <div
-                className={`my-4 p-3 rounded-lg flex items-center gap-2 text-xs font-medium ${
-                  message.type === 'success' ? 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30' : 'bg-red-500/15 text-red-600 border border-red-500/30'
-                }`}
-              >
-                {message.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
-                {message.text}
-              </div>
-            )}
+            {/* Form Body */}
+            <div className="p-6 space-y-5 flex-1">
+              {message && (
+                <div
+                  className={`p-4 rounded-xl flex items-center gap-3 text-xs font-semibold shadow-sm ${
+                    message.type === 'success' ? 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30' : 'bg-red-500/15 text-red-600 border border-red-500/30'
+                  }`}
+                >
+                  {message.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
+                  {message.text}
+                </div>
+              )}
 
-            <form onSubmit={handleCreate} className="space-y-4 py-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold">Custom Voucher Code (Optional)</Label>
-                <Input
-                  placeholder="e.g. GIFT-2026-FCI"
-                  value={form.code}
-                  onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
-                  className="bg-card border-border/80 font-mono font-semibold"
-                />
-                <p className="text-[11px] text-muted-foreground">Leave blank to auto-generate random code</p>
-              </div>
+              <form id="gift-card-form" onSubmit={handleCreate} className="space-y-5">
+                {/* Voucher Code Card */}
+                <div className="p-4 rounded-2xl bg-muted/20 border border-border/50 space-y-4">
+                  <div className="text-xs font-bold text-foreground flex items-center gap-1.5 border-b border-border/40 pb-2">
+                    <Gift className="h-4 w-4 text-amber-500" /> Voucher Code & Denomination
+                  </div>
 
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold">Gift Card Value (₹ INR)</Label>
-                <Input
-                  type="number"
-                  value={form.amount}
-                  onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })}
-                  className="bg-card border-border/80 font-semibold"
-                />
-                <p className="text-[11px] text-muted-foreground">Full value credited on customer redemption</p>
-              </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-bold">Custom Voucher Code (Optional)</Label>
+                    <Input
+                      placeholder="e.g. GIFT-2026-FCI"
+                      value={form.code}
+                      onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
+                      className="bg-card/80 border-border/80 font-mono font-semibold h-10 rounded-xl focus:border-amber-500 uppercase"
+                    />
+                    <p className="text-[11px] text-muted-foreground">Leave blank to auto-generate secure alphanumeric code</p>
+                  </div>
 
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold">Validity Expiry (Days)</Label>
-                <Input
-                  type="number"
-                  value={form.expiryDays}
-                  onChange={(e) => setForm({ ...form, expiryDays: Number(e.target.value) })}
-                  className="bg-card border-border/80 font-semibold"
-                />
-                <p className="text-[11px] text-muted-foreground">Default: 365 days (1 year)</p>
-              </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-bold">Gift Card Value (₹ INR)</Label>
+                    <Input
+                      type="number"
+                      value={form.amount}
+                      onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })}
+                      className="bg-card/80 border-border/80 font-semibold h-10 rounded-xl focus:border-amber-500"
+                    />
+                    <p className="text-[11px] text-muted-foreground">Full monetary balance credited on customer redemption</p>
+                  </div>
+                </div>
 
-              <div className="pt-4 border-t border-border/40">
-                <Button type="submit" disabled={saving} className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold h-10 shadow-md shadow-amber-500/20">
-                  <Save className="mr-2 h-4 w-4" /> {saving ? 'Generating...' : 'Generate Gift Card'}
-                </Button>
-              </div>
-            </form>
+                {/* Validity Card */}
+                <div className="p-4 rounded-2xl bg-muted/20 border border-border/50 space-y-1.5">
+                  <Label className="text-xs font-bold">Validity Period (Days)</Label>
+                  <Input
+                    type="number"
+                    value={form.expiryDays}
+                    onChange={(e) => setForm({ ...form, expiryDays: Number(e.target.value) })}
+                    className="bg-card/80 border-border/80 font-semibold h-10 rounded-xl"
+                  />
+                  <p className="text-[11px] text-muted-foreground">Default validity: 365 days (1 Year)</p>
+                </div>
+              </form>
+            </div>
+
+            {/* Sticky Action Footer */}
+            <div className="sticky bottom-0 bg-card/90 backdrop-blur-md p-4 border-t border-border/40 flex justify-end gap-3 shrink-0">
+              <Button type="button" variant="outline" onClick={() => setSheetOpen(false)} className="h-11 px-5 rounded-xl font-semibold">
+                Cancel
+              </Button>
+              <Button form="gift-card-form" type="submit" disabled={saving} className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold h-11 px-6 rounded-xl shadow-lg shadow-amber-500/25 transition-all hover:scale-[1.01] active:scale-[0.99]">
+                <Save className="mr-2 h-4 w-4" /> {saving ? 'Generating...' : 'Generate Gift Card'}
+              </Button>
+            </div>
           </SheetContent>
         </Sheet>
       </div>

@@ -43,6 +43,8 @@ import {
   ArrowUpDown,
   ChevronLeft,
   ChevronRight,
+  Sparkles,
+  ShieldCheck,
 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 
@@ -413,111 +415,143 @@ export default function ProductRewardsPage() {
 
         {/* Slide-Over Editor Sheet */}
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-          <SheetContent className="sm:max-w-md overflow-y-auto">
-            <SheetHeader className="border-b border-border/40 pb-4">
-              <SheetTitle className="text-base font-bold flex items-center gap-2">
-                <Package className="h-5 w-5 text-amber-500" /> Edit Product Reward Rule
-              </SheetTitle>
-              <SheetDescription className="text-xs">
-                {selectedProduct?.name} (ID: #{selectedProduct?.id})
-              </SheetDescription>
+          <SheetContent className="sm:max-w-lg w-full bg-card/95 backdrop-blur-2xl border-l border-border/40 shadow-2xl p-0 overflow-y-auto flex flex-col">
+            {/* Header Banner */}
+            <SheetHeader className="relative overflow-hidden bg-gradient-to-r from-amber-500/20 via-purple-600/15 to-amber-600/20 p-6 pr-12 border-b border-border/60 text-left space-y-0">
+              <div className="flex items-center gap-3.5">
+                <div className="h-12 w-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-500 flex items-center justify-center shrink-0 shadow-md">
+                  <Package className="h-6 w-6" />
+                </div>
+                <div>
+                  <SheetTitle className="text-xl font-extrabold text-foreground tracking-tight">
+                    Edit Product Reward Rule
+                  </SheetTitle>
+                  <SheetDescription className="text-xs font-bold text-amber-600 dark:text-amber-400 mt-1">
+                    {selectedProduct?.name} <span className="text-muted-foreground font-normal">(ID: #{selectedProduct?.id})</span>
+                  </SheetDescription>
+                </div>
+              </div>
             </SheetHeader>
 
-            {message && (
-              <div
-                className={`my-4 p-3 rounded-lg flex items-center gap-2 text-xs font-medium ${
-                  message.type === 'success' ? 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30' : 'bg-red-500/15 text-red-600 border border-red-500/30'
-                }`}
-              >
-                {message.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
-                {message.text}
-              </div>
-            )}
-
-            <form onSubmit={handleSave} className="space-y-5 py-4">
-              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/40">
-                <div>
-                  <Label className="font-bold text-xs">Enable Product Reward Override</Label>
-                  <p className="text-[11px] text-muted-foreground">Overrides global & category reward rules for this product.</p>
+            {/* Form Body */}
+            <div className="p-6 space-y-5 flex-1">
+              {message && (
+                <div
+                  className={`p-4 rounded-xl flex items-center gap-3 text-xs font-semibold shadow-sm ${
+                    message.type === 'success' ? 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30' : 'bg-red-500/15 text-red-600 border border-red-500/30'
+                  }`}
+                >
+                  {message.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
+                  {message.text}
                 </div>
-                <Switch
-                  checked={editForm.overrideGlobalReward}
-                  onCheckedChange={(val) => setFormState('overrideGlobalReward', val)}
-                />
-              </div>
+              )}
 
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold">Reward Points Earned</Label>
-                <Input
-                  type="number"
-                  value={editForm.rewardPoints}
-                  onChange={(e) => setFormState('rewardPoints', Number(e.target.value))}
-                  className="bg-card border-border/80 font-semibold"
-                />
-                <p className="text-[11px] text-muted-foreground">Fixed points earned when buying this product</p>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold">Maximum Redeemable Points</Label>
-                <Input
-                  type="number"
-                  value={editForm.maxRedeemablePoints}
-                  onChange={(e) => setFormState('maxRedeemablePoints', Number(e.target.value))}
-                  className="bg-card border-border/80 font-semibold"
-                />
-                <p className="text-[11px] text-muted-foreground">Max points customer can spend on this product</p>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold">Reward Multiplier</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={editForm.rewardMultiplier}
-                  onChange={(e) => setFormState('rewardMultiplier', Number(e.target.value))}
-                  className="bg-card border-border/80 font-semibold"
-                />
-                <p className="text-[11px] text-muted-foreground">e.g. 2.0 = 2x Double Points multiplier</p>
-              </div>
-
-              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/40">
-                <div>
-                  <Label className="font-bold text-xs">Allow Earning Points</Label>
-                  <p className="text-[11px] text-muted-foreground">Allows customers to earn points on this item.</p>
+              <form id="product-reward-form" onSubmit={handleSave} className="space-y-5">
+                {/* Override Toggle Box */}
+                <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-between gap-4 shadow-sm">
+                  <div>
+                    <Label className="font-extrabold text-xs text-foreground">Enable Priority Override</Label>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">Overrides global & category point rules specifically for this product.</p>
+                  </div>
+                  <Switch
+                    checked={editForm.overrideGlobalReward}
+                    onCheckedChange={(val) => setFormState('overrideGlobalReward', val)}
+                  />
                 </div>
-                <Switch
-                  checked={editForm.allowRewardEarning}
-                  onCheckedChange={(val) => setFormState('allowRewardEarning', val)}
-                />
-              </div>
 
-              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/40">
-                <div>
-                  <Label className="font-bold text-xs">Allow Points Redemption</Label>
-                  <p className="text-[11px] text-muted-foreground">Allows redeeming points for discount on this item.</p>
+                {/* Points Configuration Card */}
+                <div className="p-4 rounded-2xl bg-muted/20 border border-border/50 space-y-4">
+                  <div className="text-xs font-bold text-foreground flex items-center gap-1.5 border-b border-border/40 pb-2">
+                    <Sparkles className="h-4 w-4 text-amber-500" /> Reward Points Parameters
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-bold">Reward Points Earned</Label>
+                    <Input
+                      type="number"
+                      value={editForm.rewardPoints}
+                      onChange={(e) => setFormState('rewardPoints', Number(e.target.value))}
+                      className="bg-card/80 border-border/80 font-semibold h-10 rounded-xl focus:border-amber-500"
+                    />
+                    <p className="text-[11px] text-muted-foreground">Fixed reward points customer earns per item purchase</p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-bold">Maximum Redeemable Points</Label>
+                    <Input
+                      type="number"
+                      value={editForm.maxRedeemablePoints}
+                      onChange={(e) => setFormState('maxRedeemablePoints', Number(e.target.value))}
+                      className="bg-card/80 border-border/80 font-semibold h-10 rounded-xl focus:border-purple-500"
+                    />
+                    <p className="text-[11px] text-muted-foreground">Max points customer can redeem on single product checkout</p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-bold">Reward Multiplier</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={editForm.rewardMultiplier}
+                      onChange={(e) => setFormState('rewardMultiplier', Number(e.target.value))}
+                      className="bg-card/80 border-border/80 font-semibold h-10 rounded-xl focus:border-teal-500"
+                    />
+                    <p className="text-[11px] text-muted-foreground">Multiplier boost (e.g. 2.0 = 2x Double Points)</p>
+                  </div>
                 </div>
-                <Switch
-                  checked={editForm.allowRewardRedemption}
-                  onCheckedChange={(val) => setFormState('allowRewardRedemption', val)}
-                />
-              </div>
 
-              <div>
-                <Label className="text-xs font-bold">Reward Rule Expiry Date (Optional)</Label>
-                <Input
-                  type="date"
-                  value={editForm.rewardExpiryDate}
-                  onChange={(e) => setFormState('rewardExpiryDate', e.target.value)}
-                  className="mt-1 bg-card border-border/80"
-                />
-              </div>
+                {/* Permission Toggles Card */}
+                <div className="p-4 rounded-2xl bg-muted/20 border border-border/50 space-y-3.5">
+                  <div className="text-xs font-bold text-foreground flex items-center gap-1.5 border-b border-border/40 pb-2">
+                    <ShieldCheck className="h-4 w-4 text-emerald-500" /> Policy & Permission Controls
+                  </div>
 
-              <div className="flex justify-end pt-4">
-                <Button type="submit" disabled={saving} className="bg-amber-600 hover:bg-amber-700 text-white font-bold shadow-md shadow-amber-500/20">
-                  <Save className="mr-2 h-4 w-4" /> {saving ? 'Saving...' : 'Save Configuration'}
-                </Button>
-              </div>
-            </form>
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-card/60 border border-border/40">
+                    <div>
+                      <Label className="font-bold text-xs">Allow Earning Points</Label>
+                      <p className="text-[10px] text-muted-foreground">Permit point accumulation on this item</p>
+                    </div>
+                    <Switch
+                      checked={editForm.allowRewardEarning}
+                      onCheckedChange={(val) => setFormState('allowRewardEarning', val)}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-card/60 border border-border/40">
+                    <div>
+                      <Label className="font-bold text-xs">Allow Points Redemption</Label>
+                      <p className="text-[10px] text-muted-foreground">Permit redeeming points discount on this item</p>
+                    </div>
+                    <Switch
+                      checked={editForm.allowRewardRedemption}
+                      onCheckedChange={(val) => setFormState('allowRewardRedemption', val)}
+                    />
+                  </div>
+                </div>
+
+                {/* Expiry Date Card */}
+                <div className="p-4 rounded-2xl bg-muted/20 border border-border/50 space-y-1.5">
+                  <Label className="text-xs font-bold">Rule Expiration Date (Optional)</Label>
+                  <Input
+                    type="date"
+                    value={editForm.rewardExpiryDate}
+                    onChange={(e) => setFormState('rewardExpiryDate', e.target.value)}
+                    className="bg-card/80 border-border/80 font-semibold h-10 rounded-xl"
+                  />
+                  <p className="text-[11px] text-muted-foreground">Leave empty for non-expiring permanent override rule</p>
+                </div>
+              </form>
+            </div>
+
+            {/* Sticky Action Footer */}
+            <div className="sticky bottom-0 bg-card/90 backdrop-blur-md p-4 border-t border-border/40 flex justify-end gap-3 shrink-0">
+              <Button type="button" variant="outline" onClick={() => setSheetOpen(false)} className="h-11 px-5 rounded-xl font-semibold">
+                Cancel
+              </Button>
+              <Button form="product-reward-form" type="submit" disabled={saving} className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold h-11 px-6 rounded-xl shadow-lg shadow-amber-500/25 transition-all hover:scale-[1.01] active:scale-[0.99]">
+                <Save className="mr-2 h-4 w-4" /> {saving ? 'Saving Rule...' : 'Save Product Rule'}
+              </Button>
+            </div>
           </SheetContent>
         </Sheet>
       </div>

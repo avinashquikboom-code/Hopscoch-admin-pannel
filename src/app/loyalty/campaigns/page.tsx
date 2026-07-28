@@ -181,110 +181,149 @@ export default function CampaignsAdminPage() {
 
         {/* Create Campaign Sheet */}
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-          <SheetContent className="sm:max-w-md overflow-y-auto">
-            <SheetHeader className="border-b border-border/40 pb-4">
-              <SheetTitle className="text-base font-bold flex items-center gap-2">
-                <Flame className="h-5 w-5 text-purple-500" /> Create Reward Campaign
-              </SheetTitle>
-              <SheetDescription className="text-xs">
-                Launch a new point multiplier campaign for sales events.
-              </SheetDescription>
+          <SheetContent className="sm:max-w-lg w-full bg-card/95 backdrop-blur-2xl border-l border-border/40 shadow-2xl p-0 overflow-y-auto flex flex-col">
+            {/* Header Banner */}
+            <SheetHeader className="relative overflow-hidden bg-gradient-to-r from-purple-500/20 via-indigo-600/15 to-amber-500/20 p-6 pr-12 border-b border-border/60 text-left space-y-0">
+              <div className="flex items-center gap-3.5">
+                <div className="h-12 w-12 rounded-2xl bg-purple-500/20 border border-purple-500/40 text-purple-500 flex items-center justify-center shrink-0 shadow-md">
+                  <Flame className="h-6 w-6" />
+                </div>
+                <div>
+                  <SheetTitle className="text-xl font-extrabold text-foreground tracking-tight">
+                    Create Reward Campaign
+                  </SheetTitle>
+                  <SheetDescription className="text-xs text-muted-foreground mt-1">
+                    Launch a promotional point multiplier campaign for sales events
+                  </SheetDescription>
+                </div>
+              </div>
             </SheetHeader>
 
-            {message && (
-              <div
-                className={`my-4 p-3 rounded-lg flex items-center gap-2 text-xs font-medium ${
-                  message.type === 'success' ? 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30' : 'bg-red-500/15 text-red-600 border border-red-500/30'
-                }`}
-              >
-                {message.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
-                {message.text}
-              </div>
-            )}
+            {/* Form Body */}
+            <div className="p-6 space-y-5 flex-1">
+              {message && (
+                <div
+                  className={`p-4 rounded-xl flex items-center gap-3 text-xs font-semibold shadow-sm ${
+                    message.type === 'success' ? 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30' : 'bg-red-500/15 text-red-600 border border-red-500/30'
+                  }`}
+                >
+                  {message.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
+                  {message.text}
+                </div>
+              )}
 
-            <form onSubmit={handleSave} className="space-y-4 py-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold">Campaign Title</Label>
-                <Input
-                  placeholder="e.g. Festival Double Points Bonus"
-                  value={form.title}
-                  onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  required
-                  className="bg-card border-border/80 font-semibold"
-                />
-              </div>
+              <form id="campaign-form" onSubmit={handleSave} className="space-y-5">
+                {/* General Info Card */}
+                <div className="p-4 rounded-2xl bg-muted/20 border border-border/50 space-y-4">
+                  <div className="text-xs font-bold text-foreground flex items-center gap-1.5 border-b border-border/40 pb-2">
+                    <Flame className="h-4 w-4 text-purple-500" /> Campaign Identification
+                  </div>
 
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold">Promo Code (Optional)</Label>
-                <Input
-                  placeholder="e.g. FESTIVAL2026"
-                  value={form.code}
-                  onChange={(e) => setForm({ ...form, code: e.target.value })}
-                  className="bg-card border-border/80 font-mono font-semibold"
-                />
-              </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-bold">Campaign Title</Label>
+                    <Input
+                      placeholder="e.g. Festival Double Points Bonus"
+                      value={form.title}
+                      onChange={(e) => setForm({ ...form, title: e.target.value })}
+                      required
+                      className="bg-card/80 border-border/80 font-semibold h-10 rounded-xl focus:border-purple-500"
+                    />
+                  </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-bold">Bonus Points</Label>
-                  <Input
-                    type="number"
-                    value={form.bonusPoints}
-                    onChange={(e) => setForm({ ...form, bonusPoints: Number(e.target.value) })}
-                    className="bg-card font-semibold"
-                  />
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-bold">Promo Code (Optional)</Label>
+                    <Input
+                      placeholder="e.g. FESTIVAL2026"
+                      value={form.code}
+                      onChange={(e) => setForm({ ...form, code: e.target.value })}
+                      className="bg-card/80 border-border/80 font-mono font-semibold h-10 rounded-xl focus:border-purple-500 uppercase"
+                    />
+                  </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-bold">Multiplier</Label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    value={form.multiplier}
-                    onChange={(e) => setForm({ ...form, multiplier: Number(e.target.value) })}
-                    className="bg-card font-semibold"
-                  />
+                {/* Multiplier & Bonus Points Card */}
+                <div className="p-4 rounded-2xl bg-muted/20 border border-border/50 space-y-4">
+                  <div className="text-xs font-bold text-foreground flex items-center gap-1.5 border-b border-border/40 pb-2">
+                    <Sparkles className="h-4 w-4 text-amber-500" /> Multipliers & Qualifications
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-bold">Bonus Points</Label>
+                      <Input
+                        type="number"
+                        value={form.bonusPoints}
+                        onChange={(e) => setForm({ ...form, bonusPoints: Number(e.target.value) })}
+                        className="bg-card/80 border-border/80 font-semibold h-10 rounded-xl"
+                      />
+                      <p className="text-[10px] text-muted-foreground">Fixed bonus pts</p>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-bold">Multiplier</Label>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={form.multiplier}
+                        onChange={(e) => setForm({ ...form, multiplier: Number(e.target.value) })}
+                        className="bg-card/80 border-border/80 font-semibold h-10 rounded-xl"
+                      />
+                      <p className="text-[10px] text-muted-foreground">e.g. 2.0 = 2x Boost</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-bold">Min Order Subtotal (₹ INR)</Label>
+                    <Input
+                      type="number"
+                      value={form.minOrderAmount}
+                      onChange={(e) => setForm({ ...form, minOrderAmount: Number(e.target.value) })}
+                      className="bg-card/80 border-border/80 font-semibold h-10 rounded-xl"
+                    />
+                    <p className="text-[11px] text-muted-foreground">Minimum cart total to trigger bonus multiplier</p>
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold">Min Order Subtotal (₹)</Label>
-                <Input
-                  type="number"
-                  value={form.minOrderAmount}
-                  onChange={(e) => setForm({ ...form, minOrderAmount: Number(e.target.value) })}
-                  className="bg-card font-semibold"
-                />
-              </div>
+                {/* Campaign Schedule Card */}
+                <div className="p-4 rounded-2xl bg-muted/20 border border-border/50 space-y-4">
+                  <div className="text-xs font-bold text-foreground flex items-center gap-1.5 border-b border-border/40 pb-2">
+                    <Plus className="h-4 w-4 text-indigo-500" /> Campaign Schedule
+                  </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-bold">Start Date</Label>
-                  <Input
-                    type="date"
-                    value={form.startsAt}
-                    onChange={(e) => setForm({ ...form, startsAt: e.target.value })}
-                    className="bg-card font-semibold"
-                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-bold">Start Date</Label>
+                      <Input
+                        type="date"
+                        value={form.startsAt}
+                        onChange={(e) => setForm({ ...form, startsAt: e.target.value })}
+                        className="bg-card/80 border-border/80 font-semibold h-10 rounded-xl"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-bold">End Date</Label>
+                      <Input
+                        type="date"
+                        value={form.endsAt}
+                        onChange={(e) => setForm({ ...form, endsAt: e.target.value })}
+                        className="bg-card/80 border-border/80 font-semibold h-10 rounded-xl"
+                      />
+                    </div>
+                  </div>
                 </div>
+              </form>
+            </div>
 
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-bold">End Date</Label>
-                  <Input
-                    type="date"
-                    value={form.endsAt}
-                    onChange={(e) => setForm({ ...form, endsAt: e.target.value })}
-                    className="bg-card font-semibold"
-                  />
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-border/40">
-                <Button type="submit" disabled={saving} className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold h-10 shadow-md shadow-purple-500/20">
-                  <Save className="mr-2 h-4 w-4" /> {saving ? 'Saving...' : 'Create Campaign'}
-                </Button>
-              </div>
-            </form>
+            {/* Sticky Action Footer */}
+            <div className="sticky bottom-0 bg-card/90 backdrop-blur-md p-4 border-t border-border/40 flex justify-end gap-3 shrink-0">
+              <Button type="button" variant="outline" onClick={() => setSheetOpen(false)} className="h-11 px-5 rounded-xl font-semibold">
+                Cancel
+              </Button>
+              <Button form="campaign-form" type="submit" disabled={saving} className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-extrabold h-11 px-6 rounded-xl shadow-lg shadow-purple-500/25 transition-all hover:scale-[1.01] active:scale-[0.99]">
+                <Save className="mr-2 h-4 w-4" /> {saving ? 'Creating Campaign...' : 'Create Campaign'}
+              </Button>
+            </div>
           </SheetContent>
         </Sheet>
       </div>
