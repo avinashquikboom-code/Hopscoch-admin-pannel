@@ -336,7 +336,7 @@ export default function OrderDetailsPage({ params }: { params: any }) {
         <body>
           <div class="header">
             <div>
-              <div class="title">HOPSCOTCH TAX INVOICE</div>
+              <div class="title">FCI Seller TAX INVOICE</div>
               <p style="margin:4px 0; font-size:13px; color:#64748b;">Luxury E-Commerce</p>
             </div>
             <div style="text-align:right;">
