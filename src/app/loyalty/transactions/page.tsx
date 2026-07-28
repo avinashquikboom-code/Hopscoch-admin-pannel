@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { AdminLayout } from '@/components/layout/admin-layout';
-import { PageHeader } from '@/components/layout/page-header';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -14,8 +13,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { API_BASE } from '@/lib/api';
-import { RefreshCcw, Wallet, Award } from 'lucide-react';
+import { RefreshCcw, Wallet, Award, ArrowLeft, ShieldCheck, Receipt } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 export default function MasterTransactionsPage() {
   const [data, setData] = useState<any>(null);
@@ -46,54 +46,70 @@ export default function MasterTransactionsPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6 p-6">
-        <PageHeader
-          title="Master Transactions Ledger"
-          description="Detailed transaction audit logs for Wallet and Reward Points."
-        >
-          <Button onClick={fetchTransactions} variant="outline" size="sm">
-            <RefreshCcw className="mr-2 h-4 w-4" /> Refresh
-          </Button>
-        </PageHeader>
+      <div className="space-y-8 p-6 max-w-[1500px] mx-auto">
+        {/* Banner Header */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-500/15 via-purple-600/10 to-amber-500/15 p-8 border border-border/60 backdrop-blur-xl shadow-lg">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <Link href="/loyalty" className="inline-flex items-center text-xs font-semibold text-muted-foreground hover:text-emerald-500 transition-colors mb-2">
+                <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back to Loyalty Hub
+              </Link>
+              <h1 className="text-3xl font-extrabold text-foreground flex items-center gap-2">
+                <Receipt className="h-7 w-7 text-emerald-500" /> Master Loyalty & Wallet Ledger
+              </h1>
+              <p className="text-muted-foreground text-sm mt-1">
+                Real-time audit log statements of customer wallet money transactions and point adjustments.
+              </p>
+            </div>
+            <Button onClick={fetchTransactions} disabled={loading} className="bg-card hover:bg-muted text-foreground border border-border/80 shadow-sm shrink-0">
+              <RefreshCcw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Refresh Ledger
+            </Button>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Wallet Transactions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <Wallet className="h-4 w-4 text-emerald-500" /> Wallet Transactions History
+          <Card className="border-border/60 shadow-sm">
+            <CardHeader className="border-b border-border/40 pb-4">
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <Wallet className="h-5 w-5 text-emerald-500" /> Customer Wallet Statement Ledger
               </CardTitle>
+              <CardDescription className="text-xs">
+                Credits, debits, refunds, and order payment deductions
+              </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Reference</TableHead>
-                    <TableHead>Date</TableHead>
+                  <TableRow className="bg-muted/30">
+                    <TableHead className="font-bold">Transaction Type</TableHead>
+                    <TableHead className="font-bold">Amount</TableHead>
+                    <TableHead className="font-bold">Reference / Note</TableHead>
+                    <TableHead className="font-bold text-right">Timestamp</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {data?.wallet?.transactions && data.wallet.transactions.length > 0 ? (
                     data.wallet.transactions.map((t: any) => (
-                      <TableRow key={t.id}>
+                      <TableRow key={t.id} className="hover:bg-muted/40 transition-colors">
                         <TableCell className="text-xs font-semibold">
-                          <Badge variant="outline">{t.type}</Badge>
+                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 font-bold">
+                            {t.type}
+                          </Badge>
                         </TableCell>
-                        <TableCell className={`text-xs font-bold ${Number(t.amount) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                          {Number(t.amount) >= 0 ? `+₹${t.amount}` : `-₹${Math.abs(t.amount)}`}
+                        <TableCell className={`text-xs font-extrabold ${Number(t.amount) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {Number(t.amount) >= 0 ? `+₹${Number(t.amount).toFixed(2)}` : `-₹${Math.abs(Number(t.amount)).toFixed(2)}`}
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">{t.description || t.referenceId || '—'}</TableCell>
-                        <TableCell className="text-[11px] text-muted-foreground">
+                        <TableCell className="text-[11px] text-muted-foreground text-right">
                           {new Date(t.createdAt).toLocaleString()}
                         </TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-4 text-xs text-muted-foreground">
-                        No wallet transactions recorded.
+                      <TableCell colSpan={4} className="text-center py-8 text-xs text-muted-foreground">
+                        {loading ? 'Loading wallet transactions...' : 'No wallet transactions recorded.'}
                       </TableCell>
                     </TableRow>
                   )}
@@ -103,42 +119,47 @@ export default function MasterTransactionsPage() {
           </Card>
 
           {/* Reward Points Transactions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <Award className="h-4 w-4 text-amber-500" /> Reward Points History
+          <Card className="border-border/60 shadow-sm">
+            <CardHeader className="border-b border-border/40 pb-4">
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <Award className="h-5 w-5 text-amber-500" /> Reward Points History
               </CardTitle>
+              <CardDescription className="text-xs">
+                Points earned on orders, event bonuses, and order redemption logs
+              </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Points</TableHead>
-                    <TableHead>Reason</TableHead>
-                    <TableHead>Date</TableHead>
+                  <TableRow className="bg-muted/30">
+                    <TableHead className="font-bold">Event Type</TableHead>
+                    <TableHead className="font-bold">Points</TableHead>
+                    <TableHead className="font-bold">Reason / Order</TableHead>
+                    <TableHead className="font-bold text-right">Timestamp</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data?.rewardPoints?.transactions && data.rewardPoints.transactions.length > 0 ? (
-                    data.rewardPoints.transactions.map((t: any) => (
-                      <TableRow key={t.id}>
+                  {data?.points?.transactions && data.points.transactions.length > 0 ? (
+                    data.points.transactions.map((t: any) => (
+                      <TableRow key={t.id} className="hover:bg-muted/40 transition-colors">
                         <TableCell className="text-xs font-semibold">
-                          <Badge variant="secondary">{t.type}</Badge>
+                          <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30 font-bold">
+                            {t.type}
+                          </Badge>
                         </TableCell>
-                        <TableCell className={`text-xs font-bold ${t.points >= 0 ? 'text-amber-600' : 'text-purple-600'}`}>
-                          {t.points >= 0 ? `+${t.points} Pts` : `${t.points} Pts`}
+                        <TableCell className={`text-xs font-extrabold ${Number(t.points) >= 0 ? 'text-amber-600' : 'text-purple-600'}`}>
+                          {Number(t.points) >= 0 ? `+${t.points} Pts` : `${t.points} Pts`}
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{t.reason || t.orderId || '—'}</TableCell>
-                        <TableCell className="text-[11px] text-muted-foreground">
+                        <TableCell className="text-xs text-muted-foreground">{t.reason || (t.orderId ? `Order #${t.orderId}` : '—')}</TableCell>
+                        <TableCell className="text-[11px] text-muted-foreground text-right">
                           {new Date(t.createdAt).toLocaleString()}
                         </TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-4 text-xs text-muted-foreground">
-                        No reward point transactions recorded.
+                      <TableCell colSpan={4} className="text-center py-8 text-xs text-muted-foreground">
+                        {loading ? 'Loading reward points history...' : 'No reward point transactions recorded.'}
                       </TableCell>
                     </TableRow>
                   )}

@@ -57,6 +57,9 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
     Sales: false,
     Marketing: false,
     Analytics: false,
+    Shipping: false,
+    Payments: false,
+    'Loyalty & Rewards': true,
     Settings: true,
   });
   const [user, setUser] = useState<{ firstName: string; lastName: string; email: string } | null>(null);
@@ -73,6 +76,18 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
       }
     }
   }, []);
+
+  useEffect(() => {
+    if (!pathname) return;
+    groups.forEach((group) => {
+      const isMatch = group.items.some(
+        (item) => pathname === item.href || pathname.startsWith(item.href + '/')
+      );
+      if (isMatch) {
+        setOpenGroups((prev) => ({ ...prev, [group.name]: true }));
+      }
+    });
+  }, [pathname]);
 
   const getInitials = () => {
     if (!user) return 'AD';

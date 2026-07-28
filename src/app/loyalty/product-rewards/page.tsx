@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { AdminLayout } from '@/components/layout/admin-layout';
-import { PageHeader } from '@/components/layout/page-header';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,8 +23,9 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { API_BASE } from '@/lib/api';
-import { Package, Edit, Search, Save, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react';
+import { API_BASE, getImageUrl } from '@/lib/api';
+import { Package, Edit, Search, Save, Sparkles, CheckCircle2, AlertCircle, ArrowLeft, ShieldCheck } from 'lucide-react';
+import Link from 'next/link';
 
 export default function ProductRewardsPage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -108,9 +108,8 @@ export default function ProductRewardsPage() {
       if (json.success) {
         setMessage({ type: 'success', text: 'Product reward rule updated successfully!' });
         fetchProducts();
-        setTimeout(() => setSheetOpen(false), 800);
       } else {
-        setMessage({ type: 'error', text: json.message || 'Failed to update product reward' });
+        setMessage({ type: 'error', text: json.message || 'Failed to update product rule' });
       }
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message || 'Server error' });
@@ -119,89 +118,117 @@ export default function ProductRewardsPage() {
     }
   };
 
+  const setFormState = (key: string, val: any) => {
+    setEditForm((prev) => ({ ...prev, [key]: val }));
+  };
+
   return (
     <AdminLayout>
-      <div className="space-y-6 p-6">
-        <PageHeader
-          title="Product Reward Configuration"
-          description="Override points earned, maximum redeemable points, multipliers, and reward rules per product."
-        />
+      <div className="space-y-8 p-6 max-w-[1400px] mx-auto">
+        {/* Banner Header */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500/15 via-purple-600/10 to-amber-600/15 p-8 border border-border/60 backdrop-blur-xl shadow-lg">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <Link href="/loyalty" className="inline-flex items-center text-xs font-semibold text-muted-foreground hover:text-amber-500 transition-colors mb-2">
+                <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back to Loyalty Hub
+              </Link>
+              <h1 className="text-3xl font-extrabold text-foreground flex items-center gap-2">
+                <Package className="h-7 w-7 text-amber-500" /> Product Reward Override Matrix
+              </h1>
+              <p className="text-muted-foreground text-sm mt-1">
+                Configure explicit reward points, max redemption limits, multipliers, and earning toggles for individual products (Tier 1 Priority).
+              </p>
+            </div>
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-amber-500/15 text-amber-600 border border-amber-500/30 shrink-0">
+              <ShieldCheck className="h-4 w-4" /> Tier 1 Priority Rule
+            </span>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Package className="h-4 w-4 text-amber-500" /> Products List
-            </CardTitle>
-            <div className="relative w-72">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Card className="border-border/60 shadow-sm">
+          <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border/40 pb-4 gap-4">
+            <div>
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <Package className="h-5 w-5 text-amber-500" /> Catalog Product Rules
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Search and customize points rules for individual inventory items.
+              </CardDescription>
+            </div>
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search products..."
+                placeholder="Search products by name..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 h-9 text-xs"
+                className="pl-9 h-10 text-xs bg-card border-border/80"
               />
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Product</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Reward Earned</TableHead>
-                  <TableHead>Max Redeemable</TableHead>
-                  <TableHead>Override Mode</TableHead>
-                  <TableHead>Actions</TableHead>
+                <TableRow className="bg-muted/30">
+                  <TableHead className="font-bold">Product</TableHead>
+                  <TableHead className="font-bold">Category</TableHead>
+                  <TableHead className="font-bold">Price (₹)</TableHead>
+                  <TableHead className="font-bold">Reward Earned</TableHead>
+                  <TableHead className="font-bold">Max Redeemable</TableHead>
+                  <TableHead className="font-bold">Override Mode</TableHead>
+                  <TableHead className="font-bold text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {products.length > 0 ? (
                   products.map((p) => (
-                    <TableRow key={p.id}>
+                    <TableRow key={p.id} className="hover:bg-muted/40 transition-colors">
                       <TableCell className="font-medium text-xs">
-                        <div className="flex items-center gap-2">
-                          {p.thumbnailUrl && (
-                            <img src={p.thumbnailUrl} alt="" className="h-8 w-8 rounded object-cover border" />
+                        <div className="flex items-center gap-3">
+                          {p.thumbnailUrl ? (
+                            <img src={getImageUrl(p.thumbnailUrl)} alt="" className="h-9 w-9 rounded-lg object-cover border border-border/50 shrink-0" />
+                          ) : (
+                            <div className="h-9 w-9 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 flex items-center justify-center font-bold text-xs shrink-0">
+                              P
+                            </div>
                           )}
                           <div>
-                            <div className="text-foreground font-semibold">{p.name}</div>
+                            <div className="text-foreground font-bold">{p.name}</div>
                             <div className="text-[10px] text-muted-foreground">ID: #{p.id}</div>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-xs">{p.category?.name || '—'}</TableCell>
-                      <TableCell className="text-xs font-semibold">₹{Number(p.basePrice).toLocaleString()}</TableCell>
+                      <TableCell className="text-xs">{p.category?.name || 'Uncategorized'}</TableCell>
+                      <TableCell className="text-xs font-bold">₹{Number(p.basePrice).toLocaleString('en-IN')}</TableCell>
                       <TableCell className="text-xs">
-                        <Badge variant="secondary" className="bg-amber-500/10 text-amber-600">
+                        <Badge className="bg-amber-500/15 text-amber-600 hover:bg-amber-500/20 border-amber-500/30">
                           {p.rewardPoints || 0} Pts
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-xs">
-                        <Badge variant="outline" className="text-purple-600 border-purple-300">
-                          {p.maxRedeemablePoints || 0} Pts
-                        </Badge>
+                      <TableCell className="text-xs font-semibold text-purple-600">
+                        {p.maxRedeemablePoints || 0} Pts
                       </TableCell>
                       <TableCell className="text-xs">
                         {p.overrideGlobalReward ? (
-                          <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-300">Product Override</Badge>
-                        ) : p.overrideCategoryReward ? (
-                          <Badge className="bg-blue-500/10 text-blue-600 border-blue-300">Category Override</Badge>
+                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 font-bold">
+                            Active Override
+                          </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-muted-foreground">Global Rule</Badge>
+                          <Badge variant="outline" className="bg-muted text-muted-foreground">
+                            Global Default
+                          </Badge>
                         )}
                       </TableCell>
-                      <TableCell>
-                        <Button size="xs" variant="outline" onClick={() => openEdit(p)}>
-                          <Edit className="h-3.5 w-3.5 mr-1" /> Configure
+                      <TableCell className="text-right">
+                        <Button size="sm" variant="outline" onClick={() => openEdit(p)} className="h-8 text-xs font-semibold border-amber-500/30 text-amber-600 hover:bg-amber-500/10">
+                          <Edit className="mr-1 h-3.5 w-3.5" /> Edit Rule
                         </Button>
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-6 text-xs text-muted-foreground">
-                      No products found.
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground text-xs">
+                      {loading ? 'Loading catalog products...' : 'No products found.'}
                     </TableCell>
                   </TableRow>
                 )}
@@ -210,108 +237,93 @@ export default function ProductRewardsPage() {
           </CardContent>
         </Card>
 
-        {/* Edit Product Reward Configuration Sheet */}
+        {/* Slide-Over Editor Sheet */}
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-          <SheetContent className="w-[450px] sm:w-[540px] overflow-y-auto">
-            <SheetHeader>
-              <SheetTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-amber-500" /> Reward Configuration
+          <SheetContent className="sm:max-w-md overflow-y-auto">
+            <SheetHeader className="border-b border-border/40 pb-4">
+              <SheetTitle className="text-base font-bold flex items-center gap-2">
+                <Package className="h-5 w-5 text-amber-500" /> Edit Product Reward Rule
               </SheetTitle>
-              <SheetDescription>
-                Configure reward points for <strong>{selectedProduct?.name}</strong>.
+              <SheetDescription className="text-xs">
+                {selectedProduct?.name} (ID: #{selectedProduct?.id})
               </SheetDescription>
             </SheetHeader>
 
             {message && (
               <div
-                className={`my-4 p-3 rounded text-xs flex items-center gap-2 ${
-                  message.type === 'success' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-600'
+                className={`my-4 p-3 rounded-lg flex items-center gap-2 text-xs font-medium ${
+                  message.type === 'success' ? 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30' : 'bg-red-500/15 text-red-600 border border-red-500/30'
                 }`}
               >
-                {message.type === 'success' ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                {message.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
                 {message.text}
               </div>
             )}
 
-            <form onSubmit={handleSave} className="space-y-4 mt-4">
-              <div className="flex items-center justify-between border-b pb-3">
-                <Label>Enable Product Rewards</Label>
-                <Switch
-                  checked={editForm.enableReward}
-                  onCheckedChange={(val) => setEditForm({ ...editForm, enableReward: val })}
-                />
-              </div>
-
-              <div className="flex items-center justify-between border-b pb-3">
-                <Label>Override Global Rules</Label>
+            <form onSubmit={handleSave} className="space-y-5 py-4">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/40">
+                <div>
+                  <Label className="font-bold text-xs">Enable Product Reward Override</Label>
+                  <p className="text-[11px] text-muted-foreground">Overrides global & category reward rules for this product.</p>
+                </div>
                 <Switch
                   checked={editForm.overrideGlobalReward}
-                  onCheckedChange={(val) => setEditForm({ ...editForm, overrideGlobalReward: val })}
+                  onCheckedChange={(val) => setFormState('overrideGlobalReward', val)}
                 />
               </div>
 
-              <div className="flex items-center justify-between border-b pb-3">
-                <Label>Override Category Rules</Label>
-                <Switch
-                  checked={editForm.overrideCategoryReward}
-                  onCheckedChange={(val) => setEditForm({ ...editForm, overrideCategoryReward: val })}
-                />
-              </div>
-
-              <div>
-                <Label>Reward Points Earned on Purchase</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold">Reward Points Earned</Label>
                 <Input
                   type="number"
                   value={editForm.rewardPoints}
-                  onChange={(e) => setEditForm({ ...editForm, rewardPoints: Number(e.target.value) })}
-                  className="mt-1"
+                  onChange={(e) => setFormState('rewardPoints', Number(e.target.value))}
+                  className="bg-card border-border/80 font-semibold"
                 />
+                <p className="text-[11px] text-muted-foreground">Fixed points earned when buying this product</p>
               </div>
 
-              <div>
-                <Label>Maximum Redeemable Points for Product</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold">Maximum Redeemable Points</Label>
                 <Input
                   type="number"
                   value={editForm.maxRedeemablePoints}
-                  onChange={(e) => setEditForm({ ...editForm, maxRedeemablePoints: Number(e.target.value) })}
-                  className="mt-1"
+                  onChange={(e) => setFormState('maxRedeemablePoints', Number(e.target.value))}
+                  className="bg-card border-border/80 font-semibold"
                 />
+                <p className="text-[11px] text-muted-foreground">Max points customer can spend on this product</p>
               </div>
 
-              <div>
-                <Label>Reward Points Multiplier</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold">Reward Multiplier</Label>
                 <Input
                   type="number"
                   step="0.1"
                   value={editForm.rewardMultiplier}
-                  onChange={(e) => setEditForm({ ...editForm, rewardMultiplier: Number(e.target.value) })}
-                  className="mt-1"
+                  onChange={(e) => setFormState('rewardMultiplier', Number(e.target.value))}
+                  className="bg-card border-border/80 font-semibold"
                 />
+                <p className="text-[11px] text-muted-foreground">e.g. 2.0 = 2x Double Points multiplier</p>
               </div>
 
-              <div className="flex items-center justify-between border-b pb-3">
-                <Label>Allow Reward Earning</Label>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/40">
+                <div>
+                  <Label className="font-bold text-xs">Allow Earning Points</Label>
+                  <p className="text-[11px] text-muted-foreground">Allows customers to earn points on this item.</p>
+                </div>
                 <Switch
                   checked={editForm.allowRewardEarning}
-                  onCheckedChange={(val) => setEditForm({ ...editForm, allowRewardEarning: val })}
+                  onCheckedChange={(val) => setFormState('allowRewardEarning', val)}
                 />
               </div>
 
-              <div className="flex items-center justify-between border-b pb-3">
-                <Label>Allow Reward Redemption</Label>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/40">
+                <div>
+                  <Label className="font-bold text-xs">Allow Points Redemption</Label>
+                  <p className="text-[11px] text-muted-foreground">Allows redeeming points for discount on this item.</p>
+                </div>
                 <Switch
                   checked={editForm.allowRewardRedemption}
-                  onCheckedChange={(val) => setEditForm({ ...editForm, allowRewardRedemption: val })}
-                />
-              </div>
-
-              <div>
-                <Label>Campaign Bonus Points</Label>
-                <Input
-                  type="number"
-                  value={editForm.campaignReward}
-                  onChange={(e) => setEditForm({ ...editForm, campaignReward: Number(e.target.value) })}
-                  className="mt-1"
                 />
               </div>
 

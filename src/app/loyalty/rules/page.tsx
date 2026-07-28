@@ -2,14 +2,26 @@
 
 import { useState, useEffect } from 'react';
 import { AdminLayout } from '@/components/layout/admin-layout';
-import { PageHeader } from '@/components/layout/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { API_BASE } from '@/lib/api';
-import { Sparkles, Save, CheckCircle2, AlertCircle } from 'lucide-react';
+import {
+  Sparkles,
+  Save,
+  CheckCircle2,
+  AlertCircle,
+  ShieldCheck,
+  Zap,
+  Gift,
+  Coins,
+  ArrowLeft,
+  Settings2,
+  Flame,
+} from 'lucide-react';
+import Link from 'next/link';
 
 export default function LoyaltyRulesPage() {
   const [loading, setLoading] = useState(true);
@@ -105,37 +117,54 @@ export default function LoyaltyRulesPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6 p-6 max-w-5xl">
-        <PageHeader
-          title="Global Reward Rules & Settings"
-          description="Configure system-wide loyalty settings, conversion rates, order redemption limits, and event rewards."
-        />
+      <div className="space-y-8 p-6 max-w-[1400px] mx-auto">
+        {/* Banner Header */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500/15 via-purple-600/10 to-emerald-500/15 p-8 border border-border/60 backdrop-blur-xl shadow-lg">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <Link href="/loyalty" className="inline-flex items-center text-xs font-semibold text-muted-foreground hover:text-amber-500 transition-colors mb-2">
+                <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back to Loyalty Hub
+              </Link>
+              <h1 className="text-3xl font-extrabold text-foreground flex items-center gap-2">
+                <Settings2 className="h-7 w-7 text-amber-500" /> Global Reward Rules & Engine
+              </h1>
+              <p className="text-muted-foreground text-sm mt-1">
+                Configure global earning formulas, point-to-INR conversions, order discount caps, and automated milestone rewards.
+              </p>
+            </div>
+            <Button onClick={handleSave} disabled={saving} className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold shadow-md shadow-amber-500/20 shrink-0">
+              <Save className="mr-2 h-4 w-4" /> {saving ? 'Saving...' : 'Save Configuration'}
+            </Button>
+          </div>
+        </div>
 
         {message && (
           <div
-            className={`p-4 rounded-lg flex items-center gap-2 text-sm ${
-              message.type === 'success' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-red-500/10 text-red-600 border border-red-500/20'
+            className={`p-4 rounded-xl flex items-center gap-3 text-sm font-medium ${
+              message.type === 'success' ? 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30' : 'bg-red-500/15 text-red-600 border border-red-500/30'
             }`}
           >
-            {message.type === 'success' ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+            {message.type === 'success' ? <CheckCircle2 className="h-5 w-5 shrink-0" /> : <AlertCircle className="h-5 w-5 shrink-0" />}
             {message.text}
           </div>
         )}
 
         <form onSubmit={handleSave} className="space-y-6">
           {/* Master Toggles */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary" /> Master Module Toggles
+          <Card className="border-border/60 shadow-sm">
+            <CardHeader className="border-b border-border/40 pb-4">
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-amber-500" /> Core Module Subsystems
               </CardTitle>
-              <CardDescription>Enable or disable major subsystems globally.</CardDescription>
+              <CardDescription className="text-xs">
+                Master switches to globally enable or disable reward mechanisms across web, mobile, and backend APIs.
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between border-b border-border/40 pb-3">
+            <CardContent className="p-6 space-y-4">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/30 hover:bg-muted/50 transition-colors">
                 <div>
-                  <Label className="font-semibold">Enable Reward System</Label>
-                  <p className="text-xs text-muted-foreground">Allow customers to earn and redeem reward points.</p>
+                  <Label className="font-bold text-sm text-foreground">Reward Points System</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">Customers earn points on orders & redeem points for checkout discounts.</p>
                 </div>
                 <Switch
                   checked={form.enableRewardSystem}
@@ -143,10 +172,10 @@ export default function LoyaltyRulesPage() {
                 />
               </div>
 
-              <div className="flex items-center justify-between border-b border-border/40 pb-3">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/30 hover:bg-muted/50 transition-colors">
                 <div>
-                  <Label className="font-semibold">Enable Customer Wallet</Label>
-                  <p className="text-xs text-muted-foreground">Allow customers to hold funds and pay using wallet balance.</p>
+                  <Label className="font-bold text-sm text-foreground">Customer Digital Wallet</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">Allows storing money balance, quick checkout payments, and refund credits.</p>
                 </div>
                 <Switch
                   checked={form.enableWallet}
@@ -154,10 +183,10 @@ export default function LoyaltyRulesPage() {
                 />
               </div>
 
-              <div className="flex items-center justify-between border-b border-border/40 pb-3">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/30 hover:bg-muted/50 transition-colors">
                 <div>
-                  <Label className="font-semibold">Enable Cashback System</Label>
-                  <p className="text-xs text-muted-foreground">Allow promotional and order cashback credits.</p>
+                  <Label className="font-bold text-sm text-foreground">Cashback Subsystem</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">Enables promotional cashback transactions directly credited to user wallets.</p>
                 </div>
                 <Switch
                   checked={form.enableCashback}
@@ -165,10 +194,10 @@ export default function LoyaltyRulesPage() {
                 />
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/30 hover:bg-muted/50 transition-colors">
                 <div>
-                  <Label className="font-semibold">Enable Referral Program</Label>
-                  <p className="text-xs text-muted-foreground">Allow customers to invite friends and earn referral bonuses.</p>
+                  <Label className="font-bold text-sm text-foreground">Referral & Invite Program</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">Generates referral codes for users to invite friends & earn signup bonuses.</p>
                 </div>
                 <Switch
                   checked={form.enableReferral}
@@ -179,150 +208,167 @@ export default function LoyaltyRulesPage() {
           </Card>
 
           {/* Points Calculation & Conversion */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Points Earning & Redemption Conversion</CardTitle>
-              <CardDescription>Default earn rate and conversion value (e.g. 100 Points = ₹1.00 INR).</CardDescription>
+          <Card className="border-border/60 shadow-sm">
+            <CardHeader className="border-b border-border/40 pb-4">
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <Coins className="h-5 w-5 text-purple-500" /> Point Calculations & Currency Conversion
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Configure default earning multipliers, redemption thresholds, and currency equivalence.
+              </CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label>Points Earned Per ₹100 Spent</Label>
+            <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold">Points Earned Per ₹100 Spent</Label>
                 <Input
                   type="number"
                   value={form.pointsPer100}
                   onChange={(e) => setForm({ ...form, pointsPer100: Number(e.target.value) })}
-                  className="mt-1"
+                  className="bg-card border-border/80 font-semibold"
                 />
-                <p className="text-[11px] text-muted-foreground mt-1">Example: 10 points per ₹100 spent = 10% points return.</p>
+                <p className="text-[11px] text-muted-foreground">Default: 10 points = 10% points return rate</p>
               </div>
 
-              <div>
-                <Label>Point Conversion Rate (INR per Point)</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold">Conversion Rate (INR Per Point)</Label>
                 <Input
                   type="number"
                   step="0.001"
                   value={form.rewardConversionRate}
                   onChange={(e) => setForm({ ...form, rewardConversionRate: Number(e.target.value) })}
-                  className="mt-1"
+                  className="bg-card border-border/80 font-semibold"
                 />
-                <p className="text-[11px] text-muted-foreground mt-1">0.01 means 100 Points = ₹1.00 INR discount.</p>
+                <p className="text-[11px] text-muted-foreground">0.01 means 100 Points = ₹1.00 INR Discount</p>
               </div>
 
-              <div>
-                <Label>Maximum Redeemable Points Per Order</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold">Max Redeemable Points Per Order</Label>
                 <Input
                   type="number"
                   value={form.maxRedeemablePointsPerOrder}
                   onChange={(e) => setForm({ ...form, maxRedeemablePointsPerOrder: Number(e.target.value) })}
-                  className="mt-1"
+                  className="bg-card border-border/80 font-semibold"
                 />
+                <p className="text-[11px] text-muted-foreground">Cap limit per single order checkout</p>
               </div>
 
-              <div>
-                <Label>Maximum Redeemable % of Order Subtotal</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold">Max Order Discount Cap (%)</Label>
                 <Input
                   type="number"
                   value={form.maxRedeemablePercentPerOrder}
                   onChange={(e) => setForm({ ...form, maxRedeemablePercentPerOrder: Number(e.target.value) })}
-                  className="mt-1"
+                  className="bg-card border-border/80 font-semibold"
                 />
-                <p className="text-[11px] text-muted-foreground mt-1">Example: 50% max order discount from points.</p>
+                <p className="text-[11px] text-muted-foreground">Example: 50% max discount allowed from points</p>
               </div>
 
-              <div>
-                <Label>Minimum Order Amount to Earn/Redeem</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold">Minimum Order Amount (₹)</Label>
                 <Input
                   type="number"
                   value={form.minOrderAmount}
                   onChange={(e) => setForm({ ...form, minOrderAmount: Number(e.target.value) })}
-                  className="mt-1"
+                  className="bg-card border-border/80 font-semibold"
                 />
+                <p className="text-[11px] text-muted-foreground">Threshold required to earn or redeem points</p>
               </div>
 
-              <div>
-                <Label>Reward Points Expiry (Days)</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold">Reward Expiry (Days)</Label>
                 <Input
                   type="number"
                   value={form.rewardExpiryDays}
                   onChange={(e) => setForm({ ...form, rewardExpiryDays: Number(e.target.value) })}
-                  className="mt-1"
+                  className="bg-card border-border/80 font-semibold"
                 />
+                <p className="text-[11px] text-muted-foreground">Points expire after specified days of inactivity</p>
               </div>
             </CardContent>
           </Card>
 
-          {/* Instant Event Rewards */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Instant Event Reward Bonuses</CardTitle>
-              <CardDescription>Points awarded automatically for user activity events.</CardDescription>
+          {/* Automated Event Rewards */}
+          <Card className="border-border/60 shadow-sm">
+            <CardHeader className="border-b border-border/40 pb-4">
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <Gift className="h-5 w-5 text-emerald-500" /> Automated Event Rewards
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Instant point bonuses credited automatically upon customer milestones and triggers.
+              </CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              <div>
-                <Label>Welcome Bonus (New Signup)</Label>
+            <CardContent className="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+              <div className="p-3.5 rounded-xl bg-muted/20 border border-border/40 space-y-1.5">
+                <Label className="text-xs font-bold text-foreground">Welcome Bonus (Signup)</Label>
                 <Input
                   type="number"
                   value={form.welcomeReward}
                   onChange={(e) => setForm({ ...form, welcomeReward: Number(e.target.value) })}
-                  className="mt-1"
+                  className="bg-card font-semibold"
                 />
+                <p className="text-[11px] text-muted-foreground">Credited on account registration</p>
               </div>
 
-              <div>
-                <Label>Daily Login Reward</Label>
+              <div className="p-3.5 rounded-xl bg-muted/20 border border-border/40 space-y-1.5">
+                <Label className="text-xs font-bold text-foreground">Daily App Login Bonus</Label>
                 <Input
                   type="number"
                   value={form.dailyLoginReward}
                   onChange={(e) => setForm({ ...form, dailyLoginReward: Number(e.target.value) })}
-                  className="mt-1"
+                  className="bg-card font-semibold"
                 />
+                <p className="text-[11px] text-muted-foreground">Credited once per day on app open</p>
               </div>
 
-              <div>
-                <Label>Referral Bonus (Per Friend)</Label>
+              <div className="p-3.5 rounded-xl bg-muted/20 border border-border/40 space-y-1.5">
+                <Label className="text-xs font-bold text-foreground">Referral Bonus (Per Friend)</Label>
                 <Input
                   type="number"
                   value={form.referralReward}
                   onChange={(e) => setForm({ ...form, referralReward: Number(e.target.value) })}
-                  className="mt-1"
+                  className="bg-card font-semibold"
                 />
+                <p className="text-[11px] text-muted-foreground">Credited when referred user signs up</p>
               </div>
 
-              <div>
-                <Label>Product Review Reward</Label>
+              <div className="p-3.5 rounded-xl bg-muted/20 border border-border/40 space-y-1.5">
+                <Label className="text-xs font-bold text-foreground">Product Review Reward</Label>
                 <Input
                   type="number"
                   value={form.reviewReward}
                   onChange={(e) => setForm({ ...form, reviewReward: Number(e.target.value) })}
-                  className="mt-1"
+                  className="bg-card font-semibold"
                 />
+                <p className="text-[11px] text-muted-foreground">Credited on verified product review</p>
               </div>
 
-              <div>
-                <Label>First Order Bonus</Label>
+              <div className="p-3.5 rounded-xl bg-muted/20 border border-border/40 space-y-1.5">
+                <Label className="text-xs font-bold text-foreground">First Order Completion</Label>
                 <Input
                   type="number"
                   value={form.firstOrderReward}
                   onChange={(e) => setForm({ ...form, firstOrderReward: Number(e.target.value) })}
-                  className="mt-1"
+                  className="bg-card font-semibold"
                 />
+                <p className="text-[11px] text-muted-foreground">Credited on first completed order</p>
               </div>
 
-              <div>
-                <Label>Birthday Reward</Label>
+              <div className="p-3.5 rounded-xl bg-muted/20 border border-border/40 space-y-1.5">
+                <Label className="text-xs font-bold text-foreground">Birthday Special Bonus</Label>
                 <Input
                   type="number"
                   value={form.birthdayReward}
                   onChange={(e) => setForm({ ...form, birthdayReward: Number(e.target.value) })}
-                  className="mt-1"
+                  className="bg-card font-semibold"
                 />
+                <p className="text-[11px] text-muted-foreground">Credited automatically on birthday</p>
               </div>
             </CardContent>
           </Card>
 
-          <div className="flex justify-end">
-            <Button type="submit" disabled={saving}>
-              <Save className="mr-2 h-4 w-4" /> {saving ? 'Saving...' : 'Save Loyalty Rules'}
+          <div className="flex justify-end pt-2">
+            <Button type="submit" disabled={saving} size="lg" className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold shadow-lg shadow-amber-500/25 px-8">
+              <Save className="mr-2 h-5 w-5" /> {saving ? 'Saving...' : 'Save Configuration'}
             </Button>
           </div>
         </form>
@@ -330,3 +376,4 @@ export default function LoyaltyRulesPage() {
     </AdminLayout>
   );
 }
+
