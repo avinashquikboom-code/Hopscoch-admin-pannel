@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/toast';
 import {
   Zap,
@@ -22,7 +23,9 @@ import {
   BrainCircuit,
   MapPin,
   Cloud,
-  MessageSquare
+  MessageSquare,
+  Flame,
+  Bell
 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 
@@ -37,6 +40,7 @@ export default function IntegrationsSettingsPage() {
   const [google, setGoogle] = useState({ gemini_api_key: '', maps_api_key: '' });
   const [aws, setAws] = useState({ access_key_id: '', secret_access_key: '', region: 'ap-south-1', bucket_name: '' });
   const [msg91, setMsg91] = useState({ auth_key: '', sender_id: 'HOPSCH', dlt_te_id: '', flow_id: '' });
+  const [firebase, setFirebase] = useState({ api_key: '', project_id: '', messaging_sender_id: '', app_id: '', fcm_server_key: '' });
 
   // Show/Hide password states
   const [showRzpSecret, setShowRzpSecret] = useState(false);
@@ -45,6 +49,8 @@ export default function IntegrationsSettingsPage() {
   const [showMaps, setShowMaps] = useState(false);
   const [showAwsSecret, setShowAwsSecret] = useState(false);
   const [showMsg91Auth, setShowMsg91Auth] = useState(false);
+  const [showFirebaseKey, setShowFirebaseKey] = useState(false);
+  const [showFcmServerKey, setShowFcmServerKey] = useState(false);
 
   // Test Connection States
   const [testingShiprocket, setTestingShiprocket] = useState(false);
@@ -62,6 +68,9 @@ export default function IntegrationsSettingsPage() {
   const [testingMsg91, setTestingMsg91] = useState(false);
   const [msg91TestResult, setMsg91TestResult] = useState<'success' | 'fail' | null>(null);
 
+  const [testingFirebase, setTestingFirebase] = useState(false);
+  const [firebaseTestResult, setFirebaseTestResult] = useState<'success' | 'fail' | null>(null);
+
   const loadSettings = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/v1/admin/settings/integrations`, { headers: authHeaders() });
@@ -72,6 +81,7 @@ export default function IntegrationsSettingsPage() {
         if (json.data.google) setGoogle(json.data.google);
         if (json.data.aws) setAws(json.data.aws);
         if (json.data.msg91) setMsg91(json.data.msg91);
+        if (json.data.firebase) setFirebase(json.data.firebase);
       }
     } catch (err) {
       console.error(err);
@@ -82,11 +92,11 @@ export default function IntegrationsSettingsPage() {
     loadSettings();
   }, []);
 
-  const handleSave = async (provider: 'shiprocket' | 'razorpay' | 'google' | 'aws' | 'msg91') => {
+  const handleSave = async (provider: 'shiprocket' | 'razorpay' | 'google' | 'aws' | 'msg91' | 'firebase') => {
     try {
       const payload = {
         provider,
-        settings: provider === 'shiprocket' ? shiprocket : provider === 'razorpay' ? razorpay : provider === 'google' ? google : provider === 'aws' ? aws : msg91,
+        settings: provider === 'shiprocket' ? shiprocket : provider === 'razorpay' ? razorpay : provider === 'google' ? google : provider === 'aws' ? aws : provider === 'msg91' ? msg91 : firebase,
       };
 
       const res = await fetch(`${API_BASE}/api/v1/admin/settings/integrations`, {
@@ -96,9 +106,8 @@ export default function IntegrationsSettingsPage() {
       });
 
       if (res.ok) {
-        const label = provider === 'shiprocket' ? 'Shiprocket' : provider === 'razorpay' ? 'Razorpay' : provider === 'google' ? 'Google' : provider === 'aws' ? 'AWS S3' : 'MSG91';
+        const label = provider === 'shiprocket' ? 'Shiprocket' : provider === 'razorpay' ? 'Razorpay' : provider === 'google' ? 'Google' : provider === 'aws' ? 'AWS S3' : provider === 'msg91' ? 'MSG91' : 'Firebase';
         toast.success(`${label} credentials saved successfully.`);
-        loadSettings();
         loadSettings();
       } else {
         const data = await res.json();
@@ -110,8 +119,8 @@ export default function IntegrationsSettingsPage() {
     }
   };
 
-  const handleDisconnect = async (provider: 'shiprocket' | 'razorpay' | 'google' | 'aws' | 'msg91', keyName?: string) => {
-    const label = keyName === 'gemini_api_key' ? 'Google Gemini Vision' : keyName === 'maps_api_key' ? 'Google Places API' : provider === 'shiprocket' ? 'Shiprocket' : provider === 'razorpay' ? 'Razorpay' : provider === 'aws' ? 'AWS S3 Bucket' : 'MSG91 Gateway';
+  const handleDisconnect = async (provider: 'shiprocket' | 'razorpay' | 'google' | 'aws' | 'msg91' | 'firebase', keyName?: string) => {
+    const label = keyName === 'gemini_api_key' ? 'Google Gemini Vision' : keyName === 'maps_api_key' ? 'Google Places API' : provider === 'shiprocket' ? 'Shiprocket' : provider === 'razorpay' ? 'Razorpay' : provider === 'aws' ? 'AWS S3 Bucket' : provider === 'msg91' ? 'MSG91 Gateway' : 'Firebase App';
     if (!confirm(`Are you sure you want to disconnect ${label}? This will clear its saved credentials.`)) {
       return;
     }
@@ -127,7 +136,9 @@ export default function IntegrationsSettingsPage() {
           }
         : provider === 'aws'
         ? { access_key_id: '', secret_access_key: '', region: '', bucket_name: '' }
-        : { auth_key: '', sender_id: '', dlt_te_id: '', flow_id: '' };
+        : provider === 'msg91'
+        ? { auth_key: '', sender_id: '', dlt_te_id: '', flow_id: '' }
+        : { api_key: '', project_id: '', messaging_sender_id: '', app_id: '', fcm_server_key: '' };
 
       const res = await fetch(`${API_BASE}/api/v1/admin/settings/integrations`, {
         method: 'PUT',
@@ -155,9 +166,12 @@ export default function IntegrationsSettingsPage() {
         } else if (provider === 'aws') {
           setAws({ access_key_id: '', secret_access_key: '', region: 'ap-south-1', bucket_name: '' });
           setAwsTestResult(null);
-        } else {
+        } else if (provider === 'msg91') {
           setMsg91({ auth_key: '', sender_id: 'HOPSCH', dlt_te_id: '', flow_id: '' });
           setMsg91TestResult(null);
+        } else {
+          setFirebase({ api_key: '', project_id: '', messaging_sender_id: '', app_id: '', fcm_server_key: '' });
+          setFirebaseTestResult(null);
         }
       } else {
         toast.error(`Failed to disconnect ${label}.`);
@@ -168,7 +182,7 @@ export default function IntegrationsSettingsPage() {
     }
   };
 
-  const testConnection = async (provider: 'shiprocket' | 'razorpay' | 'google' | 'aws' | 'msg91') => {
+  const testConnection = async (provider: 'shiprocket' | 'razorpay' | 'google' | 'aws' | 'msg91' | 'firebase') => {
     if (provider === 'shiprocket') {
       setTestingShiprocket(true);
       setShiprocketTestResult(null);
@@ -181,9 +195,12 @@ export default function IntegrationsSettingsPage() {
     } else if (provider === 'aws') {
       setTestingAws(true);
       setAwsTestResult(null);
-    } else {
+    } else if (provider === 'msg91') {
       setTestingMsg91(true);
       setMsg91TestResult(null);
+    } else {
+      setTestingFirebase(true);
+      setFirebaseTestResult(null);
     }
 
     try {
@@ -192,7 +209,7 @@ export default function IntegrationsSettingsPage() {
         headers: authHeaders(),
         body: JSON.stringify({
           provider,
-          settings: provider === 'shiprocket' ? shiprocket : provider === 'razorpay' ? razorpay : provider === 'google' ? google : provider === 'aws' ? aws : msg91,
+          settings: provider === 'shiprocket' ? shiprocket : provider === 'razorpay' ? razorpay : provider === 'google' ? google : provider === 'aws' ? aws : provider === 'msg91' ? msg91 : firebase,
         }),
       });
 
@@ -201,26 +218,30 @@ export default function IntegrationsSettingsPage() {
         else if (provider === 'razorpay') setRazorpayTestResult('success');
         else if (provider === 'google') setGoogleTestResult('success');
         else if (provider === 'aws') setAwsTestResult('success');
-        else setMsg91TestResult('success');
+        else if (provider === 'msg91') setMsg91TestResult('success');
+        else setFirebaseTestResult('success');
       } else {
         if (provider === 'shiprocket') setShiprocketTestResult('fail');
         else if (provider === 'razorpay') setRazorpayTestResult('fail');
         else if (provider === 'google') setGoogleTestResult('fail');
         else if (provider === 'aws') setAwsTestResult('fail');
-        else setMsg91TestResult('fail');
+        else if (provider === 'msg91') setMsg91TestResult('fail');
+        else setFirebaseTestResult('fail');
       }
     } catch (err) {
       if (provider === 'shiprocket') setShiprocketTestResult('fail');
       else if (provider === 'razorpay') setRazorpayTestResult('fail');
       else if (provider === 'google') setGoogleTestResult('fail');
       else if (provider === 'aws') setAwsTestResult('fail');
-      else setMsg91TestResult('fail');
+      else if (provider === 'msg91') setMsg91TestResult('fail');
+      else setFirebaseTestResult('fail');
     } finally {
       if (provider === 'shiprocket') setTestingShiprocket(false);
       else if (provider === 'razorpay') setTestingRazorpay(false);
       else if (provider === 'google') setTestingGoogle(false);
       else if (provider === 'aws') setTestingAws(false);
-      else setTestingMsg91(false);
+      else if (provider === 'msg91') setTestingMsg91(false);
+      else setTestingFirebase(false);
     }
   };
 
@@ -728,24 +749,53 @@ export default function IntegrationsSettingsPage() {
             </div>
           </Card>
 
-          {/* MSG91 Gateway Card */}
-          <Card className="border-border/40 rounded-xl bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-            <div className="p-6 border-b border-border/20 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold">
-                  <MessageSquare className="h-5 w-5" />
+          {/* MSG91 Gateway Card — Redesigned High-Fidelity */}
+          <Card className="border border-purple-500/20 dark:border-purple-500/30 rounded-2xl bg-gradient-to-br from-card via-card to-purple-950/10 shadow-lg hover:shadow-purple-500/10 transition-all duration-300 overflow-hidden relative group">
+            {/* Top Gradient Bar */}
+            <div className="h-1.5 w-full bg-gradient-to-r from-purple-600 via-indigo-500 to-amber-500" />
+
+            {/* Header */}
+            <div className="p-6 border-b border-border/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-purple-500/[0.02]">
+              <div className="flex items-center gap-3.5">
+                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 text-white flex items-center justify-center font-bold shadow-md shadow-purple-500/20 shrink-0">
+                  <MessageSquare className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-base text-foreground flex items-center gap-2">
-                    MSG91 SMS & OTP Gateway
-                  </h3>
-                  <p className="text-xs text-muted-foreground font-light">Transactional SMS, DLT Templates & WhatsApp OTP Gateway</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-extrabold text-lg text-foreground tracking-tight">
+                      MSG91 SMS & OTP Gateway
+                    </h3>
+                    <Badge variant="outline" className="text-[10px] font-bold px-2 py-0.5 rounded-full border-purple-500/30 text-purple-600 dark:text-purple-400 bg-purple-500/10">
+                      TRAI DLT Ready
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5 font-light">
+                    Enterprise Transactional SMS, DLT Header Mapping & WhatsApp OTP Dispatch
+                  </p>
                 </div>
               </div>
               <StatusBadge configured={Boolean(msg91.auth_key)} />
             </div>
 
-            <CardContent className="p-6 space-y-5">
+            <CardContent className="p-6 space-y-6">
+              {/* MSG91 Capability Highlights */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-xl bg-muted/20 border border-border/30 text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="font-semibold text-foreground">High Delivery Speed</span>
+                  <span className="text-[10px] text-muted-foreground font-mono">&lt; 3s</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="h-3.5 w-3.5 text-purple-500" />
+                  <span className="font-semibold text-foreground">DLT Header Guard</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Zap className="h-3.5 w-3.5 text-amber-500" />
+                  <span className="font-semibold text-foreground">Flow & OTP API v5</span>
+                </div>
+              </div>
+
+              {/* Masked Active Key Summary */}
               {msg91.auth_key && (
                 <ActiveKeyRow
                   value={msg91.auth_key}
@@ -756,9 +806,16 @@ export default function IntegrationsSettingsPage() {
                 />
               )}
 
-              <div className="space-y-4">
+              {/* Form Input Section */}
+              <div className="space-y-5">
+                {/* Auth Key */}
                 <div className="space-y-1.5">
-                  <Label htmlFor="msg91AuthKey" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">MSG91 Auth Key *</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="msg91AuthKey" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                      MSG91 Authentication Key *
+                    </Label>
+                    <span className="text-[10px] text-purple-500 font-medium">MSG91 Control Panel &gt; API Keys</span>
+                  </div>
                   <PasswordInput
                     id="msg91AuthKey"
                     value={msg91.auth_key}
@@ -770,50 +827,62 @@ export default function IntegrationsSettingsPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Grid for Headers & Template IDs */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="space-y-1.5">
-                    <Label htmlFor="msg91SenderId" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Sender ID (Header)</Label>
+                    <Label htmlFor="msg91SenderId" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                      Sender ID / Header
+                    </Label>
                     <Input
                       id="msg91SenderId"
                       value={msg91.sender_id}
-                      onChange={(e) => setMsg91({ ...msg91, sender_id: e.target.value })}
+                      onChange={(e) => setMsg91({ ...msg91, sender_id: e.target.value.toUpperCase() })}
                       placeholder="e.g. HOPSCH"
-                      className="rounded-lg border-border/60 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 h-11 text-sm uppercase"
+                      maxLength={6}
+                      className="rounded-lg border-border/60 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 h-11 text-sm font-mono uppercase tracking-wider"
                     />
+                    <p className="text-[10px] text-muted-foreground font-light">6-char TRAI approved Header</p>
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="msg91DltTeId" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">DLT Template Entity ID</Label>
+                    <Label htmlFor="msg91DltTeId" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                      DLT Template Entity ID
+                    </Label>
                     <Input
                       id="msg91DltTeId"
                       value={msg91.dlt_te_id}
                       onChange={(e) => setMsg91({ ...msg91, dlt_te_id: e.target.value })}
                       placeholder="e.g. 1707161234567890123"
-                      className="rounded-lg border-border/60 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 h-11 text-sm"
+                      className="rounded-lg border-border/60 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 h-11 text-sm font-mono"
                     />
+                    <p className="text-[10px] text-muted-foreground font-light">DLT Principal Entity ID</p>
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="msg91FlowId" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Flow ID / Template ID</Label>
+                    <Label htmlFor="msg91FlowId" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                      Flow ID / OTP Template
+                    </Label>
                     <Input
                       id="msg91FlowId"
                       value={msg91.flow_id}
                       onChange={(e) => setMsg91({ ...msg91, flow_id: e.target.value })}
                       placeholder="e.g. 61d8a1b2c3d4e5f6789"
-                      className="rounded-lg border-border/60 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 h-11 text-sm"
+                      className="rounded-lg border-border/60 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 h-11 text-sm font-mono"
                     />
+                    <p className="text-[10px] text-muted-foreground font-light">MSG91 Campaign Flow ID</p>
                   </div>
                 </div>
               </div>
 
+              {/* Test Result Feedback */}
               <TestResultBanner result={msg91TestResult} failMessage="Connection check failed. Please verify your MSG91 Auth Key." />
             </CardContent>
 
             {/* Bottom Actions */}
-            <div className="p-6 border-t border-border/20 bg-muted/20 flex items-center gap-3">
+            <div className="p-6 border-t border-border/20 bg-purple-500/[0.02] flex items-center gap-3">
               <Button
                 onClick={() => handleSave('msg91')}
-                className="rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold h-11 px-6 flex items-center gap-2 text-xs"
+                className="rounded-lg bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-700 hover:to-indigo-700 text-white font-bold h-11 px-6 flex items-center gap-2 text-xs shadow-md shadow-purple-600/20 cursor-pointer transition-all hover:scale-[1.01]"
               >
                 <Key className="h-4 w-4" />
                 {Boolean(msg91.auth_key) ? 'Update Credentials' : 'Save Credentials'}
@@ -824,7 +893,7 @@ export default function IntegrationsSettingsPage() {
                 onClick={() => testConnection('msg91')}
                 disabled={testingMsg91}
                 variant="outline"
-                className="rounded-lg border-border/60 h-11 px-4 flex items-center gap-2 text-xs"
+                className="rounded-lg border-purple-500/30 hover:bg-purple-500/10 text-purple-600 dark:text-purple-400 font-semibold h-11 px-4 flex items-center gap-2 text-xs cursor-pointer"
               >
                 <RefreshCw className={`h-4 w-4 ${testingMsg91 ? 'animate-spin' : ''}`} />
                 Test Connection
@@ -834,7 +903,181 @@ export default function IntegrationsSettingsPage() {
                 <Button
                   onClick={() => handleDisconnect('msg91')}
                   variant="ghost"
-                  className="rounded-lg text-rose-500 hover:bg-rose-500/10 hover:text-rose-500 h-11 px-4 text-xs ml-auto"
+                  className="rounded-lg text-rose-500 hover:bg-rose-500/10 hover:text-rose-500 h-11 px-4 text-xs ml-auto cursor-pointer"
+                >
+                  Disconnect
+                </Button>
+              )}
+            </div>
+          </Card>
+
+          {/* Firebase Integration Card — High Fidelity */}
+          <Card className="border border-amber-500/20 dark:border-amber-500/30 rounded-2xl bg-gradient-to-br from-card via-card to-amber-950/10 shadow-lg hover:shadow-amber-500/10 transition-all duration-300 overflow-hidden relative group">
+            {/* Top Gradient Accent Bar */}
+            <div className="h-1.5 w-full bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500" />
+
+            {/* Card Header */}
+            <div className="p-6 border-b border-border/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-amber-500/[0.02]">
+              <div className="flex items-center gap-3.5">
+                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center font-bold shadow-md shadow-amber-500/20 shrink-0">
+                  <Flame className="h-6 w-6 text-yellow-200" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-extrabold text-lg text-foreground tracking-tight">
+                      Firebase Cloud Suite
+                    </h3>
+                    <Badge variant="outline" className="text-[10px] font-bold px-2 py-0.5 rounded-full border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-500/10">
+                      FCM &amp; Analytics
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5 font-light">
+                    FCM Push Notifications, Realtime Analytics &amp; Web/Mobile Authentication
+                  </p>
+                </div>
+              </div>
+              <StatusBadge configured={Boolean(firebase.api_key && firebase.project_id)} />
+            </div>
+
+            <CardContent className="p-6 space-y-6">
+              {/* Capability Highlights */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-xl bg-muted/20 border border-border/30 text-xs">
+                <div className="flex items-center gap-2">
+                  <Bell className="h-3.5 w-3.5 text-amber-500" />
+                  <span className="font-semibold text-foreground">FCM Cloud Messaging</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Zap className="h-3.5 w-3.5 text-orange-500" />
+                  <span className="font-semibold text-foreground">Realtime Auth &amp; Sync</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="h-3.5 w-3.5 text-yellow-500" />
+                  <span className="font-semibold text-foreground">Service Account Guard</span>
+                </div>
+              </div>
+
+              {/* Active Key Row */}
+              {firebase.api_key && (
+                <ActiveKeyRow
+                  value={firebase.api_key}
+                  onCopy={() => {
+                    navigator.clipboard.writeText(firebase.api_key);
+                    toast.success('Firebase Web API Key copied to clipboard');
+                  }}
+                />
+              )}
+
+              {/* Form Input Section */}
+              <div className="space-y-5">
+                {/* Firebase Web API Key */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="firebaseApiKey" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                      Firebase Web API Key *
+                    </Label>
+                    <span className="text-[10px] text-amber-500 font-medium">Firebase Console &gt; Project Settings</span>
+                  </div>
+                  <PasswordInput
+                    id="firebaseApiKey"
+                    value={firebase.api_key}
+                    onChange={(v) => setFirebase({ ...firebase, api_key: v })}
+                    placeholder="AIzaSyA1234567890ExampleKey"
+                    visible={showFirebaseKey}
+                    onToggleVisible={() => setShowFirebaseKey(!showFirebaseKey)}
+                    focusColor="blue"
+                  />
+                </div>
+
+                {/* Grid for Project ID, App ID & Messaging Sender ID */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="firebaseProjectId" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                      Project ID *
+                    </Label>
+                    <Input
+                      id="firebaseProjectId"
+                      value={firebase.project_id}
+                      onChange={(e) => setFirebase({ ...firebase, project_id: e.target.value })}
+                      placeholder="e.g. hopscotch-fashion-prod"
+                      className="rounded-lg border-border/60 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 h-11 text-sm font-mono"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="firebaseSenderId" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                      Messaging Sender ID
+                    </Label>
+                    <Input
+                      id="firebaseSenderId"
+                      value={firebase.messaging_sender_id}
+                      onChange={(e) => setFirebase({ ...firebase, messaging_sender_id: e.target.value })}
+                      placeholder="e.g. 109283746501"
+                      className="rounded-lg border-border/60 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 h-11 text-sm font-mono"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="firebaseAppId" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                      Firebase App ID
+                    </Label>
+                    <Input
+                      id="firebaseAppId"
+                      value={firebase.app_id}
+                      onChange={(e) => setFirebase({ ...firebase, app_id: e.target.value })}
+                      placeholder="e.g. 1:109283746501:web:abc123"
+                      className="rounded-lg border-border/60 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 h-11 text-sm font-mono"
+                    />
+                  </div>
+                </div>
+
+                {/* FCM Server Key / Private Key */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="fcmServerKey" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    FCM Legacy Server Key / Private Key (for Server Push)
+                  </Label>
+                  <PasswordInput
+                    id="fcmServerKey"
+                    value={firebase.fcm_server_key}
+                    onChange={(v) => setFirebase({ ...firebase, fcm_server_key: v })}
+                    placeholder="AAAA1234567:APA91bG...ServerKey"
+                    visible={showFcmServerKey}
+                    onToggleVisible={() => setShowFcmServerKey(!showFcmServerKey)}
+                    focusColor="blue"
+                  />
+                  <p className="text-[10px] text-muted-foreground font-light">Required for backend Cloud Messaging push dispatch</p>
+                </div>
+              </div>
+
+              {/* Test Result Feedback */}
+              <TestResultBanner result={firebaseTestResult} failMessage="Connection check failed. Please verify your Firebase API Key & Project ID." />
+            </CardContent>
+
+            {/* Bottom Actions */}
+            <div className="p-6 border-t border-border/20 bg-amber-500/[0.02] flex items-center gap-3">
+              <Button
+                onClick={() => handleSave('firebase')}
+                className="rounded-lg bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-white font-bold h-11 px-6 flex items-center gap-2 text-xs shadow-md shadow-amber-500/20 cursor-pointer transition-all hover:scale-[1.01]"
+              >
+                <Key className="h-4 w-4" />
+                {Boolean(firebase.api_key) ? 'Update Credentials' : 'Save Credentials'}
+              </Button>
+
+              <Button
+                type="button"
+                onClick={() => testConnection('firebase')}
+                disabled={testingFirebase}
+                variant="outline"
+                className="rounded-lg border-amber-500/30 hover:bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold h-11 px-4 flex items-center gap-2 text-xs cursor-pointer"
+              >
+                <RefreshCw className={`h-4 w-4 ${testingFirebase ? 'animate-spin' : ''}`} />
+                Test Connection
+              </Button>
+
+              {Boolean(firebase.api_key || firebase.project_id) && (
+                <Button
+                  onClick={() => handleDisconnect('firebase')}
+                  variant="ghost"
+                  className="rounded-lg text-rose-500 hover:bg-rose-500/10 hover:text-rose-500 h-11 px-4 text-xs ml-auto cursor-pointer"
                 >
                   Disconnect
                 </Button>
