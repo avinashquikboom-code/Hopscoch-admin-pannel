@@ -47,18 +47,18 @@ export default function ShippingChargesPage() {
   const [form, setForm] = useState({ name: '', type: 'flat' as ChargeType, amount: '', min: '', max: '' });
 
   useEffect(() => {
-    const saved = localStorage.getItem('hopscotch_shipping_charges');
+    const saved = localStorage.getItem('fciseller_shipping_charges') || localStorage.getItem('hopscotch_shipping_charges');
     if (saved) {
       setCharges(JSON.parse(saved));
     } else {
       setCharges(initialCharges);
-      localStorage.setItem('hopscotch_shipping_charges', JSON.stringify(initialCharges));
+      localStorage.setItem('fciseller_shipping_charges', JSON.stringify(initialCharges));
     }
   }, []);
 
   const saveCharges = (newCharges: Charge[]) => {
     setCharges(newCharges);
-    localStorage.setItem('hopscotch_shipping_charges', JSON.stringify(newCharges));
+    localStorage.setItem('fciseller_shipping_charges', JSON.stringify(newCharges));
   };
 
   const filtered = charges.filter(c => c.name.toLowerCase().includes(search.toLowerCase()));

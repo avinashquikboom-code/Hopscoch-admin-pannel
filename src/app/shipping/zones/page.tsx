@@ -29,18 +29,18 @@ export default function ShippingZonesPage() {
   const [form, setForm] = useState({ name: '', country: 'India', states: '', cities: '', pincodes: '' });
 
   useEffect(() => {
-    const saved = localStorage.getItem('hopscotch_shipping_zones');
+    const saved = localStorage.getItem('fciseller_shipping_zones') || localStorage.getItem('hopscotch_shipping_zones');
     if (saved) {
       setZones(JSON.parse(saved));
     } else {
       setZones(initialZones);
-      localStorage.setItem('hopscotch_shipping_zones', JSON.stringify(initialZones));
+      localStorage.setItem('fciseller_shipping_zones', JSON.stringify(initialZones));
     }
   }, []);
 
   const saveZones = (newZones: any[]) => {
     setZones(newZones);
-    localStorage.setItem('hopscotch_shipping_zones', JSON.stringify(newZones));
+    localStorage.setItem('fciseller_shipping_zones', JSON.stringify(newZones));
   };
 
   const filtered = zones.filter(z =>
