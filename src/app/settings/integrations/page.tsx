@@ -21,7 +21,8 @@ import {
   ShieldCheck,
   BrainCircuit,
   MapPin,
-  Cloud
+  Cloud,
+  MessageSquare
 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 
@@ -35,6 +36,7 @@ export default function IntegrationsSettingsPage() {
   const [razorpay, setRazorpay] = useState({ key_id: '', key_secret: '' });
   const [google, setGoogle] = useState({ gemini_api_key: '', maps_api_key: '' });
   const [aws, setAws] = useState({ access_key_id: '', secret_access_key: '', region: 'ap-south-1', bucket_name: '' });
+  const [msg91, setMsg91] = useState({ auth_key: '', sender_id: 'HOPSCH', dlt_te_id: '', flow_id: '' });
 
   // Show/Hide password states
   const [showRzpSecret, setShowRzpSecret] = useState(false);
@@ -42,6 +44,7 @@ export default function IntegrationsSettingsPage() {
   const [showGemini, setShowGemini] = useState(false);
   const [showMaps, setShowMaps] = useState(false);
   const [showAwsSecret, setShowAwsSecret] = useState(false);
+  const [showMsg91Auth, setShowMsg91Auth] = useState(false);
 
   // Test Connection States
   const [testingShiprocket, setTestingShiprocket] = useState(false);
@@ -56,6 +59,9 @@ export default function IntegrationsSettingsPage() {
   const [testingAws, setTestingAws] = useState(false);
   const [awsTestResult, setAwsTestResult] = useState<'success' | 'fail' | null>(null);
 
+  const [testingMsg91, setTestingMsg91] = useState(false);
+  const [msg91TestResult, setMsg91TestResult] = useState<'success' | 'fail' | null>(null);
+
   const loadSettings = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/v1/admin/settings/integrations`, { headers: authHeaders() });
@@ -65,6 +71,7 @@ export default function IntegrationsSettingsPage() {
         if (json.data.razorpay) setRazorpay(json.data.razorpay);
         if (json.data.google) setGoogle(json.data.google);
         if (json.data.aws) setAws(json.data.aws);
+        if (json.data.msg91) setMsg91(json.data.msg91);
       }
     } catch (err) {
       console.error(err);
@@ -75,11 +82,11 @@ export default function IntegrationsSettingsPage() {
     loadSettings();
   }, []);
 
-  const handleSave = async (provider: 'shiprocket' | 'razorpay' | 'google' | 'aws') => {
+  const handleSave = async (provider: 'shiprocket' | 'razorpay' | 'google' | 'aws' | 'msg91') => {
     try {
       const payload = {
         provider,
-        settings: provider === 'shiprocket' ? shiprocket : provider === 'razorpay' ? razorpay : provider === 'google' ? google : aws,
+        settings: provider === 'shiprocket' ? shiprocket : provider === 'razorpay' ? razorpay : provider === 'google' ? google : provider === 'aws' ? aws : msg91,
       };
 
       const res = await fetch(`${API_BASE}/api/v1/admin/settings/integrations`, {
@@ -89,8 +96,9 @@ export default function IntegrationsSettingsPage() {
       });
 
       if (res.ok) {
-        const label = provider === 'shiprocket' ? 'Shiprocket' : provider === 'razorpay' ? 'Razorpay' : provider === 'google' ? 'Google' : 'AWS S3';
+        const label = provider === 'shiprocket' ? 'Shiprocket' : provider === 'razorpay' ? 'Razorpay' : provider === 'google' ? 'Google' : provider === 'aws' ? 'AWS S3' : 'MSG91';
         toast.success(`${label} credentials saved successfully.`);
+        loadSettings();
         loadSettings();
       } else {
         const data = await res.json();
@@ -102,8 +110,8 @@ export default function IntegrationsSettingsPage() {
     }
   };
 
-  const handleDisconnect = async (provider: 'shiprocket' | 'razorpay' | 'google' | 'aws', keyName?: string) => {
-    const label = keyName === 'gemini_api_key' ? 'Google Gemini Vision' : keyName === 'maps_api_key' ? 'Google Places API' : provider === 'shiprocket' ? 'Shiprocket' : provider === 'razorpay' ? 'Razorpay' : 'AWS S3 Bucket';
+  const handleDisconnect = async (provider: 'shiprocket' | 'razorpay' | 'google' | 'aws' | 'msg91', keyName?: string) => {
+    const label = keyName === 'gemini_api_key' ? 'Google Gemini Vision' : keyName === 'maps_api_key' ? 'Google Places API' : provider === 'shiprocket' ? 'Shiprocket' : provider === 'razorpay' ? 'Razorpay' : provider === 'aws' ? 'AWS S3 Bucket' : 'MSG91 Gateway';
     if (!confirm(`Are you sure you want to disconnect ${label}? This will clear its saved credentials.`)) {
       return;
     }
@@ -117,7 +125,9 @@ export default function IntegrationsSettingsPage() {
             gemini_api_key: keyName === 'gemini_api_key' ? '' : google.gemini_api_key,
             maps_api_key: keyName === 'maps_api_key' ? '' : google.maps_api_key
           }
-        : { access_key_id: '', secret_access_key: '', region: '', bucket_name: '' };
+        : provider === 'aws'
+        ? { access_key_id: '', secret_access_key: '', region: '', bucket_name: '' }
+        : { auth_key: '', sender_id: '', dlt_te_id: '', flow_id: '' };
 
       const res = await fetch(`${API_BASE}/api/v1/admin/settings/integrations`, {
         method: 'PUT',
@@ -142,9 +152,12 @@ export default function IntegrationsSettingsPage() {
             setGoogle({ gemini_api_key: '', maps_api_key: '' });
           }
           setGoogleTestResult(null);
-        } else {
+        } else if (provider === 'aws') {
           setAws({ access_key_id: '', secret_access_key: '', region: 'ap-south-1', bucket_name: '' });
           setAwsTestResult(null);
+        } else {
+          setMsg91({ auth_key: '', sender_id: 'HOPSCH', dlt_te_id: '', flow_id: '' });
+          setMsg91TestResult(null);
         }
       } else {
         toast.error(`Failed to disconnect ${label}.`);
@@ -155,7 +168,7 @@ export default function IntegrationsSettingsPage() {
     }
   };
 
-  const testConnection = async (provider: 'shiprocket' | 'razorpay' | 'google' | 'aws') => {
+  const testConnection = async (provider: 'shiprocket' | 'razorpay' | 'google' | 'aws' | 'msg91') => {
     if (provider === 'shiprocket') {
       setTestingShiprocket(true);
       setShiprocketTestResult(null);
@@ -165,9 +178,12 @@ export default function IntegrationsSettingsPage() {
     } else if (provider === 'google') {
       setTestingGoogle(true);
       setGoogleTestResult(null);
-    } else {
+    } else if (provider === 'aws') {
       setTestingAws(true);
       setAwsTestResult(null);
+    } else {
+      setTestingMsg91(true);
+      setMsg91TestResult(null);
     }
 
     try {
@@ -176,7 +192,7 @@ export default function IntegrationsSettingsPage() {
         headers: authHeaders(),
         body: JSON.stringify({
           provider,
-          settings: provider === 'shiprocket' ? shiprocket : provider === 'razorpay' ? razorpay : provider === 'google' ? google : aws,
+          settings: provider === 'shiprocket' ? shiprocket : provider === 'razorpay' ? razorpay : provider === 'google' ? google : provider === 'aws' ? aws : msg91,
         }),
       });
 
@@ -184,23 +200,27 @@ export default function IntegrationsSettingsPage() {
         if (provider === 'shiprocket') setShiprocketTestResult('success');
         else if (provider === 'razorpay') setRazorpayTestResult('success');
         else if (provider === 'google') setGoogleTestResult('success');
-        else setAwsTestResult('success');
+        else if (provider === 'aws') setAwsTestResult('success');
+        else setMsg91TestResult('success');
       } else {
         if (provider === 'shiprocket') setShiprocketTestResult('fail');
         else if (provider === 'razorpay') setRazorpayTestResult('fail');
         else if (provider === 'google') setGoogleTestResult('fail');
-        else setAwsTestResult('fail');
+        else if (provider === 'aws') setAwsTestResult('fail');
+        else setMsg91TestResult('fail');
       }
     } catch (err) {
       if (provider === 'shiprocket') setShiprocketTestResult('fail');
       else if (provider === 'razorpay') setRazorpayTestResult('fail');
       else if (provider === 'google') setGoogleTestResult('fail');
-      else setAwsTestResult('fail');
+      else if (provider === 'aws') setAwsTestResult('fail');
+      else setMsg91TestResult('fail');
     } finally {
       if (provider === 'shiprocket') setTestingShiprocket(false);
       else if (provider === 'razorpay') setTestingRazorpay(false);
       else if (provider === 'google') setTestingGoogle(false);
-      else setTestingAws(false);
+      else if (provider === 'aws') setTestingAws(false);
+      else setTestingMsg91(false);
     }
   };
 
@@ -699,6 +719,120 @@ export default function IntegrationsSettingsPage() {
               {Boolean(aws.access_key_id || aws.bucket_name) && (
                 <Button
                   onClick={() => handleDisconnect('aws')}
+                  variant="ghost"
+                  className="rounded-lg text-rose-500 hover:bg-rose-500/10 hover:text-rose-500 h-11 px-4 text-xs ml-auto"
+                >
+                  Disconnect
+                </Button>
+              )}
+            </div>
+          </Card>
+
+          {/* MSG91 Gateway Card */}
+          <Card className="border-border/40 rounded-xl bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+            <div className="p-6 border-b border-border/20 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold">
+                  <MessageSquare className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-foreground flex items-center gap-2">
+                    MSG91 SMS & OTP Gateway
+                  </h3>
+                  <p className="text-xs text-muted-foreground font-light">Transactional SMS, DLT Templates & WhatsApp OTP Gateway</p>
+                </div>
+              </div>
+              <StatusBadge configured={Boolean(msg91.auth_key)} />
+            </div>
+
+            <CardContent className="p-6 space-y-5">
+              {msg91.auth_key && (
+                <ActiveKeyRow
+                  value={msg91.auth_key}
+                  onCopy={() => {
+                    navigator.clipboard.writeText(msg91.auth_key);
+                    toast.success('MSG91 Auth Key copied to clipboard');
+                  }}
+                />
+              )}
+
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="msg91AuthKey" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">MSG91 Auth Key *</Label>
+                  <PasswordInput
+                    id="msg91AuthKey"
+                    value={msg91.auth_key}
+                    onChange={(v) => setMsg91({ ...msg91, auth_key: v })}
+                    placeholder="e.g. 381920As78129a02910a1"
+                    visible={showMsg91Auth}
+                    onToggleVisible={() => setShowMsg91Auth(!showMsg91Auth)}
+                    focusColor="violet"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="msg91SenderId" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Sender ID (Header)</Label>
+                    <Input
+                      id="msg91SenderId"
+                      value={msg91.sender_id}
+                      onChange={(e) => setMsg91({ ...msg91, sender_id: e.target.value })}
+                      placeholder="e.g. HOPSCH"
+                      className="rounded-lg border-border/60 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 h-11 text-sm uppercase"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="msg91DltTeId" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">DLT Template Entity ID</Label>
+                    <Input
+                      id="msg91DltTeId"
+                      value={msg91.dlt_te_id}
+                      onChange={(e) => setMsg91({ ...msg91, dlt_te_id: e.target.value })}
+                      placeholder="e.g. 1707161234567890123"
+                      className="rounded-lg border-border/60 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 h-11 text-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="msg91FlowId" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Flow ID / Template ID</Label>
+                    <Input
+                      id="msg91FlowId"
+                      value={msg91.flow_id}
+                      onChange={(e) => setMsg91({ ...msg91, flow_id: e.target.value })}
+                      placeholder="e.g. 61d8a1b2c3d4e5f6789"
+                      className="rounded-lg border-border/60 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 h-11 text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <TestResultBanner result={msg91TestResult} failMessage="Connection check failed. Please verify your MSG91 Auth Key." />
+            </CardContent>
+
+            {/* Bottom Actions */}
+            <div className="p-6 border-t border-border/20 bg-muted/20 flex items-center gap-3">
+              <Button
+                onClick={() => handleSave('msg91')}
+                className="rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold h-11 px-6 flex items-center gap-2 text-xs"
+              >
+                <Key className="h-4 w-4" />
+                {Boolean(msg91.auth_key) ? 'Update Credentials' : 'Save Credentials'}
+              </Button>
+
+              <Button
+                type="button"
+                onClick={() => testConnection('msg91')}
+                disabled={testingMsg91}
+                variant="outline"
+                className="rounded-lg border-border/60 h-11 px-4 flex items-center gap-2 text-xs"
+              >
+                <RefreshCw className={`h-4 w-4 ${testingMsg91 ? 'animate-spin' : ''}`} />
+                Test Connection
+              </Button>
+
+              {Boolean(msg91.auth_key) && (
+                <Button
+                  onClick={() => handleDisconnect('msg91')}
                   variant="ghost"
                   className="rounded-lg text-rose-500 hover:bg-rose-500/10 hover:text-rose-500 h-11 px-4 text-xs ml-auto"
                 >
