@@ -35,7 +35,6 @@ function authHeaders(): HeadersInit {
 }
 
 export default function IntegrationsSettingsPage() {
-  const [shiprocket, setShiprocket] = useState({ email: '', password: '', base_url: '' });
   const [razorpay, setRazorpay] = useState({ key_id: '', key_secret: '' });
   const [google, setGoogle] = useState({ gemini_api_key: '', maps_api_key: '' });
   const [aws, setAws] = useState({ access_key_id: '', secret_access_key: '', region: 'ap-south-1', bucket_name: '' });
@@ -44,7 +43,6 @@ export default function IntegrationsSettingsPage() {
 
   // Show/Hide password states
   const [showRzpSecret, setShowRzpSecret] = useState(false);
-  const [showSrPassword, setShowSrPassword] = useState(false);
   const [showGemini, setShowGemini] = useState(false);
   const [showMaps, setShowMaps] = useState(false);
   const [showAwsSecret, setShowAwsSecret] = useState(false);
@@ -53,9 +51,6 @@ export default function IntegrationsSettingsPage() {
   const [showFcmServerKey, setShowFcmServerKey] = useState(false);
 
   // Test Connection States
-  const [testingShiprocket, setTestingShiprocket] = useState(false);
-  const [shiprocketTestResult, setShiprocketTestResult] = useState<'success' | 'fail' | null>(null);
-
   const [testingRazorpay, setTestingRazorpay] = useState(false);
   const [razorpayTestResult, setRazorpayTestResult] = useState<'success' | 'fail' | null>(null);
 
@@ -76,7 +71,6 @@ export default function IntegrationsSettingsPage() {
       const res = await fetch(`${API_BASE}/api/v1/admin/settings/integrations`, { headers: authHeaders() });
       const json = await res.json();
       if (res.ok && json.data) {
-        if (json.data.shiprocket) setShiprocket(json.data.shiprocket);
         if (json.data.razorpay) setRazorpay(json.data.razorpay);
         if (json.data.google) setGoogle(json.data.google);
         if (json.data.aws) setAws(json.data.aws);
@@ -92,11 +86,11 @@ export default function IntegrationsSettingsPage() {
     loadSettings();
   }, []);
 
-  const handleSave = async (provider: 'shiprocket' | 'razorpay' | 'google' | 'aws' | 'msg91' | 'firebase') => {
+  const handleSave = async (provider: 'razorpay' | 'google' | 'aws' | 'msg91' | 'firebase') => {
     try {
       const payload = {
         provider,
-        settings: provider === 'shiprocket' ? shiprocket : provider === 'razorpay' ? razorpay : provider === 'google' ? google : provider === 'aws' ? aws : provider === 'msg91' ? msg91 : firebase,
+        settings: provider === 'razorpay' ? razorpay : provider === 'google' ? google : provider === 'aws' ? aws : provider === 'msg91' ? msg91 : firebase,
       };
 
       const res = await fetch(`${API_BASE}/api/v1/admin/settings/integrations`, {
@@ -106,7 +100,7 @@ export default function IntegrationsSettingsPage() {
       });
 
       if (res.ok) {
-        const label = provider === 'shiprocket' ? 'Shiprocket' : provider === 'razorpay' ? 'Razorpay' : provider === 'google' ? 'Google' : provider === 'aws' ? 'AWS S3' : provider === 'msg91' ? 'MSG91' : 'Firebase';
+        const label = provider === 'razorpay' ? 'Razorpay' : provider === 'google' ? 'Google' : provider === 'aws' ? 'AWS S3' : provider === 'msg91' ? 'MSG91' : 'Firebase';
         toast.success(`${label} credentials saved successfully.`);
         loadSettings();
       } else {
@@ -119,15 +113,13 @@ export default function IntegrationsSettingsPage() {
     }
   };
 
-  const handleDisconnect = async (provider: 'shiprocket' | 'razorpay' | 'google' | 'aws' | 'msg91' | 'firebase', keyName?: string) => {
-    const label = keyName === 'gemini_api_key' ? 'Google Gemini Vision' : keyName === 'maps_api_key' ? 'Google Places API' : provider === 'shiprocket' ? 'Shiprocket' : provider === 'razorpay' ? 'Razorpay' : provider === 'aws' ? 'AWS S3 Bucket' : provider === 'msg91' ? 'MSG91 Gateway' : 'Firebase App';
+  const handleDisconnect = async (provider: 'razorpay' | 'google' | 'aws' | 'msg91' | 'firebase', keyName?: string) => {
+    const label = keyName === 'gemini_api_key' ? 'Google Gemini Vision' : keyName === 'maps_api_key' ? 'Google Places API' : provider === 'razorpay' ? 'Razorpay' : provider === 'aws' ? 'AWS S3 Bucket' : provider === 'msg91' ? 'MSG91 Gateway' : 'Firebase App';
     if (!confirm(`Are you sure you want to disconnect ${label}? This will clear its saved credentials.`)) {
       return;
     }
     try {
-      const emptySettings = provider === 'shiprocket'
-        ? { email: '', password: '', base_url: '' }
-        : provider === 'razorpay'
+      const emptySettings = provider === 'razorpay'
         ? { key_id: '', key_secret: '' }
         : provider === 'google'
         ? {
@@ -148,10 +140,7 @@ export default function IntegrationsSettingsPage() {
 
       if (res.ok) {
         toast.success(`${label} disconnected successfully.`);
-        if (provider === 'shiprocket') {
-          setShiprocket({ email: '', password: '', base_url: '' });
-          setShiprocketTestResult(null);
-        } else if (provider === 'razorpay') {
+        if (provider === 'razorpay') {
           setRazorpay({ key_id: '', key_secret: '' });
           setRazorpayTestResult(null);
         } else if (provider === 'google') {
@@ -182,11 +171,8 @@ export default function IntegrationsSettingsPage() {
     }
   };
 
-  const testConnection = async (provider: 'shiprocket' | 'razorpay' | 'google' | 'aws' | 'msg91' | 'firebase') => {
-    if (provider === 'shiprocket') {
-      setTestingShiprocket(true);
-      setShiprocketTestResult(null);
-    } else if (provider === 'razorpay') {
+  const testConnection = async (provider: 'razorpay' | 'google' | 'aws' | 'msg91' | 'firebase') => {
+    if (provider === 'razorpay') {
       setTestingRazorpay(true);
       setRazorpayTestResult(null);
     } else if (provider === 'google') {
@@ -209,35 +195,31 @@ export default function IntegrationsSettingsPage() {
         headers: authHeaders(),
         body: JSON.stringify({
           provider,
-          settings: provider === 'shiprocket' ? shiprocket : provider === 'razorpay' ? razorpay : provider === 'google' ? google : provider === 'aws' ? aws : provider === 'msg91' ? msg91 : firebase,
+          settings: provider === 'razorpay' ? razorpay : provider === 'google' ? google : provider === 'aws' ? aws : provider === 'msg91' ? msg91 : firebase,
         }),
       });
 
       if (res.ok) {
-        if (provider === 'shiprocket') setShiprocketTestResult('success');
-        else if (provider === 'razorpay') setRazorpayTestResult('success');
+        if (provider === 'razorpay') setRazorpayTestResult('success');
         else if (provider === 'google') setGoogleTestResult('success');
         else if (provider === 'aws') setAwsTestResult('success');
         else if (provider === 'msg91') setMsg91TestResult('success');
         else setFirebaseTestResult('success');
       } else {
-        if (provider === 'shiprocket') setShiprocketTestResult('fail');
-        else if (provider === 'razorpay') setRazorpayTestResult('fail');
+        if (provider === 'razorpay') setRazorpayTestResult('fail');
         else if (provider === 'google') setGoogleTestResult('fail');
         else if (provider === 'aws') setAwsTestResult('fail');
         else if (provider === 'msg91') setMsg91TestResult('fail');
         else setFirebaseTestResult('fail');
       }
     } catch (err) {
-      if (provider === 'shiprocket') setShiprocketTestResult('fail');
-      else if (provider === 'razorpay') setRazorpayTestResult('fail');
+      if (provider === 'razorpay') setRazorpayTestResult('fail');
       else if (provider === 'google') setGoogleTestResult('fail');
       else if (provider === 'aws') setAwsTestResult('fail');
       else if (provider === 'msg91') setMsg91TestResult('fail');
       else setFirebaseTestResult('fail');
     } finally {
-      if (provider === 'shiprocket') setTestingShiprocket(false);
-      else if (provider === 'razorpay') setTestingRazorpay(false);
+      if (provider === 'razorpay') setTestingRazorpay(false);
       else if (provider === 'google') setTestingGoogle(false);
       else if (provider === 'aws') setTestingAws(false);
       else if (provider === 'msg91') setTestingMsg91(false);
@@ -251,7 +233,6 @@ export default function IntegrationsSettingsPage() {
   };
 
   const isRzpConfigured = Boolean(razorpay.key_id && razorpay.key_secret);
-  const isSrConfigured = Boolean(shiprocket.email && shiprocket.password);
 
   return (
     <AdminLayout>
@@ -260,7 +241,7 @@ export default function IntegrationsSettingsPage() {
           titlePart1="Third-party"
           titlePart2="Integrations"
           badgeText="API Connections"
-          subtitle="Manage credentials, API configurations and webhooks for Razorpay payments, Shiprocket shipping, Gemini Vision, and Google Places."
+          subtitle="Manage credentials, API configurations and webhooks for Razorpay payments, MSG91 SMS, Firebase Push Notifications, Gemini Vision, and AWS S3."
           actions={
             <div className="flex items-center gap-2 text-xs font-semibold text-primary bg-primary/10 border border-primary/15 px-3.5 py-1.5 rounded-full">
               <ShieldCheck className="w-3.5 h-3.5" />
@@ -358,113 +339,6 @@ export default function IntegrationsSettingsPage() {
               {isRzpConfigured && (
                 <Button
                   onClick={() => handleDisconnect('razorpay')}
-                  variant="ghost"
-                  className="rounded-lg text-rose-500 hover:bg-rose-500/10 hover:text-rose-500 h-11 px-4 text-xs ml-auto"
-                >
-                  Disconnect
-                </Button>
-              )}
-            </div>
-          </Card>
-
-          {/* Shiprocket Integration Card */}
-          <Card className="border-border/40 rounded-lg bg-card shadow-sm overflow-hidden flex flex-col justify-between">
-            <CardContent className="p-6 space-y-5 flex-1">
-
-              {/* Header block */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 dark:text-emerald-400">
-                    <Database className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-foreground text-lg">Shiprocket</h3>
-                  </div>
-                </div>
-                <StatusBadge configured={isSrConfigured} />
-              </div>
-
-              {/* Setup Box */}
-              <div className="bg-emerald-500/5 border border-emerald-500/15 rounded-lg p-4 space-y-1.5 text-xs text-emerald-700 dark:text-emerald-300/90">
-                <p className="font-bold text-emerald-800 dark:text-emerald-300">Setup steps</p>
-                <ol className="list-decimal pl-4 space-y-1">
-                  <li>Create a Shiprocket account and generate an API user</li>
-                  <li>Copy the API email and password</li>
-                  <li>Paste the credentials below and save</li>
-                </ol>
-              </div>
-
-              {/* Active display (if configured) */}
-              {isSrConfigured && (
-                <ActiveKeyRow value={shiprocket.email} onCopy={() => copyToClipboard(shiprocket.email, 'Email')} />
-              )}
-
-              {/* Inputs block */}
-              <div className="space-y-4 pt-1">
-                <div className="space-y-1.5">
-                  <Label htmlFor="srEmail" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Shiprocket API User Email</Label>
-                  <Input
-                    id="srEmail"
-                    value={shiprocket.email}
-                    onChange={(e) => setShiprocket({ ...shiprocket, email: e.target.value })}
-                    placeholder="shiprocket-api@company.com"
-                    className="rounded-lg border-border/60 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 h-11 text-sm"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="srPassword" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Shiprocket API User Password</Label>
-                  <PasswordInput
-                    id="srPassword"
-                    value={shiprocket.password}
-                    onChange={(v) => setShiprocket({ ...shiprocket, password: v })}
-                    placeholder="Enter API User Password"
-                    visible={showSrPassword}
-                    onToggleVisible={() => setShowSrPassword(!showSrPassword)}
-                    focusColor="emerald"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="srBaseUrl" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Base API URL</Label>
-                  <Input
-                    id="srBaseUrl"
-                    value={shiprocket.base_url}
-                    onChange={(e) => setShiprocket({ ...shiprocket, base_url: e.target.value })}
-                    placeholder="https://apiv2.shiprocket.in/v1/external"
-                    className="rounded-lg border-border/60 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 h-11 text-sm"
-                  />
-                  <p className="text-[10px] text-muted-foreground">Base URL used to connect to the external endpoint</p>
-                </div>
-              </div>
-
-              <TestResultBanner result={shiprocketTestResult} failMessage="Connection check failed. Verify API credentials." />
-            </CardContent>
-
-            {/* Bottom Actions */}
-            <div className="p-6 border-t border-border/20 bg-muted/20 flex items-center gap-3">
-              <Button
-                onClick={() => handleSave('shiprocket')}
-                className="rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold h-11 px-6 flex items-center gap-2 text-xs"
-              >
-                <Key className="h-4 w-4" />
-                {isSrConfigured ? 'Update Key' : 'Save Key'}
-              </Button>
-
-              <Button
-                type="button"
-                onClick={() => testConnection('shiprocket')}
-                disabled={testingShiprocket}
-                variant="outline"
-                className="rounded-lg border-border/60 h-11 px-4 flex items-center gap-2 text-xs"
-              >
-                <RefreshCw className={`h-4 w-4 ${testingShiprocket ? 'animate-spin' : ''}`} />
-                Test Connection
-              </Button>
-
-              {isSrConfigured && (
-                <Button
-                  onClick={() => handleDisconnect('shiprocket')}
                   variant="ghost"
                   className="rounded-lg text-rose-500 hover:bg-rose-500/10 hover:text-rose-500 h-11 px-4 text-xs ml-auto"
                 >
@@ -911,7 +785,7 @@ export default function IntegrationsSettingsPage() {
             </div>
           </Card>
 
-          {/* Firebase Integration Card — High Fidelity */}
+          {/* Firebase Push Notification Card (FCM) */}
           <Card className="border border-amber-500/20 dark:border-amber-500/30 rounded-2xl bg-gradient-to-br from-card via-card to-amber-950/10 shadow-lg hover:shadow-amber-500/10 transition-all duration-300 overflow-hidden relative group">
             {/* Top Gradient Accent Bar */}
             <div className="h-1.5 w-full bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500" />
@@ -920,23 +794,23 @@ export default function IntegrationsSettingsPage() {
             <div className="p-6 border-b border-border/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-amber-500/[0.02]">
               <div className="flex items-center gap-3.5">
                 <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center font-bold shadow-md shadow-amber-500/20 shrink-0">
-                  <Flame className="h-6 w-6 text-yellow-200" />
+                  <Bell className="h-6 w-6 text-yellow-100" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-extrabold text-lg text-foreground tracking-tight">
-                      Firebase Cloud Suite
+                      Firebase Push Notifications (FCM)
                     </h3>
                     <Badge variant="outline" className="text-[10px] font-bold px-2 py-0.5 rounded-full border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-500/10">
-                      FCM &amp; Analytics
+                      FCM Push Service
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5 font-light">
-                    FCM Push Notifications, Realtime Analytics &amp; Web/Mobile Authentication
+                    Firebase Cloud Messaging credentials for Android, iOS &amp; Web Push Notifications
                   </p>
                 </div>
               </div>
-              <StatusBadge configured={Boolean(firebase.api_key && firebase.project_id)} />
+              <StatusBadge configured={Boolean(firebase.fcm_server_key || (firebase.api_key && firebase.project_id))} />
             </div>
 
             <CardContent className="p-6 space-y-6">
@@ -944,55 +818,56 @@ export default function IntegrationsSettingsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-xl bg-muted/20 border border-border/30 text-xs">
                 <div className="flex items-center gap-2">
                   <Bell className="h-3.5 w-3.5 text-amber-500" />
-                  <span className="font-semibold text-foreground">FCM Cloud Messaging</span>
+                  <span className="font-semibold text-foreground">Mobile &amp; Web Push</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Zap className="h-3.5 w-3.5 text-orange-500" />
-                  <span className="font-semibold text-foreground">Realtime Auth &amp; Sync</span>
+                  <span className="font-semibold text-foreground">FCM V1 / Server Key</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="h-3.5 w-3.5 text-yellow-500" />
-                  <span className="font-semibold text-foreground">Service Account Guard</span>
+                  <span className="font-semibold text-foreground">Instant Push Dispatch</span>
                 </div>
               </div>
 
               {/* Active Key Row */}
-              {firebase.api_key && (
+              {(firebase.fcm_server_key || firebase.api_key) && (
                 <ActiveKeyRow
-                  value={firebase.api_key}
+                  value={firebase.fcm_server_key || firebase.api_key}
                   onCopy={() => {
-                    navigator.clipboard.writeText(firebase.api_key);
-                    toast.success('Firebase Web API Key copied to clipboard');
+                    navigator.clipboard.writeText(firebase.fcm_server_key || firebase.api_key);
+                    toast.success('Firebase FCM Key copied to clipboard');
                   }}
                 />
               )}
 
               {/* Form Input Section */}
               <div className="space-y-5">
-                {/* Firebase Web API Key */}
+                {/* Primary FCM Server Key */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="firebaseApiKey" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                      Firebase Web API Key *
+                    <Label htmlFor="fcmServerKey" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                      FCM Server Key / Private Key * (for Backend Push Dispatch)
                     </Label>
-                    <span className="text-[10px] text-amber-500 font-medium">Firebase Console &gt; Project Settings</span>
+                    <span className="text-[10px] text-amber-500 font-medium">Firebase Console &gt; Project Settings &gt; Cloud Messaging</span>
                   </div>
                   <PasswordInput
-                    id="firebaseApiKey"
-                    value={firebase.api_key}
-                    onChange={(v) => setFirebase({ ...firebase, api_key: v })}
-                    placeholder="AIzaSyA1234567890ExampleKey"
-                    visible={showFirebaseKey}
-                    onToggleVisible={() => setShowFirebaseKey(!showFirebaseKey)}
+                    id="fcmServerKey"
+                    value={firebase.fcm_server_key}
+                    onChange={(v) => setFirebase({ ...firebase, fcm_server_key: v })}
+                    placeholder="e.g. AAAA1234567:APA91bG...ServerKey"
+                    visible={showFcmServerKey}
+                    onToggleVisible={() => setShowFcmServerKey(!showFcmServerKey)}
                     focusColor="blue"
                   />
+                  <p className="text-[10px] text-muted-foreground font-light">Server key used by backend to trigger push notifications to app users</p>
                 </div>
 
                 {/* Grid for Project ID, App ID & Messaging Sender ID */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="firebaseProjectId" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                      Project ID *
+                      Firebase Project ID *
                     </Label>
                     <Input
                       id="firebaseProjectId"
@@ -1030,26 +905,26 @@ export default function IntegrationsSettingsPage() {
                   </div>
                 </div>
 
-                {/* FCM Server Key / Private Key */}
+                {/* Firebase Web API Key */}
                 <div className="space-y-1.5">
-                  <Label htmlFor="fcmServerKey" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                    FCM Legacy Server Key / Private Key (for Server Push)
+                  <Label htmlFor="firebaseApiKey" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    Firebase Web API Key (Web FCM Client SDK)
                   </Label>
                   <PasswordInput
-                    id="fcmServerKey"
-                    value={firebase.fcm_server_key}
-                    onChange={(v) => setFirebase({ ...firebase, fcm_server_key: v })}
-                    placeholder="AAAA1234567:APA91bG...ServerKey"
-                    visible={showFcmServerKey}
-                    onToggleVisible={() => setShowFcmServerKey(!showFcmServerKey)}
+                    id="firebaseApiKey"
+                    value={firebase.api_key}
+                    onChange={(v) => setFirebase({ ...firebase, api_key: v })}
+                    placeholder="e.g. AIzaSyA1234567890ExampleKey"
+                    visible={showFirebaseKey}
+                    onToggleVisible={() => setShowFirebaseKey(!showFirebaseKey)}
                     focusColor="blue"
                   />
-                  <p className="text-[10px] text-muted-foreground font-light">Required for backend Cloud Messaging push dispatch</p>
+                  <p className="text-[10px] text-muted-foreground font-light">Web API Key used for web push token registration in browser</p>
                 </div>
               </div>
 
               {/* Test Result Feedback */}
-              <TestResultBanner result={firebaseTestResult} failMessage="Connection check failed. Please verify your Firebase API Key & Project ID." />
+              <TestResultBanner result={firebaseTestResult} failMessage="Connection check failed. Please verify your FCM Server Key & Project ID." />
             </CardContent>
 
             {/* Bottom Actions */}
@@ -1059,7 +934,7 @@ export default function IntegrationsSettingsPage() {
                 className="rounded-lg bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-white font-bold h-11 px-6 flex items-center gap-2 text-xs shadow-md shadow-amber-500/20 cursor-pointer transition-all hover:scale-[1.01]"
               >
                 <Key className="h-4 w-4" />
-                {Boolean(firebase.api_key) ? 'Update Credentials' : 'Save Credentials'}
+                {Boolean(firebase.fcm_server_key || firebase.api_key) ? 'Update FCM Credentials' : 'Save FCM Credentials'}
               </Button>
 
               <Button
@@ -1070,10 +945,10 @@ export default function IntegrationsSettingsPage() {
                 className="rounded-lg border-amber-500/30 hover:bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold h-11 px-4 flex items-center gap-2 text-xs cursor-pointer"
               >
                 <RefreshCw className={`h-4 w-4 ${testingFirebase ? 'animate-spin' : ''}`} />
-                Test Connection
+                Test FCM Connection
               </Button>
 
-              {Boolean(firebase.api_key || firebase.project_id) && (
+              {Boolean(firebase.fcm_server_key || firebase.api_key || firebase.project_id) && (
                 <Button
                   onClick={() => handleDisconnect('firebase')}
                   variant="ghost"
