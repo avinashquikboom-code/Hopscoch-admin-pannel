@@ -22,6 +22,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { PageHeader } from '@/components/layout/page-header';
 import { API_BASE } from '@/lib/api';
 import { Sparkles, Plus, Save, CheckCircle2, AlertCircle, ArrowLeft, Flame } from 'lucide-react';
 import Link from 'next/link';
@@ -99,25 +100,18 @@ export default function CampaignsAdminPage() {
   return (
     <AdminLayout>
       <div className="space-y-8 p-6 max-w-[1400px] mx-auto">
-        {/* Banner Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-purple-500/15 via-indigo-600/10 to-amber-500/15 p-8 border border-border/60 backdrop-blur-xl shadow-lg">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <Link href="/loyalty" className="inline-flex items-center text-xs font-semibold text-muted-foreground hover:text-purple-500 transition-colors mb-2">
-                <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back to Loyalty Hub
-              </Link>
-              <h1 className="text-3xl font-extrabold text-foreground flex items-center gap-2">
-                <Flame className="h-7 w-7 text-purple-500" /> Promotional Reward Campaigns
-              </h1>
-              <p className="text-muted-foreground text-sm mt-1">
-                Create promotional bonus point multipliers, date-window events, and campaign codes.
-              </p>
-            </div>
-            <Button onClick={() => setSheetOpen(true)} className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold shadow-md shadow-purple-500/25 shrink-0">
+        <PageHeader
+          titlePart1="Promotional Reward"
+          titlePart2="Campaigns"
+          badgeText="BONUS MULTIPLIER CAMPAIGNS"
+          subtitle="Create promotional bonus point multipliers, date-window events, and campaign codes."
+          icon={<Flame className="h-8 w-8 text-purple-500" />}
+          actions={
+            <Button onClick={() => setSheetOpen(true)} className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold shadow-md shadow-purple-500/25">
               <Plus className="mr-2 h-4 w-4" /> Create Campaign
             </Button>
-          </div>
-        </div>
+          }
+        />
 
         <Card className="border-border/60 shadow-sm">
           <CardHeader className="border-b border-border/40 pb-4">

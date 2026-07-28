@@ -23,6 +23,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { PageHeader } from '@/components/layout/page-header';
 import { API_BASE } from '@/lib/api';
 import { FolderTree, Edit, Save, CheckCircle2, AlertCircle, ArrowLeft, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
@@ -112,25 +113,13 @@ export default function CategoryRewardsPage() {
   return (
     <AdminLayout>
       <div className="space-y-8 p-6 max-w-[1400px] mx-auto">
-        {/* Banner Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-teal-500/15 via-emerald-600/10 to-teal-600/15 p-8 border border-border/60 backdrop-blur-xl shadow-lg">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <Link href="/loyalty" className="inline-flex items-center text-xs font-semibold text-muted-foreground hover:text-teal-500 transition-colors mb-2">
-                <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back to Loyalty Hub
-              </Link>
-              <h1 className="text-3xl font-extrabold text-foreground flex items-center gap-2">
-                <FolderTree className="h-7 w-7 text-teal-500" /> Category Reward Matrix
-              </h1>
-              <p className="text-muted-foreground text-sm mt-1">
-                Set category-wide earn points, maximum redemption limits, and multipliers (Tier 2 Priority Rule).
-              </p>
-            </div>
-            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-teal-500/15 text-teal-600 border border-teal-500/30 shrink-0">
-              <ShieldCheck className="h-4 w-4" /> Tier 2 Priority Rule
-            </span>
-          </div>
-        </div>
+        <PageHeader
+          titlePart1="Category Reward"
+          titlePart2="Matrix"
+          badgeText="TIER 2 PRIORITY RULE"
+          subtitle="Set category-wide earn points, maximum redemption limits, and multipliers."
+          icon={<FolderTree className="h-8 w-8 text-teal-500" />}
+        />
 
         <Card className="border-border/60 shadow-sm">
           <CardHeader className="border-b border-border/40 pb-4">

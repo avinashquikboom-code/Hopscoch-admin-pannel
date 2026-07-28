@@ -7,17 +7,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { API_BASE } from '@/lib/api';
-import { Wallet, Plus, Minus, CheckCircle2, AlertCircle, ArrowLeft, ShieldCheck, Banknote } from 'lucide-react';
-import Link from 'next/link';
+import { Wallet, Plus, Minus, CheckCircle2, AlertCircle, ShieldCheck, Banknote } from 'lucide-react';
+import { PageHeader } from '@/components/layout/page-header';
 
 export default function WalletAdminPage() {
   const [userId, setUserId] = useState('');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
+  const [actionType, setActionType] = useState<'ADMIN_CREDIT' | 'ADMIN_DEBIT'>('ADMIN_CREDIT');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const handleAdjust = async (type: 'ADMIN_CREDIT' | 'ADMIN_DEBIT') => {
+  const handleAdjust = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!userId || !amount || Number(amount) <= 0) {
       setMessage({ type: 'error', text: 'Please enter valid User ID and Amount' });
       return;
@@ -34,21 +36,21 @@ export default function WalletAdminPage() {
         body: JSON.stringify({
           userId: Number(userId),
           amount: Number(amount),
-          type,
-          description: description || `Admin ${type === 'ADMIN_CREDIT' ? 'Credit' : 'Debit'}`,
+          type: actionType,
+          description: description || (actionType === 'ADMIN_CREDIT' ? 'Admin Wallet Credit' : 'Admin Wallet Debit'),
         }),
       });
       const json = await res.json();
       if (json.success) {
         setMessage({
           type: 'success',
-          text: `Wallet successfully ${type === 'ADMIN_CREDIT' ? 'credited' : 'debited'} for User #${userId}. New Balance: ₹${Number(json.data.balance).toFixed(2)}`,
+          text: `Successfully ${actionType === 'ADMIN_CREDIT' ? 'credited' : 'debited'} ₹${Number(amount).toFixed(2)} ${actionType === 'ADMIN_CREDIT' ? 'to' : 'from'} User #${userId}'s wallet!`,
         });
         setUserId('');
         setAmount('');
         setDescription('');
       } else {
-        setMessage({ type: 'error', text: json.message || 'Transaction failed' });
+        setMessage({ type: 'error', text: json.message || 'Wallet adjustment failed' });
       }
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message || 'Server error' });
@@ -60,25 +62,13 @@ export default function WalletAdminPage() {
   return (
     <AdminLayout>
       <div className="space-y-8 p-6 max-w-[1200px] mx-auto">
-        {/* Banner Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-500/15 via-teal-600/10 to-blue-500/15 p-8 border border-border/60 backdrop-blur-xl shadow-lg">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <Link href="/loyalty" className="inline-flex items-center text-xs font-semibold text-muted-foreground hover:text-emerald-500 transition-colors mb-2">
-                <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back to Loyalty Hub
-              </Link>
-              <h1 className="text-3xl font-extrabold text-foreground flex items-center gap-2">
-                <Wallet className="h-7 w-7 text-emerald-500" /> Customer Digital Wallet Manager
-              </h1>
-              <p className="text-muted-foreground text-sm mt-1">
-                Directly credit or debit customer wallets, process goodwill refunds, and execute administrative balance adjustments.
-              </p>
-            </div>
-            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-600 border border-emerald-500/30 shrink-0">
-              <ShieldCheck className="h-4 w-4" /> Atomic Financial Ledger
-            </span>
-          </div>
-        </div>
+        <PageHeader
+          titlePart1="Customer Digital"
+          titlePart2="Wallet Manager"
+          badgeText="ATOMIC FINANCIAL LEDGER"
+          subtitle="Directly credit or debit customer wallets, process goodwill refunds, and execute administrative balance adjustments."
+          icon={<Wallet className="h-8 w-8 text-emerald-500" />}
+        />
 
         {message && (
           <div

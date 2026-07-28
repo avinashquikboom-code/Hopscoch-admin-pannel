@@ -8,6 +8,8 @@ import { API_BASE } from '@/lib/api';
 import { Users, Share2, Award, ArrowLeft, ShieldCheck, UserCheck } from 'lucide-react';
 import Link from 'next/link';
 
+import { PageHeader } from '@/components/layout/page-header';
+
 export default function ReferralAdminPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -38,25 +40,13 @@ export default function ReferralAdminPage() {
   return (
     <AdminLayout>
       <div className="space-y-8 p-6 max-w-[1200px] mx-auto">
-        {/* Banner Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-500/15 via-indigo-600/10 to-blue-600/15 p-8 border border-border/60 backdrop-blur-xl shadow-lg">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <Link href="/loyalty" className="inline-flex items-center text-xs font-semibold text-muted-foreground hover:text-blue-500 transition-colors mb-2">
-                <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back to Loyalty Hub
-              </Link>
-              <h1 className="text-3xl font-extrabold text-foreground flex items-center gap-2">
-                <Share2 className="h-7 w-7 text-blue-500" /> Customer Referral Program
-              </h1>
-              <p className="text-muted-foreground text-sm mt-1">
-                Monitor customer invitation codes, referral completion milestones, and total referral bonus points distributed.
-              </p>
-            </div>
-            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-blue-500/15 text-blue-600 border border-blue-500/30 shrink-0">
-              <ShieldCheck className="h-4 w-4" /> Viral Growth Engine
-            </span>
-          </div>
-        </div>
+        <PageHeader
+          titlePart1="Customer Referral"
+          titlePart2="Program"
+          badgeText="VIRAL GROWTH ENGINE"
+          subtitle="Monitor customer invitation codes, referral completion milestones, and total referral bonus points distributed."
+          icon={<Share2 className="h-8 w-8 text-blue-500" />}
+        />
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
           <div className="rounded-xl bg-card border border-border/60 p-6 shadow-sm">

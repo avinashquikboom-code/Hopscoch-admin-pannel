@@ -10,6 +10,8 @@ import { API_BASE } from '@/lib/api';
 import { RefreshCw, Plus, CheckCircle2, AlertCircle, ArrowLeft, Coins, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 
+import { PageHeader } from '@/components/layout/page-header';
+
 export default function CashbackAdminPage() {
   const [userId, setUserId] = useState('');
   const [amount, setAmount] = useState('');
@@ -61,25 +63,13 @@ export default function CashbackAdminPage() {
   return (
     <AdminLayout>
       <div className="space-y-8 p-6 max-w-[1200px] mx-auto">
-        {/* Banner Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-500/15 via-teal-600/10 to-emerald-600/15 p-8 border border-border/60 backdrop-blur-xl shadow-lg">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <Link href="/loyalty" className="inline-flex items-center text-xs font-semibold text-muted-foreground hover:text-emerald-500 transition-colors mb-2">
-                <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back to Loyalty Hub
-              </Link>
-              <h1 className="text-3xl font-extrabold text-foreground flex items-center gap-2">
-                <RefreshCw className="h-7 w-7 text-emerald-500" /> Promotional Cashback Subsystem
-              </h1>
-              <p className="text-muted-foreground text-sm mt-1">
-                Issue promotional order cashback rewards directly credited into customer digital wallet balances.
-              </p>
-            </div>
-            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-600 border border-emerald-500/30 shrink-0">
-              <Sparkles className="h-4 w-4" /> Instant Wallet Settlement
-            </span>
-          </div>
-        </div>
+        <PageHeader
+          titlePart1="Promotional Cashback"
+          titlePart2="Subsystem"
+          badgeText="INSTANT WALLET SETTLEMENT"
+          subtitle="Issue promotional order cashback rewards directly credited into customer digital wallet balances."
+          icon={<RefreshCw className="h-8 w-8 text-emerald-500" />}
+        />
 
         {message && (
           <div

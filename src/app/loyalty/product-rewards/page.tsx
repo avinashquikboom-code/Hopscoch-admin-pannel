@@ -27,6 +27,8 @@ import { API_BASE, getImageUrl } from '@/lib/api';
 import { Package, Edit, Search, Save, Sparkles, CheckCircle2, AlertCircle, ArrowLeft, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 
+import { PageHeader } from '@/components/layout/page-header';
+
 export default function ProductRewardsPage() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -125,25 +127,13 @@ export default function ProductRewardsPage() {
   return (
     <AdminLayout>
       <div className="space-y-8 p-6 max-w-[1400px] mx-auto">
-        {/* Banner Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500/15 via-purple-600/10 to-amber-600/15 p-8 border border-border/60 backdrop-blur-xl shadow-lg">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <Link href="/loyalty" className="inline-flex items-center text-xs font-semibold text-muted-foreground hover:text-amber-500 transition-colors mb-2">
-                <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back to Loyalty Hub
-              </Link>
-              <h1 className="text-3xl font-extrabold text-foreground flex items-center gap-2">
-                <Package className="h-7 w-7 text-amber-500" /> Product Reward Override Matrix
-              </h1>
-              <p className="text-muted-foreground text-sm mt-1">
-                Configure explicit reward points, max redemption limits, multipliers, and earning toggles for individual products (Tier 1 Priority).
-              </p>
-            </div>
-            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-amber-500/15 text-amber-600 border border-amber-500/30 shrink-0">
-              <ShieldCheck className="h-4 w-4" /> Tier 1 Priority Rule
-            </span>
-          </div>
-        </div>
+        <PageHeader
+          titlePart1="Product Reward"
+          titlePart2="Override Matrix"
+          badgeText="TIER 1 PRIORITY RULE"
+          subtitle="Configure explicit reward points, max redemption limits, multipliers, and earning toggles for individual products."
+          icon={<Package className="h-8 w-8 text-amber-500" />}
+        />
 
         <Card className="border-border/60 shadow-sm">
           <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border/40 pb-4 gap-4">

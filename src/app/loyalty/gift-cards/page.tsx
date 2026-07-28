@@ -22,6 +22,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { PageHeader } from '@/components/layout/page-header';
 import { API_BASE } from '@/lib/api';
 import { Gift, Plus, Save, CheckCircle2, AlertCircle, ArrowLeft, ShieldCheck, CreditCard } from 'lucide-react';
 import Link from 'next/link';
@@ -92,25 +93,18 @@ export default function GiftCardsAdminPage() {
   return (
     <AdminLayout>
       <div className="space-y-8 p-6 max-w-[1400px] mx-auto">
-        {/* Banner Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500/15 via-emerald-600/10 to-amber-600/15 p-8 border border-border/60 backdrop-blur-xl shadow-lg">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <Link href="/loyalty" className="inline-flex items-center text-xs font-semibold text-muted-foreground hover:text-amber-500 transition-colors mb-2">
-                <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back to Loyalty Hub
-              </Link>
-              <h1 className="text-3xl font-extrabold text-foreground flex items-center gap-2">
-                <Gift className="h-7 w-7 text-amber-500" /> Digital Gift Card Vouchers
-              </h1>
-              <p className="text-muted-foreground text-sm mt-1">
-                Generate digital gift voucher codes for customer wallet balance redemption.
-              </p>
-            </div>
-            <Button onClick={() => setSheetOpen(true)} className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold shadow-md shadow-amber-500/25 shrink-0">
+        <PageHeader
+          titlePart1="Digital Gift Card"
+          titlePart2="Vouchers"
+          badgeText="GIFT CARDS LEDGER"
+          subtitle="Generate digital gift voucher codes for customer wallet balance redemption."
+          icon={<Gift className="h-8 w-8 text-amber-500" />}
+          actions={
+            <Button onClick={() => setSheetOpen(true)} className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold shadow-md shadow-amber-500/25">
               <Plus className="mr-2 h-4 w-4" /> Generate Gift Card
             </Button>
-          </div>
-        </div>
+          }
+        />
 
         <Card className="border-border/60 shadow-sm">
           <CardHeader className="border-b border-border/40 pb-4">

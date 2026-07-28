@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { API_BASE } from '@/lib/api';
 import { BarChart3, Download, RefreshCcw, ArrowLeft, TrendingUp, ShieldCheck, Wallet, Award, RefreshCw, Share2 } from 'lucide-react';
 import Link from 'next/link';
+import { PageHeader } from '@/components/layout/page-header';
 
 export default function LoyaltyReportsPage() {
   const [data, setData] = useState<any>(null);
@@ -38,25 +39,18 @@ export default function LoyaltyReportsPage() {
   return (
     <AdminLayout>
       <div className="space-y-8 p-6 max-w-[1400px] mx-auto">
-        {/* Banner Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-500/15 via-purple-600/10 to-indigo-600/15 p-8 border border-border/60 backdrop-blur-xl shadow-lg">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <Link href="/loyalty" className="inline-flex items-center text-xs font-semibold text-muted-foreground hover:text-blue-500 transition-colors mb-2">
-                <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back to Loyalty Hub
-              </Link>
-              <h1 className="text-3xl font-extrabold text-foreground flex items-center gap-2">
-                <BarChart3 className="h-7 w-7 text-blue-500" /> Executive Analytics & Financial Audit Reports
-              </h1>
-              <p className="text-muted-foreground text-sm mt-1">
-                Comprehensive financial liabilities, point circulation totals, and promotional ROI reports.
-              </p>
-            </div>
-            <Button onClick={fetchAnalytics} disabled={loading} className="bg-card hover:bg-muted text-foreground border border-border/80 shadow-sm shrink-0">
+        <PageHeader
+          titlePart1="Executive Analytics"
+          titlePart2="& Financial Reports"
+          badgeText="FINANCIAL AUDIT STATEMENT"
+          subtitle="Comprehensive financial liabilities, point circulation totals, and promotional ROI reports."
+          icon={<BarChart3 className="h-8 w-8 text-blue-500" />}
+          actions={
+            <Button onClick={fetchAnalytics} disabled={loading} className="bg-card hover:bg-muted text-foreground border border-border/80 shadow-sm">
               <RefreshCcw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Refresh Reports
             </Button>
-          </div>
-        </div>
+          }
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           <div className="rounded-xl bg-card border border-border/60 p-6 shadow-sm">

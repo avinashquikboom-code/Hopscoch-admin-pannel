@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { API_BASE } from '@/lib/api';
+import { PageHeader } from '@/components/layout/page-header';
 import {
   Sparkles,
   Save,
@@ -118,25 +119,18 @@ export default function LoyaltyRulesPage() {
   return (
     <AdminLayout>
       <div className="space-y-8 p-6 max-w-[1400px] mx-auto">
-        {/* Banner Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500/15 via-purple-600/10 to-emerald-500/15 p-8 border border-border/60 backdrop-blur-xl shadow-lg">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <Link href="/loyalty" className="inline-flex items-center text-xs font-semibold text-muted-foreground hover:text-amber-500 transition-colors mb-2">
-                <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back to Loyalty Hub
-              </Link>
-              <h1 className="text-3xl font-extrabold text-foreground flex items-center gap-2">
-                <Settings2 className="h-7 w-7 text-amber-500" /> Global Reward Rules & Engine
-              </h1>
-              <p className="text-muted-foreground text-sm mt-1">
-                Configure global earning formulas, point-to-INR conversions, order discount caps, and automated milestone rewards.
-              </p>
-            </div>
-            <Button onClick={handleSave} disabled={saving} className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold shadow-md shadow-amber-500/20 shrink-0">
+        <PageHeader
+          titlePart1="Global Reward Rules"
+          titlePart2="& Engine"
+          badgeText="GLOBAL RULES CONFIGURATION"
+          subtitle="Configure global earning formulas, point-to-INR conversions, order discount caps, and automated milestone rewards."
+          icon={<Settings2 className="h-8 w-8 text-amber-500" />}
+          actions={
+            <Button onClick={handleSave} disabled={saving} className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold shadow-md shadow-amber-500/20">
               <Save className="mr-2 h-4 w-4" /> {saving ? 'Saving...' : 'Save Configuration'}
             </Button>
-          </div>
-        </div>
+          }
+        />
 
         {message && (
           <div

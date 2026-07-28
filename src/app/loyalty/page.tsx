@@ -23,6 +23,7 @@ import {
   Settings2,
   Receipt,
   Share2,
+  Crown,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -56,47 +57,31 @@ export default function LoyaltyDashboardPage() {
   return (
     <AdminLayout>
       <div className="space-y-8 p-6 max-w-[1600px] mx-auto">
-        {/* Glassmorphic Executive Hero Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500/10 via-purple-600/10 to-teal-500/10 p-8 border border-border/50 backdrop-blur-xl shadow-xl">
-          <div className="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-amber-500/20 blur-3xl pointer-events-none" />
-          <div className="absolute -left-20 -bottom-20 w-80 h-80 rounded-full bg-purple-600/20 blur-3xl pointer-events-none" />
-
-          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-600 border border-amber-500/30">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  LOYALTY & REWARDS COMMAND CENTER
-                </span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-500/15 text-emerald-600 border border-emerald-500/30">
-                  <ShieldCheck className="h-3 w-3" /> Standard Rate: 100 Pts = ₹1.00 INR
-                </span>
-              </div>
-              <h1 className="text-3xl lg:text-4xl font-extrabold tracking-tight text-foreground">
-                Loyalty & Rewards <span className="bg-gradient-to-r from-amber-500 to-purple-600 bg-clip-text text-transparent">Hub</span>
-              </h1>
-              <p className="text-muted-foreground text-sm max-w-2xl">
-                Monitor live customer wallet pools, point issuance & redemption standard, promotional multiplier campaigns, and referral program ROI.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3 shrink-0">
+        {/* Page Header */}
+        <PageHeader
+          titlePart1="Loyalty & Rewards"
+          titlePart2="Hub"
+          badgeText="LOYALTY & REWARDS COMMAND CENTER"
+          subtitle="Monitor live customer wallet pools, point issuance & redemption standard, promotional multiplier campaigns, and referral program ROI."
+          icon={<Crown className="h-8 w-8 text-amber-500" />}
+          actions={
+            <div className="flex items-center gap-3">
               <Button
                 onClick={fetchAnalytics}
                 disabled={loading}
                 className="bg-card hover:bg-muted text-foreground border border-border/80 shadow-sm transition-all"
               >
                 <RefreshCcw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                Refresh Analytics
+                Refresh
               </Button>
               <Link href="/loyalty/rules">
-                <Button className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md shadow-amber-500/25">
+                <Button className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md shadow-amber-500/25 font-bold">
                   <Settings2 className="mr-2 h-4 w-4" /> Global Rules
                 </Button>
               </Link>
             </div>
-          </div>
-        </div>
+          }
+        />
 
         {/* Top KPI Stat Grid */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">

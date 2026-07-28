@@ -9,15 +9,16 @@ import { Label } from '@/components/ui/label';
 import { API_BASE } from '@/lib/api';
 import { Award, Plus, Minus, CheckCircle2, AlertCircle, ArrowLeft, Coins, Sparkles } from 'lucide-react';
 import Link from 'next/link';
+import { PageHeader } from '@/components/layout/page-header';
 
-export default function PointsAdminPage() {
+export default function RewardPointsAdminPage() {
   const [userId, setUserId] = useState('');
   const [points, setPoints] = useState('');
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const handleAdjust = async (isCredit: boolean) => {
+  const handleAdjustPoints = async (type: 'ADD' | 'DEDUCT') => {
     if (!userId || !points || Number(points) <= 0) {
       setMessage({ type: 'error', text: 'Please enter valid User ID and Points' });
       return;
@@ -25,7 +26,6 @@ export default function PointsAdminPage() {
     setLoading(true);
     setMessage(null);
     try {
-      const val = isCredit ? Number(points) : -Number(points);
       const res = await fetch(`${API_BASE}/loyalty/admin/points/adjust`, {
         method: 'POST',
         headers: {
@@ -34,16 +34,16 @@ export default function PointsAdminPage() {
         },
         body: JSON.stringify({
           userId: Number(userId),
-          points: val,
-          type: 'ADJUSTED',
-          reason: reason || (isCredit ? 'Admin Bonus Credit' : 'Admin Point Debit'),
+          points: Number(points),
+          type,
+          reason: reason || `Admin Point ${type === 'ADD' ? 'Credit' : 'Deduction'}`,
         }),
       });
       const json = await res.json();
       if (json.success) {
         setMessage({
           type: 'success',
-          text: `Successfully ${isCredit ? 'credited' : 'debited'} ${points} points for User #${userId}.`,
+          text: `Reward points successfully ${type === 'ADD' ? 'credited' : 'deducted'} for User #${userId}. New Points: ${json.data.totalPoints}`,
         });
         setUserId('');
         setPoints('');
@@ -61,25 +61,13 @@ export default function PointsAdminPage() {
   return (
     <AdminLayout>
       <div className="space-y-8 p-6 max-w-[1200px] mx-auto">
-        {/* Banner Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500/15 via-purple-600/10 to-amber-600/15 p-8 border border-border/60 backdrop-blur-xl shadow-lg">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <Link href="/loyalty" className="inline-flex items-center text-xs font-semibold text-muted-foreground hover:text-amber-500 transition-colors mb-2">
-                <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back to Loyalty Hub
-              </Link>
-              <h1 className="text-3xl font-extrabold text-foreground flex items-center gap-2">
-                <Award className="h-7 w-7 text-amber-500" /> Customer Reward Points Manager
-              </h1>
-              <p className="text-muted-foreground text-sm mt-1">
-                Grant manual point bonuses, process promotional rewards, or execute point debit adjustments for customer accounts.
-              </p>
-            </div>
-            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-amber-500/15 text-amber-600 border border-amber-500/30 shrink-0">
-              <Sparkles className="h-4 w-4" /> Real-time Points Engine
-            </span>
-          </div>
-        </div>
+        <PageHeader
+          titlePart1="Customer Reward"
+          titlePart2="Points Manager"
+          badgeText="REAL-TIME POINTS ENGINE"
+          subtitle="Grant manual point bonuses, process promotional rewards, or execute point debit adjustments for customer accounts."
+          icon={<Award className="h-8 w-8 text-amber-500" />}
+        />
 
         {message && (
           <div
