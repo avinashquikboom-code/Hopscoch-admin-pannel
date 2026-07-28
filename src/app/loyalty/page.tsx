@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { AdminLayout } from '@/components/layout/admin-layout';
 import { PageHeader } from '@/components/layout/page-header';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { API_BASE } from '@/lib/api';
@@ -18,6 +18,11 @@ import {
   FolderTree,
   ArrowUpRight,
   Gift,
+  Coins,
+  ShieldCheck,
+  Settings2,
+  Receipt,
+  Share2,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -50,188 +55,336 @@ export default function LoyaltyDashboardPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6 p-6">
-        <PageHeader
-          title="Loyalty & Rewards Dashboard"
-          description="Overview of customer wallet balances, reward points issued, top products, and referral metrics."
-        >
-          <Button onClick={fetchAnalytics} variant="outline" size="sm">
-            <RefreshCcw className="mr-2 h-4 w-4" /> Refresh
-          </Button>
-        </PageHeader>
+      <div className="space-y-8 p-6 max-w-[1600px] mx-auto">
+        {/* Glassmorphic Executive Hero Header */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500/10 via-purple-600/10 to-teal-500/10 p-8 border border-border/50 backdrop-blur-xl shadow-xl">
+          <div className="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-amber-500/20 blur-3xl pointer-events-none" />
+          <div className="absolute -left-20 -bottom-20 w-80 h-80 rounded-full bg-purple-600/20 blur-3xl pointer-events-none" />
 
-        {/* Top Metric Cards */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-border/60 bg-card">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Points Issued</CardTitle>
-              <Award className="h-5 w-5 text-amber-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">
-                {data?.totalPointsIssued ? data.totalPointsIssued.toLocaleString() : 0} Pts
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-600 border border-amber-500/30">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  LOYALTY & REWARDS COMMAND CENTER
+                </span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-500/15 text-emerald-600 border border-emerald-500/30">
+                  <ShieldCheck className="h-3 w-3" /> Standard Rate: 100 Pts = ₹1.00 INR
+                </span>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Total points earned by customers</p>
-            </CardContent>
-          </Card>
+              <h1 className="text-3xl lg:text-4xl font-extrabold tracking-tight text-foreground">
+                Loyalty & Rewards <span className="bg-gradient-to-r from-amber-500 to-purple-600 bg-clip-text text-transparent">Hub</span>
+              </h1>
+              <p className="text-muted-foreground text-sm max-w-2xl">
+                Monitor live customer wallet pools, point issuance & redemption standard, promotional multiplier campaigns, and referral program ROI.
+              </p>
+            </div>
 
-          <Card className="border-border/60 bg-card">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Points Redeemed</CardTitle>
-              <Sparkles className="h-5 w-5 text-purple-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">
-                {data?.totalPointsRedeemed ? data.totalPointsRedeemed.toLocaleString() : 0} Pts
+            <div className="flex items-center gap-3 shrink-0">
+              <Button
+                onClick={fetchAnalytics}
+                disabled={loading}
+                className="bg-card hover:bg-muted text-foreground border border-border/80 shadow-sm transition-all"
+              >
+                <RefreshCcw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                Refresh Analytics
+              </Button>
+              <Link href="/loyalty/rules">
+                <Button className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md shadow-amber-500/25">
+                  <Settings2 className="mr-2 h-4 w-4" /> Global Rules
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Top KPI Stat Grid */}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Card 1: Total Points Issued */}
+          <div className="relative overflow-hidden rounded-xl bg-card border border-amber-500/20 p-6 shadow-sm hover:shadow-md transition-all group">
+            <div className="absolute right-0 top-0 w-24 h-24 bg-amber-500/5 rounded-bl-full transition-all group-hover:scale-110 pointer-events-none" />
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Total Points Issued</span>
+              <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                <Coins className="h-5 w-5" />
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Points converted into discounts</p>
-            </CardContent>
-          </Card>
+            </div>
+            <div className="mt-4">
+              <div className="text-3xl font-extrabold text-foreground">
+                {data?.totalPointsIssued ? data.totalPointsIssued.toLocaleString() : 0} <span className="text-sm font-semibold text-amber-500">Pts</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                <TrendingUp className="h-3 w-3 text-emerald-500 inline" /> Lifetime customer earnings
+              </p>
+            </div>
+          </div>
 
-          <Card className="border-border/60 bg-card">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Active Wallet Balance</CardTitle>
-              <Wallet className="h-5 w-5 text-emerald-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">
-                ₹{data?.totalWalletBalance ? data.totalWalletBalance.toLocaleString() : '0.00'}
+          {/* Card 2: Points Redeemed */}
+          <div className="relative overflow-hidden rounded-xl bg-card border border-purple-500/20 p-6 shadow-sm hover:shadow-md transition-all group">
+            <div className="absolute right-0 top-0 w-24 h-24 bg-purple-500/5 rounded-bl-full transition-all group-hover:scale-110 pointer-events-none" />
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Points Redeemed</span>
+              <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-500 border border-purple-500/20">
+                <Award className="h-5 w-5" />
+              </div>
+            </div>
+            <div className="mt-4">
+              <div className="text-3xl font-extrabold text-foreground">
+                {data?.totalPointsRedeemed ? data.totalPointsRedeemed.toLocaleString() : 0} <span className="text-sm font-semibold text-purple-500">Pts</span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Across {data?.activeWalletsCount || 0} active wallets
+                Discount Value: ₹{((data?.totalPointsRedeemed || 0) * 0.01).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </p>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <Card className="border-border/60 bg-card">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Referrals Completed</CardTitle>
-              <Users className="h-5 w-5 text-blue-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">
-                {data?.totalReferralsCount || 0}
+          {/* Card 3: Active Wallet Balance */}
+          <div className="relative overflow-hidden rounded-xl bg-card border border-emerald-500/20 p-6 shadow-sm hover:shadow-md transition-all group">
+            <div className="absolute right-0 top-0 w-24 h-24 bg-emerald-500/5 rounded-bl-full transition-all group-hover:scale-110 pointer-events-none" />
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Active Wallet Pool</span>
+              <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                <Wallet className="h-5 w-5" />
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Successful customer referrals</p>
-            </CardContent>
-          </Card>
+            </div>
+            <div className="mt-4">
+              <div className="text-3xl font-extrabold text-foreground">
+                ₹{data?.totalWalletBalance ? Number(data.totalWalletBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '0.00'}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Across <span className="font-semibold text-emerald-600">{data?.activeWalletsCount || 0}</span> active customer wallets
+              </p>
+            </div>
+          </div>
+
+          {/* Card 4: Successful Referrals */}
+          <div className="relative overflow-hidden rounded-xl bg-card border border-blue-500/20 p-6 shadow-sm hover:shadow-md transition-all group">
+            <div className="absolute right-0 top-0 w-24 h-24 bg-blue-500/5 rounded-bl-full transition-all group-hover:scale-110 pointer-events-none" />
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Referral Conversions</span>
+              <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                <Users className="h-5 w-5" />
+              </div>
+            </div>
+            <div className="mt-4">
+              <div className="text-3xl font-extrabold text-foreground">
+                {data?.totalReferralsCount || 0} <span className="text-sm font-semibold text-blue-500">Users</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Successful referral signups & purchases
+              </p>
+            </div>
+          </div>
         </div>
 
-        {/* Quick Navigation Cards */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <Link href="/loyalty/rules" className="block">
-            <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-primary" /> Reward Rules & Priority
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-xs text-muted-foreground">
-                Configure Global, Category, and Product reward rules. Prioritizes Product → Category → Global.
-              </CardContent>
-            </Card>
-          </Link>
+        {/* Quick Management Suite (6 Modules) */}
+        <div>
+          <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+            <Settings2 className="h-5 w-5 text-amber-500" /> Management Modules
+          </h2>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <Link href="/loyalty/rules" className="group block">
+              <div className="h-full rounded-xl bg-card border border-border/60 p-5 hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/5 transition-all">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-lg bg-amber-500/10 text-amber-500 border border-amber-500/20 group-hover:scale-105 transition-transform">
+                    <Sparkles className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm text-foreground group-hover:text-amber-500 transition-colors flex items-center gap-1">
+                      Reward Rules & Engine <ArrowUpRight className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Configure 3-Tier priority: Product → Category → Global
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </Link>
 
-          <Link href="/loyalty/wallet" className="block">
-            <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Wallet className="h-4 w-4 text-emerald-500" /> Customer Wallets
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-xs text-muted-foreground">
-                View customer balances, top-up funds, process refunds, or execute admin credit/debit adjustments.
-              </CardContent>
-            </Card>
-          </Link>
+            <Link href="/loyalty/wallet" className="group block">
+              <div className="h-full rounded-xl bg-card border border-border/60 p-5 hover:border-emerald-500/50 hover:shadow-lg hover:shadow-emerald-500/5 transition-all">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 group-hover:scale-105 transition-transform">
+                    <Wallet className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm text-foreground group-hover:text-emerald-500 transition-colors flex items-center gap-1">
+                      Customer Wallets <ArrowUpRight className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Manual credit/debit adjustments, refunds & balances
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </Link>
 
-          <Link href="/loyalty/product-rewards" className="block">
-            <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Package className="h-4 w-4 text-amber-500" /> Product Rewards Configuration
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-xs text-muted-foreground">
-                Override reward points and maximum redeemable points for specific products.
-              </CardContent>
-            </Card>
-          </Link>
+            <Link href="/loyalty/product-rewards" className="group block">
+              <div className="h-full rounded-xl bg-card border border-border/60 p-5 hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/5 transition-all">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-lg bg-purple-500/10 text-purple-500 border border-purple-500/20 group-hover:scale-105 transition-transform">
+                    <Package className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm text-foreground group-hover:text-purple-500 transition-colors flex items-center gap-1">
+                      Product Reward Overrides <ArrowUpRight className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Set specific earn & max redemption limits per product
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </Link>
+
+            <Link href="/loyalty/category-rewards" className="group block">
+              <div className="h-full rounded-xl bg-card border border-border/60 p-5 hover:border-teal-500/50 hover:shadow-lg hover:shadow-teal-500/5 transition-all">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-lg bg-teal-500/10 text-teal-500 border border-teal-500/20 group-hover:scale-105 transition-transform">
+                    <FolderTree className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm text-foreground group-hover:text-teal-500 transition-colors flex items-center gap-1">
+                      Category Reward Matrix <ArrowUpRight className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Category-wide point multipliers & rule overrides
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </Link>
+
+            <Link href="/loyalty/gift-cards" className="group block">
+              <div className="h-full rounded-xl bg-card border border-border/60 p-5 hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/5 transition-all">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-lg bg-amber-500/10 text-amber-500 border border-amber-500/20 group-hover:scale-105 transition-transform">
+                    <Gift className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm text-foreground group-hover:text-amber-500 transition-colors flex items-center gap-1">
+                      Digital Gift Cards <ArrowUpRight className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Generate digital voucher codes for customer wallet topup
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </Link>
+
+            <Link href="/loyalty/campaigns" className="group block">
+              <div className="h-full rounded-xl bg-card border border-border/60 p-5 hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/5 transition-all">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-lg bg-blue-500/10 text-blue-500 border border-blue-500/20 group-hover:scale-105 transition-transform">
+                    <Share2 className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm text-foreground group-hover:text-blue-500 transition-colors flex items-center gap-1">
+                      Promotional Campaigns <ArrowUpRight className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Bonus point multipliers, promo windows & referral bonuses
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          </div>
         </div>
 
-        {/* Tables: Top Reward Products & Categories */}
+        {/* Data Tables Section */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* Top Reward Products */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <Package className="h-4 w-4 text-amber-500" /> Top Reward Products
-              </CardTitle>
+          {/* Table 1: Top Reward Products */}
+          <Card className="border-border/60 shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between border-b border-border/40 pb-4">
+              <div>
+                <CardTitle className="text-base font-bold flex items-center gap-2">
+                  <Package className="h-4 w-4 text-amber-500" /> Overridden Product Rules
+                </CardTitle>
+                <CardDescription className="text-xs mt-0.5">
+                  Products with explicit point override configurations
+                </CardDescription>
+              </div>
               <Link href="/loyalty/product-rewards">
-                <Button size="xs" variant="ghost" className="text-xs">
-                  View All <ArrowUpRight className="ml-1 h-3 w-3" />
+                <Button size="sm" variant="ghost" className="text-xs hover:bg-amber-500/10 hover:text-amber-600">
+                  View All <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
                 </Button>
               </Link>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4">
               <div className="space-y-3">
                 {data?.topRewardProducts && data.topRewardProducts.length > 0 ? (
                   data.topRewardProducts.map((p: any) => (
-                    <div key={p.id} className="flex items-center justify-between border-b border-border/40 pb-2 text-xs">
+                    <div key={p.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/40 hover:bg-muted/70 transition-colors border border-border/30">
                       <div>
-                        <div className="font-medium text-foreground">{p.name}</div>
-                        <div className="text-muted-foreground">Price: ₹{Number(p.basePrice).toLocaleString()}</div>
+                        <div className="font-bold text-sm text-foreground">{p.name}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">Price: ₹{Number(p.basePrice).toLocaleString('en-IN')}</div>
                       </div>
                       <div className="text-right">
-                        <Badge variant="secondary" className="bg-amber-500/10 text-amber-600">
+                        <Badge className="bg-amber-500/15 text-amber-600 hover:bg-amber-500/20 border-amber-500/30">
                           Earn {p.rewardPoints} Pts
                         </Badge>
-                        <div className="text-[10px] text-muted-foreground mt-0.5">
-                          Max Redeem: {p.maxRedeemablePoints} Pts
+                        <div className="text-[11px] text-muted-foreground mt-1">
+                          Max Redeem: <span className="font-semibold text-purple-600">{p.maxRedeemablePoints} Pts</span>
                         </div>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p className="text-xs text-muted-foreground">No custom product reward rules set.</p>
+                  <div className="text-center py-8 text-muted-foreground text-xs">
+                    No custom product reward rules set yet.
+                  </div>
                 )}
               </div>
             </CardContent>
           </Card>
 
-          {/* Top Customers */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <Users className="h-4 w-4 text-blue-500" /> Top Loyalty Customers
-              </CardTitle>
+          {/* Table 2: Top Loyalty Customers */}
+          <Card className="border-border/60 shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between border-b border-border/40 pb-4">
+              <div>
+                <CardTitle className="text-base font-bold flex items-center gap-2">
+                  <Users className="h-4 w-4 text-purple-500" /> Top Customer Balances
+                </CardTitle>
+                <CardDescription className="text-xs mt-0.5">
+                  Customers with highest reward points and active wallet funds
+                </CardDescription>
+              </div>
               <Link href="/loyalty/points">
-                <Button size="xs" variant="ghost" className="text-xs">
-                  View All <ArrowUpRight className="ml-1 h-3 w-3" />
+                <Button size="sm" variant="ghost" className="text-xs hover:bg-purple-500/10 hover:text-purple-600">
+                  View All <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
                 </Button>
               </Link>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4">
               <div className="space-y-3">
                 {data?.topCustomers && data.topCustomers.length > 0 ? (
                   data.topCustomers.map((c: any) => (
-                    <div key={c.id} className="flex items-center justify-between border-b border-border/40 pb-2 text-xs">
-                      <div>
-                        <div className="font-medium text-foreground">{c.name}</div>
-                        <div className="text-muted-foreground">{c.email}</div>
+                    <div key={c.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/40 hover:bg-muted/70 transition-colors border border-border/30">
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-600 font-bold flex items-center justify-center text-xs">
+                          {c.name ? c.name.charAt(0).toUpperCase() : 'U'}
+                        </div>
+                        <div>
+                          <div className="font-bold text-sm text-foreground">{c.name || 'Customer'}</div>
+                          <div className="text-xs text-muted-foreground">{c.email}</div>
+                        </div>
                       </div>
                       <div className="text-right">
-                        <Badge variant="outline" className="text-purple-600 border-purple-300">
+                        <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-500/30 font-bold">
                           {c.rewardPointsBalance} Pts
                         </Badge>
-                        <div className="text-[10px] text-muted-foreground mt-0.5">
-                          Wallet: ₹{c.walletBalance}
+                        <div className="text-[11px] text-emerald-600 font-semibold mt-1">
+                          Wallet: ₹{Number(c.walletBalance || 0).toFixed(2)}
                         </div>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p className="text-xs text-muted-foreground">No customer points data available.</p>
+                  <div className="text-center py-8 text-muted-foreground text-xs">
+                    No customer points or wallet data logged yet.
+                  </div>
                 )}
               </div>
             </CardContent>
@@ -241,3 +394,4 @@ export default function LoyaltyDashboardPage() {
     </AdminLayout>
   );
 }
+
