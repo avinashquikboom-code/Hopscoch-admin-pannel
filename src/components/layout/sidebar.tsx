@@ -164,6 +164,25 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
       ],
     },
     {
+      name: 'Loyalty & Rewards',
+      icon: Sparkles,
+      items: [
+        { name: 'Dashboard', href: '/loyalty' },
+        { name: 'Wallet', href: '/loyalty/wallet' },
+        { name: 'Reward Points', href: '/loyalty/points' },
+        { name: 'Reward Rules', href: '/loyalty/rules' },
+        { name: 'Product Rewards', href: '/loyalty/product-rewards' },
+        { name: 'Category Rewards', href: '/loyalty/category-rewards' },
+        { name: 'Cashback', href: '/loyalty/cashback' },
+        { name: 'Referral', href: '/loyalty/referral' },
+        { name: 'Campaigns', href: '/loyalty/campaigns' },
+        { name: 'Gift Cards', href: '/loyalty/gift-cards' },
+        { name: 'Transactions', href: '/loyalty/transactions' },
+        { name: 'Reports', href: '/loyalty/reports' },
+        { name: 'Settings', href: '/loyalty/settings' },
+      ],
+    },
+    {
       name: 'Settings',
       icon: Settings,
       items: [
