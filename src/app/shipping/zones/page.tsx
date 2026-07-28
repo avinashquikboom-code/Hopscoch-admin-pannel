@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { AdminLayout } from '@/components/layout/admin-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,9 +8,17 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  ColumnDef,
+  SortingState,
+} from '@tanstack/react-table';
 import { AppDrawer } from '@/components/ui/app-drawer';
 import { PageHeader } from '@/components/layout/page-header';
-import { Plus, Search, Edit, Trash2, Globe } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Globe, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const initialZones = [
   { id: '1', name: 'Zone A — Metro', country: 'India', states: 'MH, DL, KA, TN', cities: 'Mumbai, Delhi, Bangalore, Chennai', pincodes: '400001-400099, 110001-110099', status: true },
@@ -46,6 +54,28 @@ export default function ShippingZonesPage() {
   const filtered = zones.filter(z =>
     z.name.toLowerCase().includes(search.toLowerCase()) || z.country.toLowerCase().includes(search.toLowerCase())
   );
+
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const zoneColumns = useMemo<ColumnDef<any>[]>(() => [
+    { accessorKey: 'name', header: 'Zone Name' },
+    { accessorKey: 'country', header: 'Country' },
+    { accessorKey: 'states', header: 'States' },
+    { accessorKey: 'cities', header: 'Cities' },
+    { accessorKey: 'pincodes', header: 'Pincodes' },
+    { accessorKey: 'status', header: 'Status' },
+  ], []);
+
+  const zoneTable = useReactTable({
+    data: filtered,
+    columns: zoneColumns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: 10 } },
+  });
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,14 +162,25 @@ export default function ShippingZonesPage() {
               <Table>
                 <TableHeader className="bg-muted/30">
                   <TableRow>
-                    {['Zone Name', 'Country', 'States', 'Cities', 'Pincodes', 'Status', ''].map(h => (
-                      <TableHead key={h} className="text-xs font-bold uppercase tracking-wider">{h}</TableHead>
-                    ))}
+                    <TableHead className="text-xs font-bold uppercase tracking-wider">
+                      <Button variant="ghost" onClick={() => zoneTable.getColumn('name')?.toggleSorting(zoneTable.getColumn('name')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Zone Name <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider">Country</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider">States</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider">Cities</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider">Pincodes</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider">Status</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((z) => (
-                    <TableRow key={z.id} className="hover:bg-muted/10">
+                  {zoneTable.getRowModel().rows.length ? (
+                    zoneTable.getRowModel().rows.map((row) => {
+                    const z = row.original;
+                    return (
+                    <TableRow key={row.id} className="hover:bg-muted/10">
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Globe className="h-4 w-4 text-primary flex-shrink-0" />
@@ -165,9 +206,33 @@ export default function ShippingZonesPage() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                    })
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-xs text-muted-foreground">No zones found</TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
+              {filtered.length > 0 && (
+                <div className="flex items-center justify-between p-3 border-t border-border/30 bg-muted/10 text-xs">
+                  <span className="text-muted-foreground font-semibold">
+                    {zoneTable.getFilteredRowModel().rows.length} of {filtered.length} zones
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => zoneTable.previousPage()} disabled={!zoneTable.getCanPreviousPage()}>
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                    </Button>
+                    <span className="px-2 font-bold text-foreground text-[11px]">
+                      {zoneTable.getState().pagination.pageIndex + 1} / {zoneTable.getPageCount() || 1}
+                    </span>
+                    <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => zoneTable.nextPage()} disabled={!zoneTable.getCanNextPage()}>
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

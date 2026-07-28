@@ -1,13 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { AdminLayout } from '@/components/layout/admin-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Upload, MapPin, CheckCircle2, XCircle, Filter, Trash2, Edit } from 'lucide-react';
+import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  ColumnDef,
+  SortingState,
+} from '@tanstack/react-table';
+import { Search, Upload, MapPin, CheckCircle2, XCircle, Filter, Trash2, Edit, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { AppDrawer } from '@/components/ui/app-drawer';
 import { Label } from '@/components/ui/label';
@@ -93,6 +101,28 @@ export default function PincodePage() {
     const matchSearch = p.pin.includes(search) || p.city.toLowerCase().includes(search.toLowerCase());
     const matchFilter = filterActive === 'all' || (filterActive === 'active' ? p.active : !p.active);
     return matchSearch && matchFilter;
+  });
+
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const pincodeColumns = useMemo<ColumnDef<PincodeItem>[]>(() => [
+    { accessorKey: 'pin', header: 'Pincode' },
+    { accessorKey: 'city', header: 'City' },
+    { accessorKey: 'state', header: 'State' },
+    { accessorKey: 'cod', header: 'COD' },
+    { accessorKey: 'express', header: 'Express' },
+    { accessorKey: 'active', header: 'Status' },
+  ], []);
+
+  const pincodeTable = useReactTable({
+    data: filtered,
+    columns: pincodeColumns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: 10 } },
   });
 
   return (
@@ -200,14 +230,29 @@ export default function PincodePage() {
               <Table>
                 <TableHeader className="bg-muted/30">
                   <TableRow>
-                    {['Pincode', 'City', 'State', 'COD', 'Express', 'Status', 'Actions'].map(h => (
-                      <TableHead key={h} className="text-xs font-bold uppercase tracking-wider">{h}</TableHead>
-                    ))}
+                    <TableHead className="text-xs font-bold uppercase tracking-wider">
+                      <Button variant="ghost" onClick={() => pincodeTable.getColumn('pin')?.toggleSorting(pincodeTable.getColumn('pin')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Pincode <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider">
+                      <Button variant="ghost" onClick={() => pincodeTable.getColumn('city')?.toggleSorting(pincodeTable.getColumn('city')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        City <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider">State</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider">COD</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider">Express</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider">Status</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-wider">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((p) => (
-                    <TableRow key={p.pin} className="hover:bg-muted/10">
+                  {pincodeTable.getRowModel().rows.length ? (
+                    pincodeTable.getRowModel().rows.map((row) => {
+                    const p = row.original;
+                    return (
+                    <TableRow key={row.id} className="hover:bg-muted/10">
                       <TableCell className="font-mono font-bold text-sm text-[#14b8a6]">{p.pin}</TableCell>
                       <TableCell className="text-sm font-semibold">{p.city}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{p.state}</TableCell>
@@ -232,9 +277,33 @@ export default function PincodePage() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                    })
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-xs text-muted-foreground">No pincodes found</TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
+              {filtered.length > 0 && (
+                <div className="flex items-center justify-between p-3 border-t border-border/30 bg-muted/10 text-xs">
+                  <span className="text-muted-foreground font-semibold">
+                    {pincodeTable.getFilteredRowModel().rows.length} of {filtered.length} pincodes
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => pincodeTable.previousPage()} disabled={!pincodeTable.getCanPreviousPage()}>
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                    </Button>
+                    <span className="px-2 font-bold text-foreground text-[11px]">
+                      {pincodeTable.getState().pagination.pageIndex + 1} / {pincodeTable.getPageCount() || 1}
+                    </span>
+                    <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => pincodeTable.nextPage()} disabled={!pincodeTable.getCanNextPage()}>
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

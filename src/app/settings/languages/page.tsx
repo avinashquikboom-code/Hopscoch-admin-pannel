@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { API_BASE } from '@/lib/api';
 import { getCurrencyForCountry, getLanguageForCountry, useCurrency } from '@/context/currency-context';
 import { AdminLayout } from '@/components/layout/admin-layout';
@@ -17,6 +17,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  ColumnDef,
+  SortingState,
+} from '@tanstack/react-table';
 import {
   Sheet,
   SheetContent,
@@ -44,7 +52,10 @@ import {
   DollarSign,
   MapPin,
   Star,
-  CheckCircle2
+  CheckCircle2,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 
@@ -561,6 +572,24 @@ export default function LanguagesAndCurrencyPage() {
     saveCountries(finalCountries);
   };
 
+  const [countrySorting, setCountrySorting] = useState<SortingState>([]);
+
+  const countryColumns = useMemo<ColumnDef<any>[]>(() => [
+    { accessorKey: 'name', header: 'Country Name' },
+    { accessorKey: 'code', header: 'ISO Code' },
+  ], []);
+
+  const countryTable = useReactTable({
+    data: countries,
+    columns: countryColumns,
+    state: { sorting: countrySorting },
+    onSortingChange: setCountrySorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: 10 } },
+  });
+
   return (
     <AdminLayout>
       <div className="space-y-8 pb-12">
@@ -658,7 +687,11 @@ export default function LanguagesAndCurrencyPage() {
                   <Table>
                     <TableHeader className="bg-muted/30">
                       <TableRow>
-                        <TableHead>Country Name</TableHead>
+                        <TableHead>
+                          <Button variant="ghost" onClick={() => countryTable.getColumn('name')?.toggleSorting(countryTable.getColumn('name')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs">
+                            Country Name <ArrowUpDown className="ml-1 h-3 w-3" />
+                          </Button>
+                        </TableHead>
                         <TableHead>ISO Code</TableHead>
                         <TableHead>Mapped Currency</TableHead>
                         <TableHead>Mapped Language</TableHead>
@@ -667,11 +700,13 @@ export default function LanguagesAndCurrencyPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {countries.map((c) => {
+                      {countryTable.getRowModel().rows.length ? (
+                        countryTable.getRowModel().rows.map((row) => {
+                        const c = row.original;
                         const mappedCurrency = getCurrencyForCountry(c.code);
                         const mappedLanguage = getLanguageForCountry(c.code);
                         return (
-                          <TableRow key={c.code} className="hover:bg-muted/10">
+                          <TableRow key={row.id} className="hover:bg-muted/10">
                             <TableCell className="font-semibold text-sm text-foreground">
                               {c.name}
                             </TableCell>
@@ -729,9 +764,32 @@ export default function LanguagesAndCurrencyPage() {
                             </TableCell>
                           </TableRow>
                         );
-                      })}
+                      })
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center py-8 text-xs text-muted-foreground">No countries configured</TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
+                  {countries.length > 0 && (
+                    <div className="flex items-center justify-between p-3 border-t border-border/30 bg-muted/10 text-xs">
+                      <span className="text-muted-foreground font-semibold">
+                        {countryTable.getFilteredRowModel().rows.length} of {countries.length} countries
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => countryTable.previousPage()} disabled={!countryTable.getCanPreviousPage()}>
+                          <ChevronLeft className="h-3.5 w-3.5" />
+                        </Button>
+                        <span className="px-2 font-bold text-foreground text-[11px]">
+                          {countryTable.getState().pagination.pageIndex + 1} / {countryTable.getPageCount() || 1}
+                        </span>
+                        <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => countryTable.nextPage()} disabled={!countryTable.getCanNextPage()}>
+                          <ChevronRight className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

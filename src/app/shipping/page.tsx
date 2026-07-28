@@ -17,6 +17,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  ColumnDef,
+  SortingState,
+} from '@tanstack/react-table';
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -28,7 +36,7 @@ import {
   Truck, Package, CheckCircle2, XCircle, RefreshCw,
   Clock, TrendingUp, ArrowUpRight, DollarSign, Calendar,
   MapPin, BarChart2, Search, ArrowUp, ArrowDown, Plus, Sparkles,
-  Info, Eye, Trash2, FileText
+  Info, Eye, Trash2, FileText, ArrowUpDown, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis,
@@ -142,6 +150,29 @@ export default function ShippingDashboardPage() {
       s.status.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [shipmentsList, searchQuery]);
+
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const shipmentColumns = useMemo<ColumnDef<any>[]>(() => [
+    { accessorKey: 'id', header: 'Order ID' },
+    { accessorKey: 'shipment_id', header: 'Shiprocket Ref' },
+    { accessorKey: 'customer', header: 'Customer Name' },
+    { accessorKey: 'city', header: 'Destination City' },
+    { accessorKey: 'courier', header: 'Carrier Courier' },
+    { accessorKey: 'date', header: 'Created Date' },
+    { accessorKey: 'status', header: 'Status' },
+  ], []);
+
+  const shipmentTable = useReactTable({
+    data: filteredShipments,
+    columns: shipmentColumns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: 10 } },
+  });
 
   // Shipment Action handlers
   const handleShipmentAction = async (action: string, orderId: number) => {
@@ -262,17 +293,30 @@ export default function ShippingDashboardPage() {
                   <TableRow className="hover:bg-transparent border-b border-border/20">
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Order ID</TableHead>
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Shiprocket Ref</TableHead>
-                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Customer Name</TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => shipmentTable.getColumn('customer')?.toggleSorting(shipmentTable.getColumn('customer')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Customer Name <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Destination City</TableHead>
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Carrier Courier</TableHead>
-                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Created Date</TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => shipmentTable.getColumn('date')?.toggleSorting(shipmentTable.getColumn('date')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-[#14b8a6] text-xs uppercase tracking-wider">
+                        Created Date <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
                     <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredShipments.map((shp) => (
+                  {loading ? (
+                    <TableRow><TableCell colSpan={7} className="text-center py-10 text-xs text-muted-foreground font-semibold">Loading shipments...</TableCell></TableRow>
+                  ) : shipmentTable.getRowModel().rows.length ? (
+                    shipmentTable.getRowModel().rows.map((row) => {
+                    const shp = row.original;
+                    return (
                     <TableRow 
-                      key={shp.id}
+                      key={row.id}
                       onClick={() => setSelectedShipment(shp)}
                       className="hover:bg-muted/20 border-b border-border/20 transition-colors cursor-pointer group/row"
                     >
@@ -298,8 +342,9 @@ export default function ShippingDashboardPage() {
                         </Badge>
                       </TableCell>
                     </TableRow>
-                  ))}
-                  {filteredShipments.length === 0 && (
+                    );
+                    })
+                  ) : (
                     <TableRow>
                       <TableCell colSpan={7} className="py-12 text-center text-sm text-muted-foreground">
                         <div className="flex flex-col items-center justify-center space-y-3">
@@ -311,6 +356,24 @@ export default function ShippingDashboardPage() {
                   )}
                 </TableBody>
               </Table>
+              {filteredShipments.length > 0 && (
+                <div className="flex items-center justify-between p-3 border-t border-border/30 bg-muted/10 text-xs">
+                  <span className="text-muted-foreground font-semibold">
+                    {shipmentTable.getFilteredRowModel().rows.length} of {filteredShipments.length} shipments
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => shipmentTable.previousPage()} disabled={!shipmentTable.getCanPreviousPage()}>
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                    </Button>
+                    <span className="px-2 font-bold text-foreground text-[11px]">
+                      {shipmentTable.getState().pagination.pageIndex + 1} / {shipmentTable.getPageCount() || 1}
+                    </span>
+                    <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => shipmentTable.nextPage()} disabled={!shipmentTable.getCanNextPage()}>
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
