@@ -18,6 +18,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  ColumnDef,
+  SortingState,
+} from '@tanstack/react-table';
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -57,7 +65,10 @@ import {
   Eye,
   AlertTriangle,
   Globe,
-  EyeOff
+  EyeOff,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -158,6 +169,27 @@ export default function NotificationsPage() {
         n.message.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [notificationsList, searchQuery]);
+
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const notificationColumns = useMemo<ColumnDef<any>[]>(() => [
+    { accessorKey: 'type', header: 'Type' },
+    { accessorKey: 'title', header: 'Title' },
+    { accessorKey: 'message', header: 'Message' },
+    { accessorKey: 'isSent', header: 'Status' },
+    { accessorKey: 'sentAt', header: 'Sent At' },
+  ], []);
+
+  const notificationTable = useReactTable({
+    data: filteredNotifications,
+    columns: notificationColumns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: 10 } },
+  });
 
   const stats = useMemo(() => {
     const totalCount = notificationsList.length;
@@ -277,7 +309,11 @@ export default function NotificationsPage() {
                 <TableHeader className="bg-muted/30">
                   <TableRow className="hover:bg-transparent border-b border-border/20">
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Alert Type</TableHead>
-                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Title</TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => notificationTable.getColumn('title')?.toggleSorting(notificationTable.getColumn('title')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Title <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Message Snippet</TableHead>
                     <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Target Coverage</TableHead>
                     <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Status</TableHead>
@@ -286,12 +322,16 @@ export default function NotificationsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredNotifications.map((notification) => {
+                  {loading ? (
+                    <TableRow><TableCell colSpan={7} className="text-center py-10 text-xs text-muted-foreground font-semibold">Loading notifications...</TableCell></TableRow>
+                  ) : notificationTable.getRowModel().rows.length ? (
+                    notificationTable.getRowModel().rows.map((row) => {
+                    const notification = row.original;
                     const typeConfig = notificationTypes[notification.type as keyof typeof notificationTypes] || { label: 'General', icon: Bell, color: 'bg-muted text-foreground' };
                     const Icon = typeConfig.icon;
                     return (
                       <TableRow 
-                        key={notification.id}
+                        key={row.id}
                         onClick={() => setSelectedNotification(notification)}
                         className="hover:bg-muted/20 border-b border-border/20 transition-colors cursor-pointer group/row"
                       >
@@ -377,8 +417,8 @@ export default function NotificationsPage() {
                         </TableCell>
                       </TableRow>
                     );
-                  })}
-                  {filteredNotifications.length === 0 && (
+                    })
+                  ) : (
                     <TableRow>
                       <TableCell colSpan={7} className="py-12 text-center text-sm text-muted-foreground">
                         <div className="flex flex-col items-center justify-center space-y-3">
@@ -390,6 +430,24 @@ export default function NotificationsPage() {
                   )}
                 </TableBody>
               </Table>
+              {filteredNotifications.length > 0 && (
+                <div className="flex items-center justify-between p-3 border-t border-border/30 bg-muted/10 text-xs">
+                  <span className="text-muted-foreground font-semibold">
+                    {notificationTable.getFilteredRowModel().rows.length} of {filteredNotifications.length} records
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => notificationTable.previousPage()} disabled={!notificationTable.getCanPreviousPage()}>
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                    </Button>
+                    <span className="px-2 font-bold text-foreground text-[11px]">
+                      {notificationTable.getState().pagination.pageIndex + 1} / {notificationTable.getPageCount() || 1}
+                    </span>
+                    <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => notificationTable.nextPage()} disabled={!notificationTable.getCanNextPage()}>
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

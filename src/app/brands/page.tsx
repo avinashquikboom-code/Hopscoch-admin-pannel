@@ -19,6 +19,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  ColumnDef,
+  SortingState,
+} from '@tanstack/react-table';
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -58,7 +66,10 @@ import {
   Globe,
   EyeOff,
   AlertTriangle,
-  X
+  X,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 
@@ -228,6 +239,28 @@ export default function BrandsPage() {
     );
   }, [brandsList, searchQuery]);
 
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const brandColumns = useMemo<ColumnDef<any>[]>(() => [
+    { accessorKey: 'name', header: 'Brand' },
+    { accessorKey: 'slug', header: 'Slug' },
+    { accessorKey: 'productCount', header: 'Products' },
+    { accessorKey: 'order', header: 'Sort Order' },
+    { accessorKey: 'status', header: 'Status' },
+    { accessorKey: 'isFeatured', header: 'Featured' },
+  ], []);
+
+  const brandTable = useReactTable({
+    data: filteredBrands,
+    columns: brandColumns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: 10 } },
+  });
+
   const stats = useMemo(() => {
     const totalCount = brandsList.length;
     const featuredCount = brandsList.filter((b) => b.isFeatured).length;
@@ -318,19 +351,37 @@ export default function BrandsPage() {
               <Table>
                 <TableHeader className="bg-muted/30">
                   <TableRow className="hover:bg-transparent border-b border-border/20">
-                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Brand</TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => brandTable.getColumn('name')?.toggleSorting(brandTable.getColumn('name')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Brand <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Slug</TableHead>
-                    <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Products</TableHead>
-                    <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Sort Order</TableHead>
+                    <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => brandTable.getColumn('productCount')?.toggleSorting(brandTable.getColumn('productCount')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Products <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
+                    <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => brandTable.getColumn('order')?.toggleSorting(brandTable.getColumn('order')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Sort Order <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
                     <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Status</TableHead>
                     <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Featured</TableHead>
                     <TableHead className="w-16 py-4" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredBrands.map((brand, idx) => (
+                  {loading ? (
+                    <TableRow><TableCell colSpan={7} className="text-center py-10 text-xs text-muted-foreground font-semibold">Loading brands...</TableCell></TableRow>
+                  ) : brandTable.getRowModel().rows.length ? (
+                    brandTable.getRowModel().rows.map((row) => {
+                    const brand = row.original;
+                    const idx = row.index;
+                    return (
                     <TableRow 
-                      key={brand.id}
+                      key={row.id}
                       onClick={() => setSelectedBrand(brand)}
                       className="hover:bg-muted/20 border-b border-border/20 transition-colors cursor-pointer group/row"
                     >
@@ -431,8 +482,9 @@ export default function BrandsPage() {
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
-                  ))}
-                  {filteredBrands.length === 0 && (
+                    );
+                    })
+                  ) : (
                     <TableRow>
                       <TableCell colSpan={7} className="py-12 text-center text-sm text-muted-foreground">
                         <div className="flex flex-col items-center justify-center space-y-3">
@@ -444,6 +496,24 @@ export default function BrandsPage() {
                   )}
                 </TableBody>
               </Table>
+              {filteredBrands.length > 0 && (
+                <div className="flex items-center justify-between p-3 border-t border-border/30 bg-muted/10 text-xs">
+                  <span className="text-muted-foreground font-semibold">
+                    {brandTable.getFilteredRowModel().rows.length} of {filteredBrands.length} records
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => brandTable.previousPage()} disabled={!brandTable.getCanPreviousPage()}>
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                    </Button>
+                    <span className="px-2 font-bold text-foreground text-[11px]">
+                      {brandTable.getState().pagination.pageIndex + 1} / {brandTable.getPageCount() || 1}
+                    </span>
+                    <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => brandTable.nextPage()} disabled={!brandTable.getCanNextPage()}>
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

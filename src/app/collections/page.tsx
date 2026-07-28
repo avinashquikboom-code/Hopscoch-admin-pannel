@@ -19,6 +19,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  ColumnDef,
+  SortingState,
+} from '@tanstack/react-table';
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -58,7 +66,10 @@ import {
   Info,
   EyeOff,
   AlertTriangle,
-  X
+  X,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 
@@ -199,6 +210,27 @@ export default function CollectionsPage() {
     );
   }, [collectionsList, searchQuery]);
 
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const collectionColumns = useMemo<ColumnDef<any>[]>(() => [
+    { accessorKey: 'name', header: 'Collection' },
+    { accessorKey: 'type', header: 'Type' },
+    { accessorKey: 'productCount', header: 'Products' },
+    { accessorKey: 'startDate', header: 'Start' },
+    { accessorKey: 'isActive', header: 'Status' },
+  ], []);
+
+  const collectionTable = useReactTable({
+    data: filteredCollections,
+    columns: collectionColumns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: 10 } },
+  });
+
   const stats = useMemo(() => {
     const totalCount = collectionsList.length;
     const activeCount = collectionsList.filter((c) => c.isActive).length;
@@ -289,20 +321,33 @@ export default function CollectionsPage() {
               <Table>
                 <TableHeader className="bg-muted/30">
                   <TableRow className="hover:bg-transparent border-b border-border/20">
-                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Collection</TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => collectionTable.getColumn('name')?.toggleSorting(collectionTable.getColumn('name')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Collection <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Type</TableHead>
-                    <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Products</TableHead>
+                    <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => collectionTable.getColumn('productCount')?.toggleSorting(collectionTable.getColumn('productCount')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Products <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Date Range</TableHead>
                     <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Status</TableHead>
                     <TableHead className="w-16 py-4" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredCollections.map((collection, idx) => {
+                  {loading ? (
+                    <TableRow><TableCell colSpan={6} className="text-center py-10 text-xs text-muted-foreground font-semibold">Loading collections...</TableCell></TableRow>
+                  ) : collectionTable.getRowModel().rows.length ? (
+                    collectionTable.getRowModel().rows.map((row) => {
+                    const collection = row.original;
+                    const idx = row.index;
                     const typeConfig = collectionTypes[collection.type as keyof typeof collectionTypes] || collectionTypes.custom;
                     return (
                       <TableRow 
-                        key={collection.id}
+                        key={row.id}
                         onClick={() => setSelectedCollection(collection)}
                         className="hover:bg-muted/20 border-b border-border/20 transition-colors cursor-pointer group/row"
                       >
@@ -396,8 +441,8 @@ export default function CollectionsPage() {
                         </TableCell>
                       </TableRow>
                     );
-                  })}
-                  {filteredCollections.length === 0 && (
+                    })
+                  ) : (
                     <TableRow>
                       <TableCell colSpan={6} className="py-12 text-center text-sm text-muted-foreground">
                         <div className="flex flex-col items-center justify-center space-y-3">
@@ -409,6 +454,24 @@ export default function CollectionsPage() {
                   )}
                 </TableBody>
               </Table>
+              {filteredCollections.length > 0 && (
+                <div className="flex items-center justify-between p-3 border-t border-border/30 bg-muted/10 text-xs">
+                  <span className="text-muted-foreground font-semibold">
+                    {collectionTable.getFilteredRowModel().rows.length} of {filteredCollections.length} records
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => collectionTable.previousPage()} disabled={!collectionTable.getCanPreviousPage()}>
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                    </Button>
+                    <span className="px-2 font-bold text-foreground text-[11px]">
+                      {collectionTable.getState().pagination.pageIndex + 1} / {collectionTable.getPageCount() || 1}
+                    </span>
+                    <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => collectionTable.nextPage()} disabled={!collectionTable.getCanNextPage()}>
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

@@ -19,6 +19,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  ColumnDef,
+  SortingState,
+} from '@tanstack/react-table';
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -47,6 +55,7 @@ import {
   Save,
   ChevronRight,
   ChevronDown,
+  ChevronLeft,
   Layers,
   FolderOpen,
   Tag,
@@ -58,7 +67,9 @@ import {
   Sparkles,
   ListCollapse,
   EyeOff,
-  X
+  X,
+  ArrowUpDown,
+  AlertTriangle
 } from 'lucide-react';
 
 
@@ -292,6 +303,26 @@ export default function CategoriesPage() {
     );
   }, [categoriesList, searchQuery]);
 
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const categoryColumns = useMemo<ColumnDef<any>[]>(() => [
+    { accessorKey: 'name', header: 'Name' },
+    { accessorKey: 'slug', header: 'Slug' },
+    { accessorKey: 'productCount', header: 'Products' },
+    { accessorKey: 'order', header: 'Order' },
+  ], []);
+
+  const catTable = useReactTable({
+    data: filteredCategories,
+    columns: categoryColumns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: 10 } },
+  });
+
   const stats = useMemo(() => {
     const totalCount = categoriesList.length;
     const subcount = categoriesList.reduce((acc, cat) => acc + (cat.children?.length || 0), 0);
@@ -395,17 +426,34 @@ export default function CategoriesPage() {
                 <TableHeader className="bg-muted/30">
                   <TableRow className="hover:bg-transparent border-b border-border/20">
                     <TableHead className="w-12 py-4"></TableHead>
-                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Category Name</TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => catTable.getColumn('name')?.toggleSorting(catTable.getColumn('name')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Category Name <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Slug</TableHead>
-                    <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Products</TableHead>
-                    <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Sort Order</TableHead>
+                    <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => catTable.getColumn('productCount')?.toggleSorting(catTable.getColumn('productCount')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Products <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
+                    <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => catTable.getColumn('order')?.toggleSorting(catTable.getColumn('order')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Sort Order <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
                     <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Status</TableHead>
                     <TableHead className="w-16 py-4"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredCategories.map((category) => (
-                    <Fragment key={category.id}>
+                  {loading ? (
+                    <TableRow><TableCell colSpan={7} className="text-center py-10 text-xs text-muted-foreground font-semibold">Loading categories...</TableCell></TableRow>
+                  ) : catTable.getRowModel().rows.length ? (
+                    catTable.getRowModel().rows.map((row) => {
+                    const category = row.original;
+                    return (
+                      <Fragment key={row.id}>
                       <TableRow 
                         onClick={() => setSelectedCategory(category)}
                         className="hover:bg-muted/20 border-b border-border/20 transition-colors cursor-pointer group/row"
@@ -546,9 +594,38 @@ export default function CategoriesPage() {
                         ))
                       )}
                     </Fragment>
-                  ))}
+                    );
+                    })
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={7} className="py-12 text-center text-sm text-muted-foreground">
+                        <div className="flex flex-col items-center justify-center space-y-3">
+                          <AlertTriangle className="h-8 w-8 text-muted-foreground/60" />
+                          <p className="text-sm font-semibold text-muted-foreground">No matching categories found</p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
+              {filteredCategories.length > 0 && (
+                <div className="flex items-center justify-between p-3 border-t border-border/30 bg-muted/10 text-xs">
+                  <span className="text-muted-foreground font-semibold">
+                    {catTable.getFilteredRowModel().rows.length} of {filteredCategories.length} categories
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => catTable.previousPage()} disabled={!catTable.getCanPreviousPage()}>
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                    </Button>
+                    <span className="px-2 font-bold text-foreground text-[11px]">
+                      {catTable.getState().pagination.pageIndex + 1} / {catTable.getPageCount() || 1}
+                    </span>
+                    <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => catTable.nextPage()} disabled={!catTable.getCanNextPage()}>
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

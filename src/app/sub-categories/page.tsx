@@ -16,6 +16,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  ColumnDef,
+  SortingState,
+} from '@tanstack/react-table';
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -55,7 +63,10 @@ import {
   Download,
   CheckCircle,
   XCircle,
-  X
+  X,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { toast } from '@/components/ui/toast';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -323,6 +334,27 @@ export default function SubCategoriesPage() {
     setVisibilityFilter('all');
   };
 
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const subCatColumns = useMemo<ColumnDef<any>[]>(() => [
+    { accessorKey: 'name', header: 'Sub Category Name' },
+    { accessorKey: 'parentName', header: 'Parent Category' },
+    { accessorKey: 'slug', header: 'Slug' },
+    { accessorKey: 'count', header: 'Mapped Products' },
+    { accessorKey: 'isVisible', header: 'Status' },
+  ], []);
+
+  const subCatTable = useReactTable({
+    data: filteredSubCategories,
+    columns: subCatColumns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: 10 } },
+  });
+
   return (
     <AdminLayout>
       <div className="space-y-6 pb-12">
@@ -488,29 +520,35 @@ export default function SubCategoriesPage() {
               <Table>
                 <TableHeader className="bg-muted/30">
                   <TableRow className="hover:bg-transparent border-b border-border/20">
-                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Sub Category Name</TableHead>
-                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Parent Category</TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => subCatTable.getColumn('name')?.toggleSorting(subCatTable.getColumn('name')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Sub Category Name <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => subCatTable.getColumn('parentName')?.toggleSorting(subCatTable.getColumn('parentName')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Parent Category <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Slug</TableHead>
-                    <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Mapped Products</TableHead>
+                    <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => subCatTable.getColumn('count')?.toggleSorting(subCatTable.getColumn('count')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Mapped Products <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
                     <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Status</TableHead>
                     <TableHead className="w-16 py-4"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredSubCategories.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-12">
-                        <div className="flex flex-col items-center justify-center space-y-3">
-                          <AlertTriangle className="h-8 w-8 text-muted-foreground/60" />
-                          <p className="text-sm font-semibold text-muted-foreground">No matching subcategories found</p>
-                          <p className="text-xs text-muted-foreground font-light">Try adjusting filters or search keywords</p>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredSubCategories.map((sc) => (
-                      <TableRow 
-                        key={sc.id}
+                  {loading ? (
+                    <TableRow><TableCell colSpan={6} className="text-center py-10 text-xs text-muted-foreground font-semibold">Loading subcategories...</TableCell></TableRow>
+                  ) : subCatTable.getRowModel().rows.length ? (
+                    subCatTable.getRowModel().rows.map((row) => {
+                    const sc = row.original;
+                    return (
+                    <TableRow 
+                        key={row.id}
                         onClick={() => setSelectedSubCategory(sc)}
                         className="border-b border-border/20 hover:bg-muted/20 transition-colors cursor-pointer group/row"
                       >
@@ -592,10 +630,38 @@ export default function SubCategoriesPage() {
                           </DropdownMenu>
                         </TableCell>
                       </TableRow>
-                    ))
+                    );
+                    })
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-12">
+                        <div className="flex flex-col items-center justify-center space-y-3">
+                          <AlertTriangle className="h-8 w-8 text-muted-foreground/60" />
+                          <p className="text-sm font-semibold text-muted-foreground">No matching subcategories found</p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
                   )}
                 </TableBody>
               </Table>
+              {filteredSubCategories.length > 0 && (
+                <div className="flex items-center justify-between p-3 border-t border-border/30 bg-muted/10 text-xs">
+                  <span className="text-muted-foreground font-semibold">
+                    {subCatTable.getFilteredRowModel().rows.length} of {filteredSubCategories.length} records
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => subCatTable.previousPage()} disabled={!subCatTable.getCanPreviousPage()}>
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                    </Button>
+                    <span className="px-2 font-bold text-foreground text-[11px]">
+                      {subCatTable.getState().pagination.pageIndex + 1} / {subCatTable.getPageCount() || 1}
+                    </span>
+                    <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => subCatTable.nextPage()} disabled={!subCatTable.getCanNextPage()}>
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

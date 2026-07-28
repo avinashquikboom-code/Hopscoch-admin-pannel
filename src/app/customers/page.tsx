@@ -17,6 +17,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  ColumnDef,
+  SortingState,
+} from '@tanstack/react-table';
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -53,7 +61,10 @@ import {
   Globe,
   EyeOff,
   AlertTriangle,
-  CheckCircle2
+  CheckCircle2,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { toast } from '@/components/ui/toast';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -203,6 +214,29 @@ export default function CustomersPage() {
     );
   }, [customersList, searchQuery]);
 
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const customerColumns = useMemo<ColumnDef<any>[]>(() => [
+    { accessorKey: 'name', header: 'Customer' },
+    { accessorKey: 'email', header: 'Contact' },
+    { accessorKey: 'totalOrders', header: 'Orders' },
+    { accessorKey: 'totalSpent', header: 'Total Spent' },
+    { accessorKey: 'averageOrderValue', header: 'AOV' },
+    { accessorKey: 'status', header: 'Status' },
+    { accessorKey: 'lastOrderDate', header: 'Last Transaction' },
+  ], []);
+
+  const customerTable = useReactTable({
+    data: filteredCustomers,
+    columns: customerColumns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: 10 } },
+  });
+
   const stats = useMemo(() => {
     const totalCount = customersList.length;
     const activeCount = customersList.filter(c => c.status === 'active').length;
@@ -312,10 +346,22 @@ export default function CustomersPage() {
               <Table>
                 <TableHeader className="bg-muted/30">
                   <TableRow className="hover:bg-transparent border-b border-border/20">
-                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Customer</TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => customerTable.getColumn('name')?.toggleSorting(customerTable.getColumn('name')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Customer <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Contact Channels</TableHead>
-                    <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Orders</TableHead>
-                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Total Spent</TableHead>
+                    <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => customerTable.getColumn('totalOrders')?.toggleSorting(customerTable.getColumn('totalOrders')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Orders <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => customerTable.getColumn('totalSpent')?.toggleSorting(customerTable.getColumn('totalSpent')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Total Spent <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Avg Order ticket</TableHead>
                     <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Status</TableHead>
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Last Transaction</TableHead>
@@ -323,11 +369,15 @@ export default function CustomersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredCustomers.map((customer) => {
+                  {loading ? (
+                    <TableRow><TableCell colSpan={8} className="text-center py-10 text-xs text-muted-foreground font-semibold">Loading customers...</TableCell></TableRow>
+                  ) : customerTable.getRowModel().rows.length ? (
+                    customerTable.getRowModel().rows.map((row) => {
+                    const customer = row.original;
                     const avatarColor = getAvatarColor(customer.name);
                     return (
                       <TableRow 
-                        key={customer.id}
+                        key={row.id}
                         onClick={() => setSelectedCustomer(customer)}
                         className="hover:bg-muted/20 border-b border-border/20 transition-colors cursor-pointer group/row"
                       >
@@ -430,8 +480,8 @@ export default function CustomersPage() {
                         </TableCell>
                       </TableRow>
                     );
-                  })}
-                  {filteredCustomers.length === 0 && (
+                  })
+                  ) : (
                     <TableRow>
                       <TableCell colSpan={8} className="py-12 text-center text-sm text-muted-foreground">
                         <div className="flex flex-col items-center justify-center space-y-3">
@@ -443,6 +493,24 @@ export default function CustomersPage() {
                   )}
                 </TableBody>
               </Table>
+              {filteredCustomers.length > 0 && (
+                <div className="flex items-center justify-between p-3 border-t border-border/30 bg-muted/10 text-xs">
+                  <span className="text-muted-foreground font-semibold">
+                    {customerTable.getFilteredRowModel().rows.length} of {filteredCustomers.length} records
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => customerTable.previousPage()} disabled={!customerTable.getCanPreviousPage()}>
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                    </Button>
+                    <span className="px-2 font-bold text-foreground text-[11px]">
+                      {customerTable.getState().pagination.pageIndex + 1} / {customerTable.getPageCount() || 1}
+                    </span>
+                    <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => customerTable.nextPage()} disabled={!customerTable.getCanNextPage()}>
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

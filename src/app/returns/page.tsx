@@ -16,6 +16,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  ColumnDef,
+  SortingState,
+} from '@tanstack/react-table';
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -52,7 +60,10 @@ import {
   AlertCircle,
   User,
   Sparkles,
-  Mail
+  Mail,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -153,6 +164,30 @@ export default function ReturnsPage() {
       return matchesSearch && matchesTab;
     });
   }, [returnsList, searchQuery, activeTab]);
+
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const returnColumns = useMemo<ColumnDef<any>[]>(() => [
+    { accessorKey: 'id', header: 'Claim ID' },
+    { accessorKey: 'orderId', header: 'Order' },
+    { accessorKey: 'customer', header: 'Customer' },
+    { accessorKey: 'date', header: 'Date' },
+    { accessorKey: 'items', header: 'Items' },
+    { accessorKey: 'amount', header: 'Amount' },
+    { accessorKey: 'reason', header: 'Reason' },
+    { accessorKey: 'status', header: 'Status' },
+  ], []);
+
+  const returnsTable = useReactTable({
+    data: filteredReturns,
+    columns: returnColumns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: 10 } },
+  });
 
   const stats = useMemo(() => {
     const totalCount = returnsList.length;
@@ -302,33 +337,39 @@ export default function ReturnsPage() {
                       <TableRow className="hover:bg-transparent border-b border-border/20">
                         <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Claim ID</TableHead>
                         <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Order Reference</TableHead>
-                        <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Customer</TableHead>
-                        <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Date</TableHead>
+                        <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                          <Button variant="ghost" onClick={() => returnsTable.getColumn('customer')?.toggleSorting(returnsTable.getColumn('customer')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                            Customer <ArrowUpDown className="ml-1 h-3 w-3" />
+                          </Button>
+                        </TableHead>
+                        <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                          <Button variant="ghost" onClick={() => returnsTable.getColumn('date')?.toggleSorting(returnsTable.getColumn('date')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                            Date <ArrowUpDown className="ml-1 h-3 w-3" />
+                          </Button>
+                        </TableHead>
                         <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Items</TableHead>
-                        <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Amount</TableHead>
+                        <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                          <Button variant="ghost" onClick={() => returnsTable.getColumn('amount')?.toggleSorting(returnsTable.getColumn('amount')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                            Amount <ArrowUpDown className="ml-1 h-3 w-3" />
+                          </Button>
+                        </TableHead>
                         <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Claim Reason</TableHead>
                         <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4 text-center">Status</TableHead>
                         <TableHead className="w-16 py-4" />
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredReturns.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={9} className="text-center py-12">
-                            <div className="flex flex-col items-center justify-center space-y-3">
-                              <AlertCircle className="h-8 w-8 text-muted-foreground/60" />
-                              <p className="text-sm font-semibold text-muted-foreground">No return claims found</p>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        filteredReturns.map((returnItem) => {
+                      {loading ? (
+                        <TableRow><TableCell colSpan={9} className="text-center py-10 text-xs text-muted-foreground font-semibold">Loading returns...</TableCell></TableRow>
+                      ) : returnsTable.getRowModel().rows.length ? (
+                        returnsTable.getRowModel().rows.map((row) => {
+                          const returnItem = row.original;
                           const statusInfo = statusConfig[returnItem.status as keyof typeof statusConfig] || statusConfig.pending_review;
                           const avatarColor = getAvatarColor(returnItem.customer);
                           
                           return (
                             <TableRow 
-                              key={returnItem.id}
+                              key={row.id}
                               onClick={() => setSelectedReturn(returnItem)}
                               className="border-b border-border/20 hover:bg-muted/20 transition-colors cursor-pointer group/row"
                             >
@@ -432,9 +473,36 @@ export default function ReturnsPage() {
                             </TableRow>
                           );
                         })
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={9} className="text-center py-12">
+                            <div className="flex flex-col items-center justify-center space-y-3">
+                              <AlertCircle className="h-8 w-8 text-muted-foreground/60" />
+                              <p className="text-sm font-semibold text-muted-foreground">No return claims found</p>
+                            </div>
+                          </TableCell>
+                        </TableRow>
                       )}
                     </TableBody>
                   </Table>
+                  {filteredReturns.length > 0 && (
+                    <div className="flex items-center justify-between p-3 border-t border-border/30 bg-muted/10 text-xs">
+                      <span className="text-muted-foreground font-semibold">
+                        {returnsTable.getFilteredRowModel().rows.length} of {filteredReturns.length} records
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => returnsTable.previousPage()} disabled={!returnsTable.getCanPreviousPage()}>
+                          <ChevronLeft className="h-3.5 w-3.5" />
+                        </Button>
+                        <span className="px-2 font-bold text-foreground text-[11px]">
+                          {returnsTable.getState().pagination.pageIndex + 1} / {returnsTable.getPageCount() || 1}
+                        </span>
+                        <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => returnsTable.nextPage()} disabled={!returnsTable.getCanNextPage()}>
+                          <ChevronRight className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </TabsContent>
             </Tabs>

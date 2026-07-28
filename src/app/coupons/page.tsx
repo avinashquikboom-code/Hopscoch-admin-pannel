@@ -17,6 +17,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  ColumnDef,
+  SortingState,
+} from '@tanstack/react-table';
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -54,7 +62,10 @@ import {
   Eye,
   EyeOff,
   Globe,
-  AlertTriangle
+  AlertTriangle,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -200,6 +211,29 @@ export default function CouponsPage() {
     );
   }, [couponsList, searchQuery]);
 
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const couponColumns = useMemo<ColumnDef<any>[]>(() => [
+    { accessorKey: 'code', header: 'Promo Code' },
+    { accessorKey: 'type', header: 'Discount Type' },
+    { accessorKey: 'value', header: 'Value' },
+    { accessorKey: 'minimumOrder', header: 'Min Spend' },
+    { accessorKey: 'usedCount', header: 'Used' },
+    { accessorKey: 'expiryDate', header: 'Expiry' },
+    { accessorKey: 'isActive', header: 'Status' },
+  ], []);
+
+  const couponTable = useReactTable({
+    data: filteredCoupons,
+    columns: couponColumns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: 10 } },
+  });
+
   const stats = useMemo(() => {
     const totalCount = couponsList.length;
     const activeCount = couponsList.filter(c => c.isActive).length;
@@ -319,21 +353,38 @@ export default function CouponsPage() {
               <Table>
                 <TableHeader className="bg-muted/30">
                   <TableRow className="hover:bg-transparent border-b border-border/20">
-                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Promo Code</TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => couponTable.getColumn('code')?.toggleSorting(couponTable.getColumn('code')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Promo Code <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Discount Type</TableHead>
-                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Value</TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => couponTable.getColumn('value')?.toggleSorting(couponTable.getColumn('value')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Value <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Min Spend</TableHead>
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Cap Amount</TableHead>
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Usage Limit Progress</TableHead>
-                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Expiry Date</TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => couponTable.getColumn('expiryDate')?.toggleSorting(couponTable.getColumn('expiryDate')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Expiry Date <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4 text-center">Status</TableHead>
                     <TableHead className="w-16 py-4" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredCoupons.map((coupon) => (
+                  {loading ? (
+                    <TableRow><TableCell colSpan={9} className="text-center py-10 text-xs text-muted-foreground font-semibold">Loading coupons...</TableCell></TableRow>
+                  ) : couponTable.getRowModel().rows.length ? (
+                    couponTable.getRowModel().rows.map((row) => {
+                    const coupon = row.original;
+                    return (
                     <TableRow 
-                      key={coupon.id}
+                      key={row.id}
                       onClick={() => setSelectedCoupon(coupon)}
                       className="hover:bg-muted/20 border-b border-border/20 transition-colors cursor-pointer group/row"
                     >
@@ -451,8 +502,9 @@ export default function CouponsPage() {
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
-                  ))}
-                  {filteredCoupons.length === 0 && (
+                    );
+                    })
+                  ) : (
                     <TableRow>
                       <TableCell colSpan={9} className="py-12 text-center text-sm text-muted-foreground">
                         <div className="flex flex-col items-center justify-center space-y-3">
@@ -464,6 +516,24 @@ export default function CouponsPage() {
                   )}
                 </TableBody>
               </Table>
+              {filteredCoupons.length > 0 && (
+                <div className="flex items-center justify-between p-3 border-t border-border/30 bg-muted/10 text-xs">
+                  <span className="text-muted-foreground font-semibold">
+                    {couponTable.getFilteredRowModel().rows.length} of {filteredCoupons.length} records
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => couponTable.previousPage()} disabled={!couponTable.getCanPreviousPage()}>
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                    </Button>
+                    <span className="px-2 font-bold text-foreground text-[11px]">
+                      {couponTable.getState().pagination.pageIndex + 1} / {couponTable.getPageCount() || 1}
+                    </span>
+                    <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => couponTable.nextPage()} disabled={!couponTable.getCanNextPage()}>
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

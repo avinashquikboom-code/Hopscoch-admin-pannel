@@ -16,6 +16,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  ColumnDef,
+  SortingState,
+} from '@tanstack/react-table';
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -44,7 +52,10 @@ import {
   Settings,
   Trash2,
   Edit,
-  Save
+  Save,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { toast } from '@/components/ui/toast';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -304,6 +315,27 @@ export default function InventoryPage() {
     );
   }, [inventoryList, searchQuery]);
 
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const inventoryColumns = useMemo<ColumnDef<any>[]>(() => [
+    { accessorKey: 'sku', header: 'SKU' },
+    { accessorKey: 'name', header: 'Product' },
+    { accessorKey: 'category', header: 'Category' },
+    { accessorKey: 'location', header: 'Bin' },
+    { accessorKey: 'stock', header: 'Stock' },
+  ], []);
+
+  const inventoryTable = useReactTable({
+    data: filteredInventory,
+    columns: inventoryColumns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: 10 } },
+  });
+
   const stats = useMemo(() => {
     const totalCount = inventoryList.length;
     const lowStockCount = inventoryList.filter((i) => i.stock > 0 && i.stock <= i.minStock).length;
@@ -416,71 +448,89 @@ export default function InventoryPage() {
               <Table>
                 <TableHeader className="bg-muted/30">
                   <TableRow className="hover:bg-transparent border-b border-border/20">
-                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">SKU Code</TableHead>
-                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Product Variant</TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => inventoryTable.getColumn('sku')?.toggleSorting(inventoryTable.getColumn('sku')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        SKU Code <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => inventoryTable.getColumn('name')?.toggleSorting(inventoryTable.getColumn('name')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Product Variant <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Category</TableHead>
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Warehouse Bin</TableHead>
-                    <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Stock Level</TableHead>
+                    <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => inventoryTable.getColumn('stock')?.toggleSorting(inventoryTable.getColumn('stock')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Stock Level <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
                     <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Status</TableHead>
                     <TableHead className="text-right font-bold text-xs uppercase tracking-wider text-muted-foreground py-4 w-28">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredInventory.map((item) => (
-                    <TableRow 
-                      key={item.id}
-                      onClick={() => setSelectedItem(item)}
-                      className="hover:bg-muted/20 border-b border-border/20 transition-colors cursor-pointer group/row"
-                    >
-                      {/* SKU */}
-                      <TableCell className="py-4">
-                        <span className="font-mono font-bold text-xs bg-muted/60 border border-border/40 text-foreground px-2.5 py-1 rounded-md select-all group-hover/row:border-[#14b8a6]/25 transition-all">
-                          {item.sku}
-                        </span>
-                      </TableCell>
+                  {loading ? (
+                    <TableRow><TableCell colSpan={7} className="text-center py-10 text-xs text-muted-foreground font-semibold">Loading inventory...</TableCell></TableRow>
+                  ) : inventoryTable.getRowModel().rows.length ? (
+                    inventoryTable.getRowModel().rows.map((row) => {
+                    const item = row.original;
+                    return (
+                      <TableRow 
+                        key={row.id}
+                        onClick={() => setSelectedItem(item)}
+                        className="hover:bg-muted/20 border-b border-border/20 transition-colors cursor-pointer group/row"
+                      >
+                        {/* SKU */}
+                        <TableCell className="py-4">
+                          <span className="font-mono font-bold text-xs bg-muted/60 border border-border/40 text-foreground px-2.5 py-1 rounded-md select-all group-hover/row:border-[#14b8a6]/25 transition-all">
+                            {item.sku}
+                          </span>
+                        </TableCell>
 
-                      {/* Variant name */}
-                      <TableCell className="py-4 font-semibold text-sm text-foreground">
-                        {item.name}
-                      </TableCell>
+                        {/* Variant name */}
+                        <TableCell className="py-4 font-semibold text-sm text-foreground">
+                          {item.name}
+                        </TableCell>
 
-                      {/* Category */}
-                      <TableCell className="py-4 text-sm text-muted-foreground font-normal">
-                        {item.category}
-                      </TableCell>
+                        {/* Category */}
+                        <TableCell className="py-4 text-sm text-muted-foreground font-normal">
+                          {item.category}
+                        </TableCell>
 
-                      {/* Bin Location */}
-                      <TableCell className="py-4 text-sm text-muted-foreground font-light">
-                        <div className="flex items-center gap-1.5">
-                          <MapPin className="h-3.5 w-3.5 text-muted-foreground/60" />
-                          <span>{item.location}</span>
-                        </div>
-                      </TableCell>
+                        {/* Bin Location */}
+                        <TableCell className="py-4 text-sm text-muted-foreground font-light">
+                          <div className="flex items-center gap-1.5">
+                            <MapPin className="h-3.5 w-3.5 text-muted-foreground/60" />
+                            <span>{item.location}</span>
+                          </div>
+                        </TableCell>
 
-                      {/* Stock Level count */}
-                      <TableCell className="py-4 text-center font-bold text-sm text-foreground">
-                        {item.stock} units
-                      </TableCell>
+                        {/* Stock Level count */}
+                        <TableCell className="py-4 text-center font-bold text-sm text-foreground">
+                          {item.stock} units
+                        </TableCell>
 
-                      {/* Status */}
-                      <TableCell className="py-4 text-center">
-                        {getStockBadge(item.stock, item.minStock)}
-                      </TableCell>
+                        {/* Status */}
+                        <TableCell className="py-4 text-center">
+                          {getStockBadge(item.stock, item.minStock)}
+                        </TableCell>
 
-                      {/* Actions */}
-                      <TableCell className="py-4 text-right" onClick={(e) => e.stopPropagation()}>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedItem(item)}
-                          className="rounded-lg h-8 px-3 cursor-pointer text-xs font-semibold text-primary hover:bg-primary/5"
-                        >
-                          Adjust Stock
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {filteredInventory.length === 0 && (
+                        {/* Actions */}
+                        <TableCell className="py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedItem(item)}
+                            className="rounded-lg h-8 px-3 cursor-pointer text-xs font-semibold text-primary hover:bg-primary/5"
+                          >
+                            Adjust Stock
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                    })
+                  ) : (
                     <TableRow>
                       <TableCell colSpan={7} className="py-12 text-center text-sm text-muted-foreground">
                         <div className="flex flex-col items-center justify-center space-y-3">
@@ -492,6 +542,24 @@ export default function InventoryPage() {
                   )}
                 </TableBody>
               </Table>
+                {filteredInventory.length > 0 && (
+                  <div className="flex items-center justify-between p-3 border-t border-border/30 bg-muted/10 text-xs">
+                    <span className="text-muted-foreground font-semibold">
+                      {inventoryTable.getFilteredRowModel().rows.length} of {filteredInventory.length} records
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => inventoryTable.previousPage()} disabled={!inventoryTable.getCanPreviousPage()}>
+                        <ChevronLeft className="h-3.5 w-3.5" />
+                      </Button>
+                      <span className="px-2 font-bold text-foreground text-[11px]">
+                        {inventoryTable.getState().pagination.pageIndex + 1} / {inventoryTable.getPageCount() || 1}
+                      </span>
+                      <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => inventoryTable.nextPage()} disabled={!inventoryTable.getCanNextPage()}>
+                        <ChevronRight className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
             </div>
           </CardContent>
         </Card>

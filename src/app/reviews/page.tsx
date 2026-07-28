@@ -15,6 +15,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  ColumnDef,
+  SortingState,
+} from '@tanstack/react-table';
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -54,7 +62,10 @@ import {
   Globe,
   EyeOff,
   Filter,
-  SlidersHorizontal
+  SlidersHorizontal,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -189,6 +200,29 @@ export default function ReviewsPage() {
 
   const getStatusCount = (status: string) =>
     status === 'all' ? reviewsList.length : reviewsList.filter(r => r.status === status).length;
+
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const reviewColumns = useMemo<ColumnDef<any>[]>(() => [
+    { accessorKey: 'customer', header: 'Customer' },
+    { accessorKey: 'product', header: 'Product' },
+    { accessorKey: 'rating', header: 'Rating' },
+    { accessorKey: 'title', header: 'Review' },
+    { accessorKey: 'helpfulCount', header: 'Helpful' },
+    { accessorKey: 'date', header: 'Date' },
+    { accessorKey: 'status', header: 'Status' },
+  ], []);
+
+  const reviewTable = useReactTable({
+    data: filteredReviews,
+    columns: reviewColumns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: 10 } },
+  });
 
   const stats = useMemo(() => {
     const totalCount = reviewsList.length;
@@ -418,23 +452,47 @@ export default function ReviewsPage() {
               <Table>
                 <TableHeader className="bg-muted/30">
                   <TableRow className="hover:bg-transparent border-b border-border/20">
-                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Customer</TableHead>
-                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Product Variant</TableHead>
-                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Stars Score</TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => reviewTable.getColumn('customer')?.toggleSorting(reviewTable.getColumn('customer')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Customer <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => reviewTable.getColumn('product')?.toggleSorting(reviewTable.getColumn('product')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Product Variant <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => reviewTable.getColumn('rating')?.toggleSorting(reviewTable.getColumn('rating')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Stars Score <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Review Summary</TableHead>
-                    <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Helpful Votes</TableHead>
-                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Published Date</TableHead>
+                    <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => reviewTable.getColumn('helpfulCount')?.toggleSorting(reviewTable.getColumn('helpfulCount')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Helpful Votes <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => reviewTable.getColumn('date')?.toggleSorting(reviewTable.getColumn('date')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Published Date <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
                     <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Status</TableHead>
                     <TableHead className="w-16 py-4" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredReviews.map((review) => {
+                  {loading ? (
+                    <TableRow><TableCell colSpan={8} className="text-center py-10 text-xs text-muted-foreground font-semibold">Loading reviews...</TableCell></TableRow>
+                  ) : reviewTable.getRowModel().rows.length ? (
+                    reviewTable.getRowModel().rows.map((row) => {
+                    const review = row.original;
                     const statusInfo = statusConfig[review.status as keyof typeof statusConfig] || statusConfig.pending;
                     const avatarColor = getAvatarColor(review.customer);
                     return (
                       <TableRow 
-                        key={review.id}
+                        key={row.id}
                         onClick={() => setSelectedReview(review)}
                         className="hover:bg-muted/20 border-b border-border/20 transition-colors cursor-pointer group/row"
                       >
@@ -531,8 +589,8 @@ export default function ReviewsPage() {
                         </TableCell>
                       </TableRow>
                     );
-                  })}
-                  {filteredReviews.length === 0 && (
+                    })
+                  ) : (
                     <TableRow>
                       <TableCell colSpan={8} className="py-12 text-center text-sm text-muted-foreground">
                         <div className="flex flex-col items-center justify-center space-y-3">
@@ -544,6 +602,24 @@ export default function ReviewsPage() {
                   )}
                 </TableBody>
               </Table>
+              {filteredReviews.length > 0 && (
+                <div className="flex items-center justify-between p-3 border-t border-border/30 bg-muted/10 text-xs">
+                  <span className="text-muted-foreground font-semibold">
+                    {reviewTable.getFilteredRowModel().rows.length} of {filteredReviews.length} records
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => reviewTable.previousPage()} disabled={!reviewTable.getCanPreviousPage()}>
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                    </Button>
+                    <span className="px-2 font-bold text-foreground text-[11px]">
+                      {reviewTable.getState().pagination.pageIndex + 1} / {reviewTable.getPageCount() || 1}
+                    </span>
+                    <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => reviewTable.nextPage()} disabled={!reviewTable.getCanNextPage()}>
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
