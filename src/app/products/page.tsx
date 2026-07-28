@@ -21,6 +21,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  ColumnDef,
+  SortingState,
+} from '@tanstack/react-table';
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -61,7 +69,10 @@ import {
   RefreshCw,
   Palette,
   Ruler,
-  SlidersHorizontal
+  SlidersHorizontal,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -858,6 +869,28 @@ export default function ProductsPage() {
     });
   }, [productsList, searchQuery, categoryFilter, brandFilter, statusFilter, stockLevelFilter]);
 
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const productColumns = useMemo<ColumnDef<any>[]>(() => [
+    { accessorKey: 'name', header: 'Product' },
+    { accessorKey: 'sku', header: 'SKU' },
+    { accessorKey: 'price', header: 'Price' },
+    { accessorKey: 'stock', header: 'Stock' },
+    { accessorKey: 'category', header: 'Category' },
+    { accessorKey: 'status', header: 'Status' },
+  ], []);
+
+  const productTable = useReactTable({
+    data: filteredProducts,
+    columns: productColumns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: 15 } },
+  });
+
   const stats = useMemo(() => {
     const totalCount = productsList.length;
     const activeCount = productsList.filter(p => p.status === 'published' || p.status === 'active').length;
@@ -1203,10 +1236,22 @@ export default function ProductsPage() {
                         }}
                       />
                     </TableHead>
-                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Product</TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => productTable.getColumn('name')?.toggleSorting(productTable.getColumn('name')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Product <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">SKU</TableHead>
-                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Price</TableHead>
-                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Stock</TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => productTable.getColumn('price')?.toggleSorting(productTable.getColumn('price')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Price <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => productTable.getColumn('stock')?.toggleSorting(productTable.getColumn('stock')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Stock <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Category</TableHead>
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Status</TableHead>
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Featured</TableHead>
@@ -1214,7 +1259,7 @@ export default function ProductsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredProducts.length === 0 ? (
+                  {productTable.getRowModel().rows.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={9} className="text-center py-12">
                         <div className="flex flex-col items-center justify-center space-y-3">
@@ -1225,29 +1270,30 @@ export default function ProductsPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredProducts.map((product) => {
+                    productTable.getRowModel().rows.map((row) => {
+                      const product = row.original;
                       const gradientColor = getProductGradient(product.name);
                       
                       return (
                         <TableRow 
-                          key={product.id}
+                          key={row.id}
                           onClick={() => setSelectedProduct(product)}
                           className="border-b border-border/20 hover:bg-muted/20 transition-colors cursor-pointer group/row"
                         >
-                          <TableCell className="py-4" onClick={(e) => e.stopPropagation()}>
-                            <input 
-                              type="checkbox" 
-                              className="rounded cursor-pointer"
-                              checked={selectedProducts.includes(product.id)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedProducts([...selectedProducts, product.id]);
-                                } else {
-                                  setSelectedProducts(selectedProducts.filter(id => id !== product.id));
-                                }
-                              }}
-                            />
-                          </TableCell>
+                      <TableCell className="py-4" onClick={(e) => e.stopPropagation()}>
+                        <input 
+                          type="checkbox" 
+                          className="rounded cursor-pointer"
+                          checked={selectedProducts.includes(product.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedProducts([...selectedProducts, product.id]);
+                            } else {
+                              setSelectedProducts(selectedProducts.filter(id => id !== product.id));
+                            }
+                          }}
+                        />
+                      </TableCell>
                           
                           {/* Image and product info */}
                           <TableCell className="py-4">
@@ -1405,6 +1451,21 @@ export default function ProductsPage() {
                 </TableBody>
               </Table>
             </div>
+            {filteredProducts.length > 0 && (
+              <div className="flex items-center justify-between p-3 border-t border-border/30 bg-muted/10 text-xs">
+                <span className="text-muted-foreground font-semibold">
+                  Page {productTable.getState().pagination.pageIndex + 1} of {productTable.getPageCount() || 1} &bull; {filteredProducts.length} products
+                </span>
+                <div className="flex items-center gap-1">
+                  <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => productTable.previousPage()} disabled={!productTable.getCanPreviousPage()}>
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => productTable.nextPage()} disabled={!productTable.getCanNextPage()}>
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            )}
 
 
           </CardContent>

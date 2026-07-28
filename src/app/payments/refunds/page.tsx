@@ -9,6 +9,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  ColumnDef,
+  SortingState,
+} from '@tanstack/react-table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
@@ -31,7 +39,10 @@ import {
   User,
   ArrowRight,
   TrendingUp,
-  ShieldCheck
+  ShieldCheck,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -133,6 +144,28 @@ export default function RefundsPage() {
       return matchesSearch && matchesTab;
     });
   }, [refundsList, searchQuery, activeTab]);
+
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const refundColumns = useMemo<ColumnDef<any>[]>(() => [
+    { accessorKey: 'id', header: 'Refund ID' },
+    { accessorKey: 'orderId', header: 'Order ID' },
+    { accessorKey: 'customer', header: 'Customer' },
+    { accessorKey: 'amount', header: 'Amount' },
+    { accessorKey: 'type', header: 'Type' },
+    { accessorKey: 'status', header: 'Status' },
+  ], []);
+
+  const refundTable = useReactTable({
+    data: filteredRefunds,
+    columns: refundColumns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: 10 } },
+  });
 
   const stats = useMemo(() => {
     const total = refundsList.length;
@@ -279,9 +312,17 @@ export default function RefundsPage() {
                         <TableRow className="border-b border-border/15 hover:bg-transparent">
                           <TableHead className="font-bold text-[10px] text-muted-foreground uppercase tracking-widest h-12 px-5">Refund ID</TableHead>
                           <TableHead className="font-bold text-[10px] text-muted-foreground uppercase tracking-widest h-12 px-4">Order ID</TableHead>
-                          <TableHead className="font-bold text-[10px] text-muted-foreground uppercase tracking-widest h-12 px-4">Customer Info</TableHead>
+                          <TableHead className="font-bold text-[10px] text-muted-foreground uppercase tracking-widest h-12 px-4">
+                            <Button variant="ghost" onClick={() => refundTable.getColumn('customer')?.toggleSorting(refundTable.getColumn('customer')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-[10px] uppercase tracking-widest">
+                              Customer Info <ArrowUpDown className="ml-1 h-3 w-3" />
+                            </Button>
+                          </TableHead>
                           <TableHead className="font-bold text-[10px] text-muted-foreground uppercase tracking-widest h-12 px-4">Date</TableHead>
-                          <TableHead className="font-bold text-[10px] text-muted-foreground uppercase tracking-widest h-12 px-4">Amount</TableHead>
+                          <TableHead className="font-bold text-[10px] text-muted-foreground uppercase tracking-widest h-12 px-4">
+                            <Button variant="ghost" onClick={() => refundTable.getColumn('amount')?.toggleSorting(refundTable.getColumn('amount')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-[10px] uppercase tracking-widest">
+                              Amount <ArrowUpDown className="ml-1 h-3 w-3" />
+                            </Button>
+                          </TableHead>
                           <TableHead className="font-bold text-[10px] text-muted-foreground uppercase tracking-widest h-12 px-4">Type</TableHead>
                           <TableHead className="font-bold text-[10px] text-muted-foreground uppercase tracking-widest h-12 px-4">Reason</TableHead>
                           <TableHead className="font-bold text-[10px] text-muted-foreground uppercase tracking-widest h-12 px-4">Status</TableHead>
@@ -290,10 +331,12 @@ export default function RefundsPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody className="divide-y divide-border/10">
-                        {filteredRefunds.map((refund) => {
+                        {refundTable.getRowModel().rows.length ? (
+                          refundTable.getRowModel().rows.map((row) => {
+                          const refund = row.original;
                           const statusInfo = refundStatusConfig[refund.status as keyof typeof refundStatusConfig] || refundStatusConfig.pending;
                           return (
-                            <TableRow key={refund.id} className="hover:bg-muted/20 border-b border-border/10 transition-colors group">
+                            <TableRow key={row.id} className="hover:bg-muted/20 border-b border-border/10 transition-colors group">
                               <TableCell className="font-mono font-bold text-xs text-foreground px-5 py-3.5">
                                 <span className="text-muted-foreground/60 mr-0.5">#</span>{refund.id.replace('RFD-', '')}
                               </TableCell>
@@ -344,9 +387,37 @@ export default function RefundsPage() {
                               </TableCell>
                             </TableRow>
                           );
-                        })}
+                          })
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={10} className="py-12 text-center text-sm text-muted-foreground">
+                              <div className="flex flex-col items-center justify-center space-y-3">
+                                <AlertCircle className="h-8 w-8 text-muted-foreground/60" />
+                                <p className="text-sm font-semibold text-muted-foreground">No matching refunds found</p>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
                       </TableBody>
                     </Table>
+                    {filteredRefunds.length > 0 && (
+                      <div className="flex items-center justify-between p-3 border-t border-border/30 bg-muted/10 text-xs">
+                        <span className="text-muted-foreground font-semibold">
+                          {refundTable.getFilteredRowModel().rows.length} of {filteredRefunds.length} refunds
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => refundTable.previousPage()} disabled={!refundTable.getCanPreviousPage()}>
+                            <ChevronLeft className="h-3.5 w-3.5" />
+                          </Button>
+                          <span className="px-2 font-bold text-foreground text-[11px]">
+                            {refundTable.getState().pagination.pageIndex + 1} / {refundTable.getPageCount() || 1}
+                          </span>
+                          <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => refundTable.nextPage()} disabled={!refundTable.getCanNextPage()}>
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </TabsContent>

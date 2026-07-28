@@ -18,6 +18,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  ColumnDef,
+  SortingState,
+} from '@tanstack/react-table';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -51,7 +59,10 @@ import {
   User,
   Mail,
   ArrowLeft,
-  AlertCircle
+  AlertCircle,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 // ── API helper ──────────────────────────────────────────────────────────────
@@ -608,6 +619,30 @@ export default function OrdersPage() {
     });
   }, [ordersList, searchQuery, activeTab, paymentFilter, dateFilter, minAmount, maxAmount]);
 
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const orderColumns = useMemo<ColumnDef<any>[]>(() => [
+    { accessorKey: 'id', header: 'Order ID' },
+    { accessorKey: 'customer', header: 'Customer' },
+    { accessorKey: 'date', header: 'Date' },
+    { accessorKey: 'items', header: 'Items' },
+    { accessorKey: 'amount', header: 'Amount' },
+    { accessorKey: 'paymentStatus', header: 'Payment' },
+    { accessorKey: 'status', header: 'Status' },
+    { accessorKey: 'trackingNumber', header: 'Tracking' },
+  ], []);
+
+  const ordersTable = useReactTable({
+    data: filteredOrders,
+    columns: orderColumns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: 15 } },
+  });
+
   // Statistics summaries
   const stats = useMemo(() => {
     const totalCount = ordersList.length;
@@ -892,10 +927,22 @@ export default function OrdersPage() {
                     <TableHeader className="bg-muted/30">
                       <TableRow className="hover:bg-transparent border-b border-border/20">
                         <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Order ID</TableHead>
-                        <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Customer</TableHead>
-                        <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Date</TableHead>
+                        <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                          <Button variant="ghost" onClick={() => ordersTable.getColumn('customer')?.toggleSorting(ordersTable.getColumn('customer')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                            Customer <ArrowUpDown className="ml-1 h-3 w-3" />
+                          </Button>
+                        </TableHead>
+                        <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                          <Button variant="ghost" onClick={() => ordersTable.getColumn('date')?.toggleSorting(ordersTable.getColumn('date')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                            Date <ArrowUpDown className="ml-1 h-3 w-3" />
+                          </Button>
+                        </TableHead>
                         <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Items</TableHead>
-                        <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Amount</TableHead>
+                        <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                          <Button variant="ghost" onClick={() => ordersTable.getColumn('amount')?.toggleSorting(ordersTable.getColumn('amount')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                            Amount <ArrowUpDown className="ml-1 h-3 w-3" />
+                          </Button>
+                        </TableHead>
                         <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Payment</TableHead>
                         <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Status</TableHead>
                         <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Tracking</TableHead>
@@ -934,13 +981,14 @@ export default function OrdersPage() {
                           </TableCell>
                         </TableRow>
                       ) : (
-                        filteredOrders.map((order) => {
+                        ordersTable.getRowModel().rows.map((row) => {
+                          const order = row.original;
                           const statusInfo = getStatusInfo(order.status);
                           const avatarColor = getAvatarColor(order.customer);
                           
                           return (
                             <TableRow 
-                              key={order.id} 
+                              key={row.id} 
                               onClick={() => setSelectedOrder(order)}
                               className="border-b border-border/20 hover:bg-muted/20 transition-colors cursor-pointer group/row"
                             >
@@ -1076,6 +1124,21 @@ export default function OrdersPage() {
                     </TableBody>
                   </Table>
                 </div>
+                {filteredOrders.length > 0 && (
+                  <div className="flex items-center justify-between p-3 border-t border-border/30 bg-muted/10 text-xs mt-0">
+                    <span className="text-muted-foreground font-semibold">
+                      Page {ordersTable.getState().pagination.pageIndex + 1} of {ordersTable.getPageCount() || 1} &bull; {filteredOrders.length} orders
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => ordersTable.previousPage()} disabled={!ordersTable.getCanPreviousPage()}>
+                        <ChevronLeft className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => ordersTable.nextPage()} disabled={!ordersTable.getCanNextPage()}>
+                        <ChevronRight className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
           </CardContent>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { AdminLayout } from '@/components/layout/admin-layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  ColumnDef,
+  SortingState,
+} from '@tanstack/react-table';
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -24,7 +32,7 @@ import {
 } from '@/components/ui/sheet';
 import { PageHeader } from '@/components/layout/page-header';
 import { API_BASE } from '@/lib/api';
-import { Sparkles, Plus, Save, CheckCircle2, AlertCircle, ArrowLeft, Flame } from 'lucide-react';
+import { Sparkles, Plus, Save, CheckCircle2, AlertCircle, ArrowLeft, Flame, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 
 export default function CampaignsAdminPage() {
@@ -68,6 +76,28 @@ export default function CampaignsAdminPage() {
   useEffect(() => {
     fetchCampaigns();
   }, []);
+
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const campaignColumns = useMemo<ColumnDef<any>[]>(() => [
+    { accessorKey: 'title', header: 'Name' },
+    { accessorKey: 'code', header: 'Code' },
+    { accessorKey: 'bonusPoints', header: 'Bonus Points' },
+    { accessorKey: 'multiplier', header: 'Multiplier' },
+    { accessorKey: 'minOrderAmount', header: 'Min Order' },
+    { accessorKey: 'isActive', header: 'Status' },
+  ], []);
+
+  const campaignTable = useReactTable({
+    data: campaigns,
+    columns: campaignColumns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: 10 } },
+  });
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,19 +156,33 @@ export default function CampaignsAdminPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/30">
-                  <TableHead className="font-bold">Campaign Name</TableHead>
+                  <TableHead className="font-bold">
+                    <Button variant="ghost" onClick={() => campaignTable.getColumn('title')?.toggleSorting(campaignTable.getColumn('title')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs">
+                      Campaign Name <ArrowUpDown className="ml-1 h-3 w-3" />
+                    </Button>
+                  </TableHead>
                   <TableHead className="font-bold">Code</TableHead>
-                  <TableHead className="font-bold">Bonus Points</TableHead>
-                  <TableHead className="font-bold">Multiplier</TableHead>
+                  <TableHead className="font-bold">
+                    <Button variant="ghost" onClick={() => campaignTable.getColumn('bonusPoints')?.toggleSorting(campaignTable.getColumn('bonusPoints')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs">
+                      Bonus Points <ArrowUpDown className="ml-1 h-3 w-3" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="font-bold">
+                    <Button variant="ghost" onClick={() => campaignTable.getColumn('multiplier')?.toggleSorting(campaignTable.getColumn('multiplier')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs">
+                      Multiplier <ArrowUpDown className="ml-1 h-3 w-3" />
+                    </Button>
+                  </TableHead>
                   <TableHead className="font-bold">Min Order (₹)</TableHead>
                   <TableHead className="font-bold">Duration Window</TableHead>
                   <TableHead className="font-bold text-right">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {campaigns.length > 0 ? (
-                  campaigns.map((c) => (
-                    <TableRow key={c.id} className="hover:bg-muted/40 transition-colors">
+                {campaignTable.getRowModel().rows.length ? (
+                  campaignTable.getRowModel().rows.map((row) => {
+                  const c = row.original;
+                  return (
+                    <TableRow key={row.id} className="hover:bg-muted/40 transition-colors">
                       <TableCell className="font-medium text-xs">
                         <div className="font-bold text-foreground">{c.title}</div>
                         <div className="text-[11px] text-muted-foreground">{c.description || 'No description'}</div>
@@ -166,7 +210,8 @@ export default function CampaignsAdminPage() {
                         )}
                       </TableCell>
                     </TableRow>
-                  ))
+                  );
+                  })
                 ) : (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground text-xs">
@@ -176,6 +221,24 @@ export default function CampaignsAdminPage() {
                 )}
               </TableBody>
             </Table>
+            {campaigns.length > 0 && (
+              <div className="flex items-center justify-between p-3 border-t border-border/30 bg-muted/10 text-xs">
+                <span className="text-muted-foreground font-semibold">
+                  {campaignTable.getFilteredRowModel().rows.length} of {campaigns.length} campaigns
+                </span>
+                <div className="flex items-center gap-1">
+                  <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => campaignTable.previousPage()} disabled={!campaignTable.getCanPreviousPage()}>
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                  </Button>
+                  <span className="px-2 font-bold text-foreground text-[11px]">
+                    {campaignTable.getState().pagination.pageIndex + 1} / {campaignTable.getPageCount() || 1}
+                  </span>
+                  <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => campaignTable.nextPage()} disabled={!campaignTable.getCanNextPage()}>
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 

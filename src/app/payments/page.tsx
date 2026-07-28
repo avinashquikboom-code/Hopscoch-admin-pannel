@@ -18,6 +18,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  ColumnDef,
+  SortingState,
+} from '@tanstack/react-table';
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -28,7 +36,8 @@ import {
 import {
   DollarSign, TrendingUp, CheckCircle2, Clock, XCircle, RefreshCw,
   ArrowUpRight, CreditCard, BarChart2, Search, ArrowUp, ArrowDown, Sparkles,
-  Info, Eye, Trash2, Calendar, User, Shield, AlertCircle
+  Info, Eye, Trash2, Calendar, User, Shield, AlertCircle,
+  ArrowUpDown, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -144,6 +153,28 @@ export default function PaymentsDashboardPage() {
       t.status.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [txnList, searchQuery]);
+
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const txnColumns = useMemo<ColumnDef<any>[]>(() => [
+    { accessorKey: 'orderNumber', header: 'Order' },
+    { accessorKey: 'customer', header: 'Customer' },
+    { accessorKey: 'amountNum', header: 'Amount' },
+    { accessorKey: 'method', header: 'Method' },
+    { accessorKey: 'date', header: 'Date' },
+    { accessorKey: 'status', header: 'Status' },
+  ], []);
+
+  const txnTable = useReactTable({
+    data: filteredTxns,
+    columns: txnColumns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: 10 } },
+  });
 
   const handleRefund = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -281,17 +312,34 @@ export default function PaymentsDashboardPage() {
                   <TableRow className="hover:bg-transparent border-b border-border/20">
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Transaction ID</TableHead>
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Order Reference</TableHead>
-                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Customer Name</TableHead>
-                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Settle Amount</TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => txnTable.getColumn('customer')?.toggleSorting(txnTable.getColumn('customer')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Customer Name <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => txnTable.getColumn('amountNum')?.toggleSorting(txnTable.getColumn('amountNum')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Settle Amount <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Payment Method</TableHead>
-                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Settle Date</TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
+                      <Button variant="ghost" onClick={() => txnTable.getColumn('date')?.toggleSorting(txnTable.getColumn('date')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
+                        Settle Date <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
                     <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredTxns.map((t) => (
+                  {loading ? (
+                    <TableRow><TableCell colSpan={7} className="text-center py-10 text-xs text-muted-foreground font-semibold">Loading transactions...</TableCell></TableRow>
+                  ) : txnTable.getRowModel().rows.length ? (
+                    txnTable.getRowModel().rows.map((row) => {
+                    const t = row.original;
+                    return (
                     <TableRow 
-                      key={t.id}
+                      key={row.id}
                       onClick={() => setSelectedTxn(t)}
                       className="hover:bg-muted/20 border-b border-border/20 transition-colors cursor-pointer group/row"
                     >
@@ -312,8 +360,9 @@ export default function PaymentsDashboardPage() {
                         </Badge>
                       </TableCell>
                     </TableRow>
-                  ))}
-                  {filteredTxns.length === 0 && (
+                    );
+                    })
+                  ) : (
                     <TableRow>
                       <TableCell colSpan={7} className="py-12 text-center text-sm text-muted-foreground">
                         <div className="flex flex-col items-center justify-center space-y-3">
@@ -325,6 +374,24 @@ export default function PaymentsDashboardPage() {
                   )}
                 </TableBody>
               </Table>
+              {filteredTxns.length > 0 && (
+                <div className="flex items-center justify-between p-3 border-t border-border/30 bg-muted/10 text-xs">
+                  <span className="text-muted-foreground font-semibold">
+                    {txnTable.getFilteredRowModel().rows.length} of {filteredTxns.length} transactions
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => txnTable.previousPage()} disabled={!txnTable.getCanPreviousPage()}>
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                    </Button>
+                    <span className="px-2 font-bold text-foreground text-[11px]">
+                      {txnTable.getState().pagination.pageIndex + 1} / {txnTable.getPageCount() || 1}
+                    </span>
+                    <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => txnTable.nextPage()} disabled={!txnTable.getCanNextPage()}>
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
