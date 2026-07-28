@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { AdminLayout } from '@/components/layout/admin-layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,10 +23,27 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  flexRender,
+  ColumnDef,
+  SortingState,
+} from '@tanstack/react-table';
 import { API_BASE, getImageUrl } from '@/lib/api';
-import { Package, Edit, Search, Save, Sparkles, CheckCircle2, AlertCircle, ArrowLeft, ShieldCheck } from 'lucide-react';
-import Link from 'next/link';
-
+import {
+  Package,
+  Edit,
+  Search,
+  Save,
+  CheckCircle2,
+  AlertCircle,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 
 export default function ProductRewardsPage() {
@@ -37,6 +54,12 @@ export default function ProductRewardsPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: 10,
+  });
 
   const [editForm, setEditForm] = useState({
     enableReward: true,
@@ -124,6 +147,160 @@ export default function ProductRewardsPage() {
     setEditForm((prev) => ({ ...prev, [key]: val }));
   };
 
+  const columns = useMemo<ColumnDef<any>[]>(
+    () => [
+      {
+        accessorKey: 'name',
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            className="p-0 hover:bg-transparent font-bold text-xs flex items-center gap-1"
+          >
+            Product
+            <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+          </Button>
+        ),
+        cell: ({ row }) => {
+          const p = row.original;
+          return (
+            <div className="flex items-center gap-3">
+              {p.thumbnailUrl ? (
+                <img src={getImageUrl(p.thumbnailUrl)} alt="" className="h-9 w-9 rounded-lg object-cover border border-border/50 shrink-0" />
+              ) : (
+                <div className="h-9 w-9 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 flex items-center justify-center font-bold text-xs shrink-0">
+                  P
+                </div>
+              )}
+              <div>
+                <div className="text-foreground font-bold text-xs">{p.name}</div>
+                <div className="text-[10px] text-muted-foreground">ID: #{p.id}</div>
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        id: 'category',
+        header: 'Category',
+        cell: ({ row }) => (
+          <span className="text-xs font-medium text-muted-foreground">
+            {row.original.category?.name || 'Uncategorized'}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'basePrice',
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            className="p-0 hover:bg-transparent font-bold text-xs flex items-center gap-1"
+          >
+            Price (₹)
+            <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+          </Button>
+        ),
+        cell: ({ row }) => (
+          <span className="text-xs font-bold">
+            ₹{Number(row.original.basePrice || 0).toLocaleString('en-IN')}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'rewardPoints',
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            className="p-0 hover:bg-transparent font-bold text-xs flex items-center gap-1"
+          >
+            Reward Earned
+            <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+          </Button>
+        ),
+        cell: ({ row }) => (
+          <Badge className="bg-amber-500/15 text-amber-600 hover:bg-amber-500/20 border-amber-500/30 font-bold">
+            {row.original.rewardPoints || 0} Pts
+          </Badge>
+        ),
+      },
+      {
+        accessorKey: 'maxRedeemablePoints',
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            className="p-0 hover:bg-transparent font-bold text-xs flex items-center gap-1"
+          >
+            Max Redeemable
+            <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+          </Button>
+        ),
+        cell: ({ row }) => (
+          <span className="text-xs font-semibold text-purple-600">
+            {row.original.maxRedeemablePoints || 0} Pts
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'rewardMultiplier',
+        header: 'Multiplier',
+        cell: ({ row }) => (
+          <span className="text-xs font-semibold text-teal-600">
+            {row.original.rewardMultiplier ? `${row.original.rewardMultiplier}x` : '1.0x'}
+          </span>
+        ),
+      },
+      {
+        id: 'overrideStatus',
+        header: 'Override Mode',
+        cell: ({ row }) => (
+          row.original.overrideGlobalReward ? (
+            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 font-bold text-[11px]">
+              Active Override
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="bg-muted text-muted-foreground text-[11px]">
+              Global Default
+            </Badge>
+          )
+        ),
+      },
+      {
+        id: 'actions',
+        header: () => <div className="text-right">Actions</div>,
+        cell: ({ row }) => (
+          <div className="text-right">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => openEdit(row.original)}
+              className="h-8 text-xs font-semibold border-amber-500/30 text-amber-600 hover:bg-amber-500/10"
+            >
+              <Edit className="mr-1 h-3.5 w-3.5" /> Edit Rule
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    []
+  );
+
+  const table = useReactTable({
+    data: products,
+    columns,
+    state: {
+      sorting,
+      pagination,
+    },
+    onSortingChange: setSorting,
+    onPaginationChange: setPagination,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+  });
+
   return (
     <AdminLayout>
       <div className="space-y-8 p-6 max-w-[1400px] mx-auto">
@@ -142,7 +319,7 @@ export default function ProductRewardsPage() {
                 <Package className="h-5 w-5 text-amber-500" /> Catalog Product Rules
               </CardTitle>
               <CardDescription className="text-xs">
-                Search and customize points rules for individual inventory items.
+                Search, sort, and customize points rules for individual inventory items.
               </CardDescription>
             </div>
             <div className="relative w-full sm:w-72">
@@ -158,72 +335,79 @@ export default function ProductRewardsPage() {
           <CardContent className="p-0">
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/30">
-                  <TableHead className="font-bold">Product</TableHead>
-                  <TableHead className="font-bold">Category</TableHead>
-                  <TableHead className="font-bold">Price (₹)</TableHead>
-                  <TableHead className="font-bold">Reward Earned</TableHead>
-                  <TableHead className="font-bold">Max Redeemable</TableHead>
-                  <TableHead className="font-bold">Override Mode</TableHead>
-                  <TableHead className="font-bold text-right">Actions</TableHead>
-                </TableRow>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id} className="bg-muted/30 hover:bg-muted/30">
+                    {headerGroup.headers.map((header) => (
+                      <TableHead key={header.id} className="font-bold text-xs">
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(header.column.columnDef.header, header.getContext())}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
               </TableHeader>
               <TableBody>
-                {products.length > 0 ? (
-                  products.map((p) => (
-                    <TableRow key={p.id} className="hover:bg-muted/40 transition-colors">
-                      <TableCell className="font-medium text-xs">
-                        <div className="flex items-center gap-3">
-                          {p.thumbnailUrl ? (
-                            <img src={getImageUrl(p.thumbnailUrl)} alt="" className="h-9 w-9 rounded-lg object-cover border border-border/50 shrink-0" />
-                          ) : (
-                            <div className="h-9 w-9 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 flex items-center justify-center font-bold text-xs shrink-0">
-                              P
-                            </div>
-                          )}
-                          <div>
-                            <div className="text-foreground font-bold">{p.name}</div>
-                            <div className="text-[10px] text-muted-foreground">ID: #{p.id}</div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-xs">{p.category?.name || 'Uncategorized'}</TableCell>
-                      <TableCell className="text-xs font-bold">₹{Number(p.basePrice).toLocaleString('en-IN')}</TableCell>
-                      <TableCell className="text-xs">
-                        <Badge className="bg-amber-500/15 text-amber-600 hover:bg-amber-500/20 border-amber-500/30">
-                          {p.rewardPoints || 0} Pts
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-xs font-semibold text-purple-600">
-                        {p.maxRedeemablePoints || 0} Pts
-                      </TableCell>
-                      <TableCell className="text-xs">
-                        {p.overrideGlobalReward ? (
-                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 font-bold">
-                            Active Override
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-muted text-muted-foreground">
-                            Global Default
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button size="sm" variant="outline" onClick={() => openEdit(p)} className="h-8 text-xs font-semibold border-amber-500/30 text-amber-600 hover:bg-amber-500/10">
-                          <Edit className="mr-1 h-3.5 w-3.5" /> Edit Rule
-                        </Button>
-                      </TableCell>
+                {table.getRowModel().rows.length > 0 ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow key={row.id} className="hover:bg-muted/40 transition-colors">
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground text-xs">
+                    <TableCell colSpan={columns.length} className="text-center py-8 text-muted-foreground text-xs">
                       {loading ? 'Loading catalog products...' : 'No products found.'}
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
+
+            {/* TanStack Table Pagination Controls */}
+            {products.length > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-border/40 text-xs">
+                <div className="text-muted-foreground">
+                  Page <span className="font-bold text-foreground">{table.getState().pagination.pageIndex + 1}</span> of{' '}
+                  <span className="font-bold text-foreground">{table.getPageCount() || 1}</span> ({products.length} total products)
+                </div>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={table.getState().pagination.pageSize}
+                    onChange={(e) => table.setPageSize(Number(e.target.value))}
+                    className="h-8 rounded-md border border-border/80 bg-card px-2 text-xs font-semibold text-foreground focus:outline-none cursor-pointer"
+                  >
+                    {[10, 20, 50, 100].map((size) => (
+                      <option key={size} value={size}>
+                        Show {size} per page
+                      </option>
+                    ))}
+                  </select>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => table.previousPage()}
+                    disabled={!table.getCanPreviousPage()}
+                    className="h-8 w-8 p-0"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => table.nextPage()}
+                    disabled={!table.getCanNextPage()}
+                    className="h-8 w-8 p-0"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -314,21 +498,22 @@ export default function ProductRewardsPage() {
                 </div>
                 <Switch
                   checked={editForm.allowRewardRedemption}
+                  onCheckedChange={(val) => setFormState('allowRewardRedemption', val)}
                 />
               </div>
 
               <div>
-                <Label>Reward Rule Expiry Date (Optional)</Label>
+                <Label className="text-xs font-bold">Reward Rule Expiry Date (Optional)</Label>
                 <Input
                   type="date"
                   value={editForm.rewardExpiryDate}
-                  onChange={(e) => setEditForm({ ...editForm, rewardExpiryDate: e.target.value })}
-                  className="mt-1"
+                  onChange={(e) => setFormState('rewardExpiryDate', e.target.value)}
+                  className="mt-1 bg-card border-border/80"
                 />
               </div>
 
               <div className="flex justify-end pt-4">
-                <Button type="submit" disabled={saving}>
+                <Button type="submit" disabled={saving} className="bg-amber-600 hover:bg-amber-700 text-white font-bold shadow-md shadow-amber-500/20">
                   <Save className="mr-2 h-4 w-4" /> {saving ? 'Saving...' : 'Save Configuration'}
                 </Button>
               </div>
