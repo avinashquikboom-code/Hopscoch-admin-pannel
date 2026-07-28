@@ -7,8 +7,11 @@ interface PageHeaderProps {
   badgeText?: string;
   titlePart1?: string;
   titlePart2?: string;
+  title?: string;
+  description?: string;
   subtitle?: string;
   actions?: React.ReactNode;
+  children?: React.ReactNode;
   onRefresh?: () => void;
   showClock?: boolean;
 }
@@ -17,11 +20,17 @@ export function PageHeader({
   badgeText = 'ACTIVE PLATFORM COMMAND CENTER',
   titlePart1,
   titlePart2,
+  title,
+  description,
   subtitle,
   actions,
+  children,
   onRefresh,
   showClock = false,
 }: PageHeaderProps) {
+  const displayTitle1 = titlePart1 || title || '';
+  const displaySubtitle = subtitle || description || '';
+  const displayActions = actions || children;
   const [time, setTime] = useState('--:--:--');
   const [greeting, setGreeting] = useState(titlePart1 || '');
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -107,9 +116,9 @@ export function PageHeader({
         </h1>
 
         {/* Subtitle description */}
-        {subtitle && (
+        {displaySubtitle && (
           <p className="text-muted-foreground text-sm font-light leading-relaxed max-w-3xl">
-            {subtitle}
+            {displaySubtitle}
           </p>
         )}
       </div>
@@ -117,7 +126,7 @@ export function PageHeader({
       {/* Right Column: Clock & Optional Actions */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 lg:self-center z-10 shrink-0">
         {/* Page specific action buttons slot */}
-        {actions && <div className="flex items-center gap-2 w-full sm:w-auto">{actions}</div>}
+        {displayActions && <div className="flex items-center gap-2 w-full sm:w-auto">{displayActions}</div>}
 
         {/* System Clock Widget */}
         {showClock && (
