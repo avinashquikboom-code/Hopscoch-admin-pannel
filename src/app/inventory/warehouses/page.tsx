@@ -126,15 +126,16 @@ export default function WarehousesPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await smartFetch('/api/admin/warehouses');
+      const res = await smartFetch('/api/admin/warehouses?status=ACTIVE');
       const json = await res.json();
+      let list: Warehouse[] = [];
       if (json.success && Array.isArray(json.data?.warehouses)) {
-        setWarehouses(json.data.warehouses);
+        list = json.data.warehouses;
       } else if (Array.isArray(json.data)) {
-        setWarehouses(json.data);
-      } else {
-        setWarehouses([]);
+        list = json.data;
       }
+      // Exclude INACTIVE / deleted warehouses from the active display list
+      setWarehouses(list.filter((w) => w.status !== 'INACTIVE'));
     } catch (err: any) {
       setError(err.message || 'Failed to load warehouses');
       toast.error('Failed to load warehouse list');
@@ -279,8 +280,11 @@ export default function WarehousesPage() {
       });
       const json = await res.json();
       if (res.ok) {
-        toast.success(json.message || 'Warehouse deleted');
+        toast.success(json.message || 'Warehouse removed');
+        const targetId = deleteId;
         setDeleteId(null);
+        // Immediately remove from UI list state
+        setWarehouses((prev) => prev.filter((w) => w.id !== targetId));
         fetchWarehouses();
       } else {
         toast.error(json.message || 'Failed to delete warehouse');
