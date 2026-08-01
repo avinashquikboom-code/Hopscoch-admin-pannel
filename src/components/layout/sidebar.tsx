@@ -115,6 +115,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
         { name: 'Brands', href: '/brands' },
         { name: 'Collections', href: '/collections' },
         { name: 'Inventory', href: '/inventory' },
+        { name: 'Warehouses', href: '/inventory/warehouses' },
       ],
     },
     {
