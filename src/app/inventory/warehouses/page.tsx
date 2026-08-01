@@ -22,6 +22,7 @@ import {
   Loader2,
   AlertTriangle,
   X,
+  Power,
 } from 'lucide-react';
 
 function authHeaders(): HeadersInit {
@@ -63,6 +64,9 @@ export default function WarehousesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Tab filter: ALL | ACTIVE | INACTIVE
+  const [statusTab, setStatusTab] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
+
   // Modal / Drawer state
   const [showDrawer, setShowDrawer] = useState(false);
   const [editingWarehouse, setEditingWarehouse] = useState<Warehouse | null>(null);
@@ -74,6 +78,7 @@ export default function WarehousesPage() {
 
   // Default action loading
   const [settingDefaultId, setSettingDefaultId] = useState<number | null>(null);
+  const [togglingStatusId, setTogglingStatusId] = useState<number | null>(null);
 
   // Form Fields
   const [formData, setFormData] = useState({
@@ -126,7 +131,7 @@ export default function WarehousesPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await smartFetch('/api/admin/warehouses?status=ACTIVE');
+      const res = await smartFetch('/api/admin/warehouses');
       const json = await res.json();
       let list: Warehouse[] = [];
       if (json.success && Array.isArray(json.data?.warehouses)) {
@@ -134,8 +139,7 @@ export default function WarehousesPage() {
       } else if (Array.isArray(json.data)) {
         list = json.data;
       }
-      // Exclude INACTIVE / deleted warehouses from the active display list
-      setWarehouses(list.filter((w) => w.status !== 'INACTIVE'));
+      setWarehouses(list);
     } catch (err: any) {
       setError(err.message || 'Failed to load warehouses');
       toast.error('Failed to load warehouse list');
@@ -231,14 +235,41 @@ export default function WarehousesPage() {
     }
   };
 
+  const handleToggleStatus = async (wh: Warehouse) => {
+    if (wh.isDefault && wh.status === 'ACTIVE') {
+      return toast.error(
+        'Cannot set default warehouse to INACTIVE. Mark another warehouse as default first.'
+      );
+    }
+    const newStatus = wh.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    setTogglingStatusId(wh.id);
+    try {
+      const res = await smartFetch(`/api/admin/warehouses/${wh.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: newStatus }),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        toast.success(`${wh.name} status changed to ${newStatus}`);
+        fetchWarehouses();
+      } else {
+        toast.error(json.message || 'Failed to update warehouse status');
+      }
+    } catch (err: any) {
+      toast.error(`Error: ${err.message}`);
+    } finally {
+      setTogglingStatusId(null);
+    }
+  };
+
   const handleSetDefault = async (wh: Warehouse) => {
     if (wh.isDefault) return;
     setSettingDefaultId(wh.id);
     try {
-      // Primary: PUT /api/admin/warehouses/:id with { isDefault: true }
+      // Primary: PUT /api/admin/warehouses/:id with { isDefault: true, status: 'ACTIVE' }
       let res = await smartFetch(`/api/admin/warehouses/${wh.id}`, {
         method: 'PUT',
-        body: JSON.stringify({ isDefault: true }),
+        body: JSON.stringify({ isDefault: true, status: 'ACTIVE' }),
       });
 
       // Fallback: POST /api/inventory/warehouses/:id/set-default
@@ -283,7 +314,6 @@ export default function WarehousesPage() {
         toast.success(json.message || 'Warehouse removed');
         const targetId = deleteId;
         setDeleteId(null);
-        // Immediately remove from UI list state
         setWarehouses((prev) => prev.filter((w) => w.id !== targetId));
         fetchWarehouses();
       } else {
@@ -296,6 +326,16 @@ export default function WarehousesPage() {
     }
   };
 
+  // Calculate Filter Counts
+  const activeCount = warehouses.filter((w) => w.status === 'ACTIVE').length;
+  const inactiveCount = warehouses.filter((w) => w.status === 'INACTIVE').length;
+
+  const displayedWarehouses = warehouses.filter((w) => {
+    if (statusTab === 'ACTIVE') return w.status === 'ACTIVE';
+    if (statusTab === 'INACTIVE') return w.status === 'INACTIVE';
+    return true;
+  });
+
   return (
     <AdminLayout>
       <div className="space-y-8 pb-12">
@@ -303,7 +343,7 @@ export default function WarehousesPage() {
           titlePart1="Warehouse"
           titlePart2="Management"
           badgeText="Fulfillment Hub"
-          subtitle="Manage physical warehouses, addresses, default dispatches, and inventory centers."
+          subtitle="Manage physical warehouses, addresses, default dispatches, and active/inactive status."
           actions={
             <div className="flex gap-2">
               <Button
@@ -333,6 +373,40 @@ export default function WarehousesPage() {
               <Building2 className="h-4 w-4 text-teal-600" /> Physical
               Warehouses ({warehouses.length})
             </CardTitle>
+
+            {/* Status Filter Tabs */}
+            <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg border border-border/40">
+              <button
+                onClick={() => setStatusTab('ALL')}
+                className={`px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                  statusTab === 'ALL'
+                    ? 'bg-background text-foreground shadow-xs'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                All ({warehouses.length})
+              </button>
+              <button
+                onClick={() => setStatusTab('ACTIVE')}
+                className={`px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                  statusTab === 'ACTIVE'
+                    ? 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Active ({activeCount})
+              </button>
+              <button
+                onClick={() => setStatusTab('INACTIVE')}
+                className={`px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                  statusTab === 'INACTIVE'
+                    ? 'bg-rose-500/15 text-rose-600 border border-rose-500/30'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Inactive ({inactiveCount})
+              </button>
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             {loading ? (
@@ -343,22 +417,26 @@ export default function WarehousesPage() {
               <div className="p-8 text-center text-rose-500 font-medium">
                 {error}
               </div>
-            ) : warehouses.length === 0 ? (
+            ) : displayedWarehouses.length === 0 ? (
               <div className="p-12 text-center text-muted-foreground space-y-3">
                 <Building2 className="h-10 w-10 mx-auto text-muted-foreground/60" />
                 <p className="font-semibold text-foreground">
-                  No warehouses configured
+                  No warehouses found in {statusTab.toLowerCase()} view
                 </p>
                 <p className="text-xs">
-                  Create your first warehouse facility to manage inventory dispatches.
+                  {statusTab === 'INACTIVE'
+                    ? 'There are no inactive warehouses.'
+                    : 'Create your first warehouse facility to manage inventory dispatches.'}
                 </p>
-                <Button
-                  onClick={openAddDrawer}
-                  size="sm"
-                  className="bg-primary text-white"
-                >
-                  <Plus className="h-3.5 w-3.5 mr-1" /> Create Warehouse
-                </Button>
+                {statusTab === 'ALL' && (
+                  <Button
+                    onClick={openAddDrawer}
+                    size="sm"
+                    className="bg-primary text-white"
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1" /> Create Warehouse
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -373,8 +451,13 @@ export default function WarehousesPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/30">
-                    {warehouses.map((wh) => (
-                      <tr key={wh.id} className="hover:bg-muted/10 transition-colors">
+                    {displayedWarehouses.map((wh) => (
+                      <tr
+                        key={wh.id}
+                        className={`hover:bg-muted/10 transition-colors ${
+                          wh.status === 'INACTIVE' ? 'opacity-70 bg-muted/5' : ''
+                        }`}
+                      >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <div>
@@ -411,18 +494,47 @@ export default function WarehousesPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          {wh.status === 'ACTIVE' ? (
-                            <Badge className="bg-emerald-500/15 text-emerald-600 border border-emerald-500/30 text-[10px] gap-1">
-                              <CheckCircle2 className="h-3 w-3" /> ACTIVE
-                            </Badge>
-                          ) : (
-                            <Badge className="bg-rose-500/15 text-rose-600 border border-rose-500/30 text-[10px] gap-1">
-                              <XCircle className="h-3 w-3" /> INACTIVE
-                            </Badge>
-                          )}
+                          <button
+                            onClick={() => handleToggleStatus(wh)}
+                            disabled={togglingStatusId === wh.id}
+                            title="Click to toggle Active / Inactive status"
+                            className="cursor-pointer group"
+                          >
+                            {togglingStatusId === wh.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-teal-600" />
+                            ) : wh.status === 'ACTIVE' ? (
+                              <Badge className="bg-emerald-500/15 text-emerald-600 border border-emerald-500/30 text-[10px] gap-1 group-hover:bg-emerald-500/30 transition-colors">
+                                <CheckCircle2 className="h-3 w-3" /> ACTIVE
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-rose-500/15 text-rose-600 border border-rose-500/30 text-[10px] gap-1 group-hover:bg-rose-500/30 transition-colors">
+                                <XCircle className="h-3 w-3" /> INACTIVE
+                              </Badge>
+                            )}
+                          </button>
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-1.5">
+                            {/* Toggle Active/Inactive Quick Action */}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleToggleStatus(wh)}
+                              disabled={togglingStatusId === wh.id || (wh.isDefault && wh.status === 'ACTIVE')}
+                              title={
+                                wh.status === 'ACTIVE'
+                                  ? 'Deactivate Warehouse'
+                                  : 'Activate Warehouse'
+                              }
+                              className={`h-8 w-8 p-0 cursor-pointer ${
+                                wh.status === 'ACTIVE'
+                                  ? 'text-amber-500 hover:text-amber-600'
+                                  : 'text-emerald-500 hover:text-emerald-600'
+                              }`}
+                            >
+                              <Power className="h-3.5 w-3.5" />
+                            </Button>
+
                             {!wh.isDefault && (
                               <Button
                                 size="sm"
@@ -763,7 +875,7 @@ export default function WarehousesPage() {
                 Delete Warehouse?
               </h3>
               <p className="text-xs text-muted-foreground">
-                Are you sure you want to delete this warehouse? If inventory is assigned to it, its status will be set to INACTIVE instead of permanent deletion.
+                Are you sure you want to delete this warehouse? If inventory or stock logs are assigned to it, its status will be set to INACTIVE instead of permanent deletion.
               </p>
               <div className="flex gap-2 pt-2">
                 <Button
