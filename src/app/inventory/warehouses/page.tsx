@@ -234,29 +234,30 @@ export default function WarehousesPage() {
     if (wh.isDefault) return;
     setSettingDefaultId(wh.id);
     try {
-      let res = await smartFetch(`/api/inventory/warehouses/${wh.id}/default`, {
+      // 1. Try standard inventory route /set-default
+      let res = await smartFetch(`/api/inventory/warehouses/${wh.id}/set-default`, {
         method: 'POST',
       });
+      // 2. Fallback to /default
       if (res.status === 404) {
-        res = await smartFetch(`/api/inventory/warehouses/${wh.id}/set-default`, {
+        res = await smartFetch(`/api/inventory/warehouses/${wh.id}/default`, {
           method: 'POST',
         });
       }
-      const json = await res.json();
-      if (res.ok) {
-        toast.success(`${wh.name} is now the default warehouse`);
-        fetchWarehouses();
-      } else {
-        const fallbackRes = await smartFetch(`/api/admin/warehouses/${wh.id}`, {
+      // 3. Fallback to admin update endpoint PUT /api/admin/warehouses/:id
+      if (res.status === 404 || !res.ok) {
+        res = await smartFetch(`/api/admin/warehouses/${wh.id}`, {
           method: 'PUT',
           body: JSON.stringify({ isDefault: true }),
         });
-        if (fallbackRes.ok) {
-          toast.success(`${wh.name} is now the default warehouse`);
-          fetchWarehouses();
-        } else {
-          toast.error(json.message || 'Failed to set default warehouse');
-        }
+      }
+
+      const json = await res.json();
+      if (res.ok && (json.success || json.data || json.id)) {
+        toast.success(`${wh.name} is now the default warehouse`);
+        fetchWarehouses();
+      } else {
+        toast.error(json.message || 'Failed to set default warehouse');
       }
     } catch (err: any) {
       toast.error(`Error: ${err.message}`);
