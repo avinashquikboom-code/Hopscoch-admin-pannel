@@ -120,9 +120,10 @@ export default function WarehousesPage() {
 
   const openAddDrawer = () => {
     setEditingWarehouse(null);
+    const autoCode = `WRH-${Math.floor(1000 + Math.random() * 9000)}`;
     setFormData({
       name: '',
-      code: '',
+      code: autoCode,
       address: '',
       city: '',
       state: '',
