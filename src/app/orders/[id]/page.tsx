@@ -186,10 +186,12 @@ export default function OrderDetailsPage({ params }: { params: any }) {
       setOrderDetails({
         id: rawOrder.orderNumber || String(rawOrder.id),
         invoiceNumber: `INV-${rawOrder.id}`,
+        sellerName: rawOrder.sellerNameSnapshot || 'FCI Seller Retail Pvt. Ltd.',
+        sellerContact: rawOrder.sellerContactSnapshot || '+91 9876543210',
         customer: {
           name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Customer',
           email: user.email || '',
-          phone: user.phone || '',
+          phone: addr.phone || addr.phoneNumber || user.phone || '',
         },
         deliveryAddress: {
           name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
@@ -336,8 +338,8 @@ export default function OrderDetailsPage({ params }: { params: any }) {
         <body>
           <div class="header">
             <div>
-              <div class="title">FCI Seller TAX INVOICE</div>
-              <p style="margin:4px 0; font-size:13px; color:#64748b;">Luxury E-Commerce</p>
+              <div class="title">${orderDetails.sellerName || 'FCI Seller Retail Pvt. Ltd.'} TAX INVOICE</div>
+              <p style="margin:4px 0; font-size:13px; color:#64748b;">Official E-Commerce Partner | Contact: ${orderDetails.sellerContact || '+91 9876543210'}</p>
             </div>
             <div style="text-align:right;">
               <p style="margin:2px 0; font-weight:bold;">Invoice #: ${orderDetails.invoiceNumber || orderDetails.id}</p>

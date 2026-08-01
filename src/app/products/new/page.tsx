@@ -64,7 +64,23 @@ export default function NewProductPage() {
 
   const [price, setPrice] = useState<string>('');
   const [shippingCharge, setShippingCharge] = useState<string>('0.00');
+  const [margin, setMargin] = useState<string>('0.00');
+  const [marginError, setMarginError] = useState<string | null>(null);
   const [stock, setStock] = useState<string>('');
+
+  const handleMarginChange = (val: string) => {
+    setMargin(val);
+    const num = parseFloat(val);
+    if (isNaN(num)) {
+      setMarginError(null);
+    } else if (num < 0) {
+      setMarginError('Margin cannot be negative');
+    } else if (num > 100) {
+      setMarginError('Margin cannot exceed 100%');
+    } else {
+      setMarginError(null);
+    }
+  };
 
   const [availableColors, setAvailableColors] = useState<string[]>(STANDARD_COLORS);
   const [availableSizes, setAvailableSizes] = useState<string[]>(STANDARD_SIZES);
@@ -638,7 +654,7 @@ export default function NewProductPage() {
                   <CardDescription>Set pricing and stock information</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
                     <div className="space-y-2">
                       <Label htmlFor="pricing-price">Price (₹) *</Label>
                       <Input 
@@ -653,6 +669,21 @@ export default function NewProductPage() {
                     <div className="space-y-2">
                       <Label htmlFor="mrp">MRP</Label>
                       <Input id="mrp" type="number" step="0.01" placeholder="0.00" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="margin" className="font-bold">Margin (%)</Label>
+                      <Input 
+                        id="margin" 
+                        type="number" 
+                        step="0.01" 
+                        min="0"
+                        max="100"
+                        placeholder="e.g. 15.00" 
+                        value={margin}
+                        onChange={(e) => handleMarginChange(e.target.value)}
+                        className={marginError ? 'border-destructive focus:border-destructive' : ''}
+                      />
+                      {marginError && <p className="text-xs text-destructive mt-1 font-medium">{marginError}</p>}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="discount">Discount</Label>

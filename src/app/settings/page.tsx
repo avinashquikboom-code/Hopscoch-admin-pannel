@@ -86,8 +86,10 @@ export default function SettingsPage() {
   const [isSaved, setIsSaved] = useState(false);
   const [config, setConfig] = useState({
     storeName: 'FCI Seller',
+    sellerName: 'FCI Seller Retail Pvt. Ltd.',
+    sellerContactNumber: '+91 9876543210',
     storeEmail: 'admin@fciseller.com',
-    storePhone: '+1 234 567 8900',
+    storePhone: '+91 9876543210',
     storeAddress: '123 Fashion Street, New York, NY 10001',
     country: 'IN',
     currency: 'INR',
@@ -363,6 +365,17 @@ export default function SettingsPage() {
                   <div className="space-y-1.5">
                     <Label htmlFor="storeEmail" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Store Email</Label>
                     <Input id="storeEmail" type="email" value={config.storeEmail} onChange={e => setConfig(prev => ({ ...prev, storeEmail: e.target.value }))} className="h-10 rounded-lg border-border/50" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="sellerName" className="text-xs font-bold uppercase tracking-wider text-primary">Seller Legal Business Name</Label>
+                    <Input id="sellerName" value={config.sellerName} onChange={e => setConfig(prev => ({ ...prev, sellerName: e.target.value }))} placeholder="e.g. FCI Seller Retail Pvt. Ltd." className="h-10 rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="sellerContactNumber" className="text-xs font-bold uppercase tracking-wider text-primary">Seller Contact Phone Number</Label>
+                    <Input id="sellerContactNumber" type="tel" value={config.sellerContactNumber} onChange={e => setConfig(prev => ({ ...prev, sellerContactNumber: e.target.value }))} placeholder="e.g. +91 9876543210" className="h-10 rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20" />
                   </div>
                 </div>
 

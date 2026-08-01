@@ -144,7 +144,7 @@ export default function ProductsPage() {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [addSheetOpen, setAddSheetOpen] = useState(false);
   const [shippingType, setShippingType] = useState<'free' | 'paid'>('free');
-  const [formData, setFormData] = useState({ name: '', sku: '', price: '', shippingCharge: '0.00', isGiftWrapAvailable: true, giftWrapCharge: '0.00', stock: '', category: '', subCategory: '', brand: '', colors: [] as string[], sizes: [] as string[], description: '', status: 'PUBLISHED', taxType: 'GST', taxPercent: '', selectedTaxRuleId: '' });
+  const [formData, setFormData] = useState({ name: '', sku: '', price: '', margin: '0.00', shippingCharge: '0.00', isGiftWrapAvailable: true, giftWrapCharge: '0.00', stock: '', category: '', subCategory: '', brand: '', colors: [] as string[], sizes: [] as string[], description: '', status: 'PUBLISHED', taxType: 'GST', taxPercent: '', selectedTaxRuleId: '' });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [editImageFiles, setEditImageFiles] = useState<File[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -612,7 +612,7 @@ export default function ProductsPage() {
       setShippingType('free');
       setImageFiles([]);
       setSubCategories([]);
-      setFormData({ name: '', sku: '', price: '', shippingCharge: '0.00', isGiftWrapAvailable: true, giftWrapCharge: '0.00', stock: '', category: categories[0]?.name || '', subCategory: '', brand: brands[0]?.name || '', colors: [], sizes: [], description: '', status: 'PUBLISHED', taxType: 'GST', taxPercent: '', selectedTaxRuleId: '' });
+      setFormData({ name: '', sku: '', price: '', margin: '0.00', shippingCharge: '0.00', isGiftWrapAvailable: true, giftWrapCharge: '0.00', stock: '', category: categories[0]?.name || '', subCategory: '', brand: brands[0]?.name || '', colors: [], sizes: [], description: '', status: 'PUBLISHED', taxType: 'GST', taxPercent: '', selectedTaxRuleId: '' });
       
       fetchProducts();
       fetchCategories();
@@ -1528,7 +1528,7 @@ export default function ProductsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="price" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Price (₹)</Label>
                     <Input
@@ -1539,6 +1539,31 @@ export default function ProductsPage() {
                       value={formData.price}
                       onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                       placeholder="e.g. 899.00"
+                      className="rounded-lg border-border/50 focus:border-primary focus:ring-1 focus:ring-primary/20 h-11"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="margin" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Margin (%)</Label>
+                    <Input
+                      id="margin"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      value={formData.margin}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const num = parseFloat(val);
+                        if (num < 0) {
+                          toast.error('Margin cannot be negative');
+                          return;
+                        }
+                        if (num > 100) {
+                          toast.error('Margin cannot exceed 100%');
+                        }
+                        setFormData({ ...formData, margin: val });
+                      }}
+                      placeholder="e.g. 15.00"
                       className="rounded-lg border-border/50 focus:border-primary focus:ring-1 focus:ring-primary/20 h-11"
                     />
                   </div>

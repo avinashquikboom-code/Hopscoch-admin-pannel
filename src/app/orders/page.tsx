@@ -115,7 +115,7 @@ function normalizeOrder(raw: any) {
     _rawId: String(raw.id || raw.orderNumber || ''),
     customer: String(shippingAddress.fullName || shippingAddress.recipientName || shippingAddress.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.name || (user.email ? user.email.split('@')[0] : '') || raw.customerName || 'Customer'),
     email: String(user.email || raw.email || ''),
-    phone: String(user.phone || raw.phone || shippingAddress.phone || ''),
+    phone: String(shippingAddress.phone || shippingAddress.phoneNumber || user.phone || raw.phone || ''),
     amount: Number(raw.totalAmount || raw.total || 0) || 0,
     status: String(raw.status || 'pending').toLowerCase().trim(),
     paymentStatus: String(raw.paymentStatus || raw.payment?.status || 'pending').toLowerCase().trim(),
