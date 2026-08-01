@@ -15,13 +15,13 @@ import {
   Trash2,
   Star,
   RefreshCw,
-  MapPin,
   Phone,
   Mail,
   CheckCircle2,
   XCircle,
   Loader2,
   AlertTriangle,
+  X,
 } from 'lucide-react';
 
 function authHeaders(): HeadersInit {
@@ -63,8 +63,8 @@ export default function WarehousesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Modal states
-  const [showModal, setShowModal] = useState(false);
+  // Modal / Drawer state
+  const [showDrawer, setShowDrawer] = useState(false);
   const [editingWarehouse, setEditingWarehouse] = useState<Warehouse | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -118,7 +118,7 @@ export default function WarehousesPage() {
     fetchWarehouses();
   }, []);
 
-  const openAddModal = () => {
+  const openAddDrawer = () => {
     setEditingWarehouse(null);
     setFormData({
       name: '',
@@ -134,10 +134,10 @@ export default function WarehousesPage() {
       isDefault: warehouses.length === 0,
       shiprocketPickupName: '',
     });
-    setShowModal(true);
+    setShowDrawer(true);
   };
 
-  const openEditModal = (wh: Warehouse) => {
+  const openEditDrawer = (wh: Warehouse) => {
     setEditingWarehouse(wh);
     setFormData({
       name: wh.name || '',
@@ -153,7 +153,7 @@ export default function WarehousesPage() {
       isDefault: wh.isDefault || false,
       shiprocketPickupName: wh.shiprocketPickupName || '',
     });
-    setShowModal(true);
+    setShowDrawer(true);
   };
 
   const handleSubmitForm = async (e: React.FormEvent) => {
@@ -189,7 +189,7 @@ export default function WarehousesPage() {
             ? 'Warehouse updated successfully'
             : 'Warehouse created successfully'
         );
-        setShowModal(false);
+        setShowDrawer(false);
         fetchWarehouses();
       } else {
         toast.error(json.message || 'Operation failed');
@@ -214,7 +214,6 @@ export default function WarehousesPage() {
         toast.success(`${wh.name} is now the default warehouse`);
         fetchWarehouses();
       } else {
-        // Fallback to admin update endpoint if inventory route fails
         const fallbackRes = await fetch(`${API_BASE}/admin/warehouses/${wh.id}`, {
           method: 'PUT',
           headers: authHeaders(),
@@ -277,7 +276,7 @@ export default function WarehousesPage() {
           actions={
             <div className="flex gap-2">
               <Button
-                onClick={openAddModal}
+                onClick={openAddDrawer}
                 className="rounded-md gap-2 text-xs bg-primary text-white hover:bg-primary/95 shadow-sm cursor-pointer"
               >
                 <Plus className="h-3.5 w-3.5" /> Add Warehouse
@@ -323,7 +322,7 @@ export default function WarehousesPage() {
                   Create your first warehouse facility to manage inventory dispatches.
                 </p>
                 <Button
-                  onClick={openAddModal}
+                  onClick={openAddDrawer}
                   size="sm"
                   className="bg-primary text-white"
                 >
@@ -412,7 +411,7 @@ export default function WarehousesPage() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={() => openEditModal(wh)}
+                              onClick={() => openEditDrawer(wh)}
                               className="h-8 w-8 p-0 cursor-pointer"
                             >
                               <Edit2 className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
@@ -442,232 +441,270 @@ export default function WarehousesPage() {
           </CardContent>
         </Card>
 
-        {/* Add/Edit Modal Dialog */}
-        {showModal && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-card border border-border/80 rounded-xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between border-b pb-3">
-                <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-                  <Building2 className="h-5 w-5 text-teal-600" />
-                  {editingWarehouse ? 'Edit Warehouse' : 'Add New Warehouse'}
-                </h3>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="text-muted-foreground hover:text-foreground font-bold text-lg cursor-pointer"
+        {/* Right-Side Slide-Over Drawer Panel */}
+        {showDrawer && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex justify-end">
+            <div className="w-full max-w-lg bg-card h-full border-l border-border/80 shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+              {/* Drawer Header */}
+              <div className="p-6 border-b flex items-center justify-between bg-muted/20">
+                <div>
+                  <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                    <Building2 className="h-5 w-5 text-teal-600" />
+                    {editingWarehouse ? 'Edit Warehouse' : 'Add New Warehouse'}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {editingWarehouse
+                      ? `Update configuration for ${editingWarehouse.code}`
+                      : 'Create a new physical warehouse facility'}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowDrawer(false)}
+                  className="rounded-full h-8 w-8 text-muted-foreground hover:text-foreground cursor-pointer"
                 >
-                  ×
-                </button>
+                  <X className="h-5 w-5" />
+                </Button>
               </div>
 
-              <form onSubmit={handleSubmitForm} className="space-y-4 text-sm">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
-                      Warehouse Name *
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Central Mumbai Hub"
-                      value={formData.name}
-                      onChange={(e) =>
-                        setFormData({ ...formData, name: e.target.value })
-                      }
-                      className="w-full p-2 rounded-md border border-border bg-background focus:ring-2 focus:ring-teal-500"
-                      required
-                    />
+              {/* Drawer Form Body */}
+              <form onSubmit={handleSubmitForm} className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex-1 overflow-y-auto p-6 space-y-5 text-sm">
+                  {/* Basic Details */}
+                  <div className="space-y-3">
+                    <p className="text-xs font-bold uppercase tracking-wider text-teal-600">
+                      Facility Details
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                          Warehouse Name *
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Central Mumbai Hub"
+                          value={formData.name}
+                          onChange={(e) =>
+                            setFormData({ ...formData, name: e.target.value })
+                          }
+                          className="w-full p-2.5 rounded-md border border-border bg-background focus:ring-2 focus:ring-teal-500 font-medium"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                          Warehouse Code
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Auto-generated if empty"
+                          value={formData.code}
+                          onChange={(e) =>
+                            setFormData({ ...formData, code: e.target.value })
+                          }
+                          className="w-full p-2.5 rounded-md border border-border bg-background font-mono focus:ring-2 focus:ring-teal-500"
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
-                      Warehouse Code
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Auto-generated if empty"
-                      value={formData.code}
-                      onChange={(e) =>
-                        setFormData({ ...formData, code: e.target.value })
-                      }
-                      className="w-full p-2 rounded-md border border-border bg-background font-mono focus:ring-2 focus:ring-teal-500"
-                    />
-                  </div>
-                </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
-                    Street Address *
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Plot No. 12, Logistics Park"
-                    value={formData.address}
-                    onChange={(e) =>
-                      setFormData({ ...formData, address: e.target.value })
-                    }
-                    className="w-full p-2 rounded-md border border-border bg-background focus:ring-2 focus:ring-teal-500"
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
-                      City *
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Mumbai"
-                      value={formData.city}
-                      onChange={(e) =>
-                        setFormData({ ...formData, city: e.target.value })
-                      }
-                      className="w-full p-2 rounded-md border border-border bg-background focus:ring-2 focus:ring-teal-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
-                      State *
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Maharashtra"
-                      value={formData.state}
-                      onChange={(e) =>
-                        setFormData({ ...formData, state: e.target.value })
-                      }
-                      className="w-full p-2 rounded-md border border-border bg-background focus:ring-2 focus:ring-teal-500"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
-                      Pincode *
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="400001"
-                      value={formData.pincode}
-                      onChange={(e) =>
-                        setFormData({ ...formData, pincode: e.target.value })
-                      }
-                      className="w-full p-2 rounded-md border border-border bg-background focus:ring-2 focus:ring-teal-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
-                      Country
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.country}
-                      onChange={(e) =>
-                        setFormData({ ...formData, country: e.target.value })
-                      }
-                      className="w-full p-2 rounded-md border border-border bg-background focus:ring-2 focus:ring-teal-500"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
-                      Phone *
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="+91 9876543210"
-                      value={formData.phone}
-                      onChange={(e) =>
-                        setFormData({ ...formData, phone: e.target.value })
-                      }
-                      className="w-full p-2 rounded-md border border-border bg-background focus:ring-2 focus:ring-teal-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
-                      Email *
-                    </label>
-                    <input
-                      type="email"
-                      placeholder="warehouse@company.com"
-                      value={formData.email}
-                      onChange={(e) =>
-                        setFormData({ ...formData, email: e.target.value })
-                      }
-                      className="w-full p-2 rounded-md border border-border bg-background focus:ring-2 focus:ring-teal-500"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 pt-2 border-t">
-                  <div>
-                    <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
-                      Status
-                    </label>
-                    <select
-                      value={formData.status}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          status: e.target.value as any,
-                        })
-                      }
-                      className="w-full p-2 rounded-md border border-border bg-background font-medium focus:ring-2 focus:ring-teal-500"
-                    >
-                      <option value="ACTIVE">ACTIVE</option>
-                      <option value="INACTIVE">INACTIVE</option>
-                    </select>
-                  </div>
-                  <div className="flex items-center pt-5">
-                    <label className="flex items-center gap-2 text-xs font-semibold text-foreground cursor-pointer">
+                  {/* Location Address */}
+                  <div className="space-y-3 pt-3 border-t">
+                    <p className="text-xs font-bold uppercase tracking-wider text-teal-600">
+                      Physical Location
+                    </p>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                        Street Address *
+                      </label>
                       <input
-                        type="checkbox"
-                        checked={formData.isDefault}
+                        type="text"
+                        placeholder="Plot No. 12, Logistics Park"
+                        value={formData.address}
+                        onChange={(e) =>
+                          setFormData({ ...formData, address: e.target.value })
+                        }
+                        className="w-full p-2.5 rounded-md border border-border bg-background focus:ring-2 focus:ring-teal-500"
+                        required
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                          City *
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Mumbai"
+                          value={formData.city}
+                          onChange={(e) =>
+                            setFormData({ ...formData, city: e.target.value })
+                          }
+                          className="w-full p-2.5 rounded-md border border-border bg-background focus:ring-2 focus:ring-teal-500"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                          State *
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Maharashtra"
+                          value={formData.state}
+                          onChange={(e) =>
+                            setFormData({ ...formData, state: e.target.value })
+                          }
+                          className="w-full p-2.5 rounded-md border border-border bg-background focus:ring-2 focus:ring-teal-500"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                          Pincode *
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="400001"
+                          value={formData.pincode}
+                          onChange={(e) =>
+                            setFormData({ ...formData, pincode: e.target.value })
+                          }
+                          className="w-full p-2.5 rounded-md border border-border bg-background focus:ring-2 focus:ring-teal-500 font-mono"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                          Country
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.country}
+                          onChange={(e) =>
+                            setFormData({ ...formData, country: e.target.value })
+                          }
+                          className="w-full p-2.5 rounded-md border border-border bg-background focus:ring-2 focus:ring-teal-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Contact Information */}
+                  <div className="space-y-3 pt-3 border-t">
+                    <p className="text-xs font-bold uppercase tracking-wider text-teal-600">
+                      Contact Information
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                          Phone *
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="+91 9876543210"
+                          value={formData.phone}
+                          onChange={(e) =>
+                            setFormData({ ...formData, phone: e.target.value })
+                          }
+                          className="w-full p-2.5 rounded-md border border-border bg-background focus:ring-2 focus:ring-teal-500 font-mono"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                          Email *
+                        </label>
+                        <input
+                          type="email"
+                          placeholder="warehouse@company.com"
+                          value={formData.email}
+                          onChange={(e) =>
+                            setFormData({ ...formData, email: e.target.value })
+                          }
+                          className="w-full p-2.5 rounded-md border border-border bg-background focus:ring-2 focus:ring-teal-500"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Settings & Configuration */}
+                  <div className="space-y-3 pt-3 border-t">
+                    <p className="text-xs font-bold uppercase tracking-wider text-teal-600">
+                      Settings & Status
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                          Status
+                        </label>
+                        <select
+                          value={formData.status}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              status: e.target.value as any,
+                            })
+                          }
+                          className="w-full p-2.5 rounded-md border border-border bg-background font-medium focus:ring-2 focus:ring-teal-500"
+                        >
+                          <option value="ACTIVE">ACTIVE</option>
+                          <option value="INACTIVE">INACTIVE</option>
+                        </select>
+                      </div>
+                      <div className="flex items-center pt-5">
+                        <label className="flex items-center gap-2 text-xs font-semibold text-foreground cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.isDefault}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                isDefault: e.target.checked,
+                              })
+                            }
+                            className="rounded border-border text-teal-600 focus:ring-teal-500 h-4 w-4"
+                          />
+                          Set as Default Warehouse
+                        </label>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                        Shiprocket Pickup Location Name (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Primary_Hub_01"
+                        value={formData.shiprocketPickupName}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            isDefault: e.target.checked,
+                            shiprocketPickupName: e.target.value,
                           })
                         }
-                        className="rounded border-border text-teal-600 focus:ring-teal-500 h-4 w-4"
+                        className="w-full p-2.5 rounded-md border border-border bg-background text-xs"
                       />
-                      Set as Default Warehouse
-                    </label>
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        Optional reference identifier for legacy Shiprocket pickup mapping.
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
-                    Shiprocket Pickup Location Name (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Primary_Hub_01"
-                    value={formData.shiprocketPickupName}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        shiprocketPickupName: e.target.value,
-                      })
-                    }
-                    className="w-full p-2 rounded-md border border-border bg-background text-xs"
-                  />
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    Optional reference for legacy Shiprocket pickup location mapping.
-                  </p>
-                </div>
-
-                <div className="flex gap-2 pt-3 border-t">
+                {/* Drawer Footer Actions */}
+                <div className="p-6 border-t bg-muted/20 flex gap-3">
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setShowModal(false)}
+                    onClick={() => setShowDrawer(false)}
                     className="flex-1 cursor-pointer"
                   >
                     Cancel
