@@ -262,7 +262,7 @@ export default function OrderDetailsPage({ params }: { params: any }) {
   const [courierName, setCourierName] = useState<string>('');
   const [actionLoading, setActionLoading] = useState(false);
 
-  const handleShiprocketAction = async (action: string) => {
+  const handleShippingAction = async (action: string) => {
     setActionLoading(true);
     try {
       const orderIdNumeric = parseInt(id.replace(/\D/g, '')) || 1234;
@@ -273,7 +273,7 @@ export default function OrderDetailsPage({ params }: { params: any }) {
       });
       const data = await res.json();
       if (res.ok) {
-        toast.success(`Shiprocket ${action.toUpperCase()} action processed successfully.`);
+        toast.success(`Shipping ${action.toUpperCase()} action processed successfully.`);
         if (action === 'create') {
           setShipmentStatus('CREATED');
         } else if (action === 'awb') {
@@ -738,12 +738,12 @@ export default function OrderDetailsPage({ params }: { params: any }) {
               </CardContent>
             </Card>
 
-            {/* Shiprocket Logistics Integration */}
+            {/* Shipping & Logistics Dispatch */}
             <Card className="border-primary/20 bg-primary/5">
               <CardHeader>
                 <CardTitle className="text-primary flex items-center gap-2">
                   <Truck className="h-5 w-5" />
-                  Shiprocket Dispatch
+                  Shipping Dispatch
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -771,9 +771,9 @@ export default function OrderDetailsPage({ params }: { params: any }) {
                   <Button
                     className="w-full"
                     disabled={actionLoading}
-                    onClick={() => handleShiprocketAction('create')}
+                    onClick={() => handleShippingAction('create')}
                   >
-                    Create Shiprocket Order
+                    Create Shipping Order
                   </Button>
                 )}
 
@@ -781,7 +781,7 @@ export default function OrderDetailsPage({ params }: { params: any }) {
                   <Button
                     className="w-full"
                     disabled={actionLoading}
-                    onClick={() => handleShiprocketAction('awb')}
+                    onClick={() => handleShippingAction('awb')}
                   >
                     Generate AWB Number
                   </Button>
@@ -791,7 +791,7 @@ export default function OrderDetailsPage({ params }: { params: any }) {
                   <Button
                     className="w-full"
                     disabled={actionLoading}
-                    onClick={() => handleShiprocketAction('pickup')}
+                    onClick={() => handleShippingAction('pickup')}
                   >
                     Schedule Pickup
                   </Button>
@@ -802,17 +802,17 @@ export default function OrderDetailsPage({ params }: { params: any }) {
                     <Button
                       className="w-full"
                       disabled={actionLoading}
-                      onClick={() => handleShiprocketAction('label')}
+                      onClick={() => handleShippingAction('label')}
                     >
-                      Download Shiprocket Label
+                      Download Shipping Label
                     </Button>
                     <Button
                       className="w-full"
                       variant="outline"
                       disabled={actionLoading}
-                      onClick={() => handleShiprocketAction('invoice')}
+                      onClick={() => handleShippingAction('invoice')}
                     >
-                      Download Shiprocket Invoice
+                      Download Shipping Invoice
                     </Button>
                   </div>
                 )}
@@ -822,9 +822,9 @@ export default function OrderDetailsPage({ params }: { params: any }) {
                     className="w-full" 
                     variant="destructive" 
                     disabled={actionLoading}
-                    onClick={() => handleShiprocketAction('cancel')}
+                    onClick={() => handleShippingAction('cancel')}
                   >
-                    Cancel Shiprocket Order
+                    Cancel Shipping Order
                   </Button>
                 )}
               </CardContent>

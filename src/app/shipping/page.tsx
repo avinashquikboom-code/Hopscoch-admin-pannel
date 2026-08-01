@@ -60,7 +60,7 @@ function normalizeShipment(raw: any) {
     orderId: raw.id,
     orderNumber: raw.orderNumber,
     customer: `${raw.user?.firstName || ''} ${raw.user?.lastName || ''}`.trim() || 'Customer',
-    courier: shipment.courier || 'Shiprocket Partner',
+    courier: shipment.courier || 'Courier Partner',
     awb: shipment.awb || '',
     status: shipment.status || raw.status || 'PENDING',
     date: raw.created_at ? new Date(raw.created_at).toLocaleDateString('en-CA') : new Date(raw.createdAt).toLocaleDateString('en-CA'),
@@ -155,7 +155,7 @@ export default function ShippingDashboardPage() {
 
   const shipmentColumns = useMemo<ColumnDef<any>[]>(() => [
     { accessorKey: 'id', header: 'Order ID' },
-    { accessorKey: 'shipment_id', header: 'Shiprocket Ref' },
+    { accessorKey: 'shipment_id', header: 'Shipment Ref' },
     { accessorKey: 'customer', header: 'Customer Name' },
     { accessorKey: 'city', header: 'Destination City' },
     { accessorKey: 'courier', header: 'Carrier Courier' },
@@ -292,7 +292,7 @@ export default function ShippingDashboardPage() {
                 <TableHeader className="bg-muted/30">
                   <TableRow className="hover:bg-transparent border-b border-border/20">
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Order ID</TableHead>
-                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Shiprocket Ref</TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">Shipment Ref</TableHead>
                     <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-4">
                       <Button variant="ghost" onClick={() => shipmentTable.getColumn('customer')?.toggleSorting(shipmentTable.getColumn('customer')?.getIsSorted() === 'asc')} className="p-0 font-bold hover:bg-transparent text-xs uppercase tracking-wider">
                         Customer Name <ArrowUpDown className="ml-1 h-3 w-3" />
@@ -396,7 +396,7 @@ export default function ShippingDashboardPage() {
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-foreground">Shipment Management</h2>
-                    <p className="text-xs text-muted-foreground mt-0.5 font-light">Manage Shiprocket actions and AWB details.</p>
+                    <p className="text-xs text-muted-foreground mt-0.5 font-light">Manage shipping actions and AWB details.</p>
                   </div>
                 </div>
 
@@ -405,7 +405,7 @@ export default function ShippingDashboardPage() {
                     <Card className="border-border/30 bg-muted/10 shadow-sm rounded-lg">
                       <CardContent className="p-4">
                         <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
-                          <Truck className="h-3.5 w-3.5 text-primary" /> Shiprocket ID
+                          <Truck className="h-3.5 w-3.5 text-primary" /> Shipment ID
                         </span>
                         <h4 className="text-sm font-mono mt-1.5">{selectedShipment.shipment_id || 'Not Created'}</h4>
                       </CardContent>
@@ -441,7 +441,7 @@ export default function ShippingDashboardPage() {
 
                   {/* Actions Area */}
                   <div className="space-y-3">
-                    <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Shiprocket Logistics Operations</h3>
+                    <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Courier & Logistics Operations</h3>
                     <div className="grid grid-cols-2 gap-3">
                       {!selectedShipment.shipment_id && (
                         <Button
