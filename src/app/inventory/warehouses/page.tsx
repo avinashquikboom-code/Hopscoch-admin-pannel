@@ -91,13 +91,42 @@ export default function WarehousesPage() {
     shiprocketPickupName: '',
   });
 
+  const smartFetch = async (path: string, options: RequestInit = {}) => {
+    const headers = { ...authHeaders(), ...(options.headers || {}) };
+    const opts = { ...options, headers };
+
+    // 1. Try standard /api/admin/... or /api/inventory/... first
+    const primaryUrl = `${API_BASE}${path}`;
+    let res = await fetch(primaryUrl, opts);
+
+    if (res.status === 404) {
+      // 2. If path is /api/admin/..., try /api/v1/admin/...
+      if (path.startsWith('/api/admin/')) {
+        const altUrl = `${API_BASE}/api/v1${path.replace('/api', '')}`;
+        const altRes = await fetch(altUrl, opts);
+        if (altRes.ok || altRes.status !== 404) return altRes;
+      }
+      // 3. If path is /api/v1/admin/..., try /api/admin/...
+      else if (path.startsWith('/api/v1/admin/')) {
+        const altUrl = `${API_BASE}/api${path.replace('/api/v1', '')}`;
+        const altRes = await fetch(altUrl, opts);
+        if (altRes.ok || altRes.status !== 404) return altRes;
+      }
+      // 4. If path is /api/inventory/..., try /api/v1/inventory/...
+      else if (path.startsWith('/api/inventory/')) {
+        const altUrl = `${API_BASE}/api/v1${path.replace('/api', '')}`;
+        const altRes = await fetch(altUrl, opts);
+        if (altRes.ok || altRes.status !== 404) return altRes;
+      }
+    }
+    return res;
+  };
+
   const fetchWarehouses = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/v1/admin/warehouses`, {
-        headers: authHeaders(),
-      });
+      const res = await smartFetch('/api/admin/warehouses');
       const json = await res.json();
       if (json.success && Array.isArray(json.data?.warehouses)) {
         setWarehouses(json.data.warehouses);
@@ -172,14 +201,13 @@ export default function WarehousesPage() {
     setSubmitting(true);
     try {
       const isEdit = !!editingWarehouse;
-      const url = isEdit
-        ? `${API_BASE}/api/v1/admin/warehouses/${editingWarehouse.id}`
-        : `${API_BASE}/api/v1/admin/warehouses`;
+      const path = isEdit
+        ? `/api/admin/warehouses/${editingWarehouse.id}`
+        : `/api/admin/warehouses`;
       const method = isEdit ? 'PUT' : 'POST';
 
-      const res = await fetch(url, {
+      const res = await smartFetch(path, {
         method,
-        headers: authHeaders(),
         body: JSON.stringify(formData),
       });
 
@@ -206,18 +234,21 @@ export default function WarehousesPage() {
     if (wh.isDefault) return;
     setSettingDefaultId(wh.id);
     try {
-      const res = await fetch(`${API_BASE}/api/v1/inventory/warehouses/${wh.id}/default`, {
+      let res = await smartFetch(`/api/inventory/warehouses/${wh.id}/default`, {
         method: 'POST',
-        headers: authHeaders(),
       });
+      if (res.status === 404) {
+        res = await smartFetch(`/api/inventory/warehouses/${wh.id}/set-default`, {
+          method: 'POST',
+        });
+      }
       const json = await res.json();
       if (res.ok) {
         toast.success(`${wh.name} is now the default warehouse`);
         fetchWarehouses();
       } else {
-        const fallbackRes = await fetch(`${API_BASE}/api/v1/admin/warehouses/${wh.id}`, {
+        const fallbackRes = await smartFetch(`/api/admin/warehouses/${wh.id}`, {
           method: 'PUT',
-          headers: authHeaders(),
           body: JSON.stringify({ isDefault: true }),
         });
         if (fallbackRes.ok) {
@@ -247,9 +278,8 @@ export default function WarehousesPage() {
 
     setDeleting(true);
     try {
-      const res = await fetch(`${API_BASE}/api/v1/admin/warehouses/${deleteId}`, {
+      const res = await smartFetch(`/api/admin/warehouses/${deleteId}`, {
         method: 'DELETE',
-        headers: authHeaders(),
       });
       const json = await res.json();
       if (res.ok) {
