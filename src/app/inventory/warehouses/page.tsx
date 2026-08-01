@@ -234,21 +234,16 @@ export default function WarehousesPage() {
     if (wh.isDefault) return;
     setSettingDefaultId(wh.id);
     try {
-      // 1. Try standard inventory route /set-default
-      let res = await smartFetch(`/api/inventory/warehouses/${wh.id}/set-default`, {
-        method: 'POST',
+      // Primary: PUT /api/admin/warehouses/:id with { isDefault: true }
+      let res = await smartFetch(`/api/admin/warehouses/${wh.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ isDefault: true }),
       });
-      // 2. Fallback to /default
-      if (res.status === 404) {
-        res = await smartFetch(`/api/inventory/warehouses/${wh.id}/default`, {
-          method: 'POST',
-        });
-      }
-      // 3. Fallback to admin update endpoint PUT /api/admin/warehouses/:id
+
+      // Fallback: POST /api/inventory/warehouses/:id/set-default
       if (res.status === 404 || !res.ok) {
-        res = await smartFetch(`/api/admin/warehouses/${wh.id}`, {
-          method: 'PUT',
-          body: JSON.stringify({ isDefault: true }),
+        res = await smartFetch(`/api/inventory/warehouses/${wh.id}/set-default`, {
+          method: 'POST',
         });
       }
 
