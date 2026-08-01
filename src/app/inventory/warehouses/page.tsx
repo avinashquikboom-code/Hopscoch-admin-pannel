@@ -495,16 +495,14 @@ export default function WarehousesPage() {
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
-                          Warehouse Code
+                          Warehouse Code (Auto-generated)
                         </label>
                         <input
                           type="text"
-                          placeholder="Auto-generated if empty"
                           value={formData.code}
-                          onChange={(e) =>
-                            setFormData({ ...formData, code: e.target.value })
-                          }
-                          className="w-full p-2.5 rounded-md border border-border bg-background font-mono focus:ring-2 focus:ring-teal-500"
+                          readOnly
+                          disabled
+                          className="w-full p-2.5 rounded-md border border-border/60 bg-muted/50 font-mono text-muted-foreground cursor-not-allowed select-none opacity-80"
                         />
                       </div>
                     </div>
