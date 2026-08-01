@@ -95,7 +95,7 @@ export default function WarehousesPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/admin/warehouses`, {
+      const res = await fetch(`${API_BASE}/api/v1/admin/warehouses`, {
         headers: authHeaders(),
       });
       const json = await res.json();
@@ -173,8 +173,8 @@ export default function WarehousesPage() {
     try {
       const isEdit = !!editingWarehouse;
       const url = isEdit
-        ? `${API_BASE}/admin/warehouses/${editingWarehouse.id}`
-        : `${API_BASE}/admin/warehouses`;
+        ? `${API_BASE}/api/v1/admin/warehouses/${editingWarehouse.id}`
+        : `${API_BASE}/api/v1/admin/warehouses`;
       const method = isEdit ? 'PUT' : 'POST';
 
       const res = await fetch(url, {
@@ -206,7 +206,7 @@ export default function WarehousesPage() {
     if (wh.isDefault) return;
     setSettingDefaultId(wh.id);
     try {
-      const res = await fetch(`${API_BASE}/inventory/warehouses/${wh.id}/default`, {
+      const res = await fetch(`${API_BASE}/api/v1/inventory/warehouses/${wh.id}/default`, {
         method: 'POST',
         headers: authHeaders(),
       });
@@ -215,7 +215,7 @@ export default function WarehousesPage() {
         toast.success(`${wh.name} is now the default warehouse`);
         fetchWarehouses();
       } else {
-        const fallbackRes = await fetch(`${API_BASE}/admin/warehouses/${wh.id}`, {
+        const fallbackRes = await fetch(`${API_BASE}/api/v1/admin/warehouses/${wh.id}`, {
           method: 'PUT',
           headers: authHeaders(),
           body: JSON.stringify({ isDefault: true }),
@@ -247,7 +247,7 @@ export default function WarehousesPage() {
 
     setDeleting(true);
     try {
-      const res = await fetch(`${API_BASE}/admin/warehouses/${deleteId}`, {
+      const res = await fetch(`${API_BASE}/api/v1/admin/warehouses/${deleteId}`, {
         method: 'DELETE',
         headers: authHeaders(),
       });
