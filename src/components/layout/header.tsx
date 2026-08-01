@@ -56,6 +56,53 @@ export function Header({ onMenuClick }: HeaderProps) {
     }
   }, []);
 
+  // Notifications state
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    let isMounted = true;
+    let prevIds = new Set<string>();
+
+    const fetchNotifications = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const res = await fetch(`${API_BASE}/notifications/my`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const json = await res.json();
+
+        if (json.success && Array.isArray(json.data) && isMounted) {
+          const items = json.data;
+          setNotifications(items);
+          const unread = items.filter((n: any) => !n.isRead).length;
+          setUnreadCount(unread);
+
+          // Check if new notification arrived
+          items.forEach((item: any) => {
+            const idStr = String(item.id);
+            if (prevIds.size > 0 && !prevIds.has(idStr)) {
+              toast.success(`🛍️ ${item.title}: ${item.body}`);
+            }
+            prevIds.add(idStr);
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch admin notifications:', err);
+      }
+    };
+
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 10000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
   // Fetch store region coordinates on mount
   useEffect(() => {
     const fetchRegionData = async () => {
@@ -340,41 +387,42 @@ export function Header({ onMenuClick }: HeaderProps) {
           <DropdownMenuTrigger render={
             <div className="relative rounded-md p-2 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors cursor-pointer border-none bg-transparent">
               <Bell className="h-5 w-5" />
-              <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#14b8a6] text-black text-[10px] font-black leading-none px-1 border-2 border-background">
-                3
-              </span>
+              {unreadCount > 0 && (
+                <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#14b8a6] text-black text-[10px] font-black leading-none px-1 border-2 border-background">
+                  {unreadCount}
+                </span>
+              )}
             </div>
           } />
           <DropdownMenuContent align="end" className="w-80 p-2 rounded-lg bg-card/95 border border-border/30 backdrop-blur-lg">
-            <DropdownMenuLabel className="font-bold text-sm text-foreground px-2 py-1.5">
-              Notifications
+            <DropdownMenuLabel className="font-bold text-sm text-foreground px-2 py-1.5 flex justify-between items-center">
+              <span>Notifications</span>
+              {unreadCount > 0 && <span className="text-[10px] bg-[#14b8a6]/20 text-[#14b8a6] px-1.5 py-0.5 rounded font-bold">{unreadCount} New</span>}
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="my-1 border-border/20" />
             <div className="max-h-80 overflow-y-auto space-y-1">
-              <DropdownMenuItem className="flex flex-col items-start gap-1 p-3 rounded-md hover:bg-muted/50 cursor-pointer">
-                <div className="flex items-center gap-2 w-full">
-                  <span className="inline-flex h-2 w-2 rounded-full bg-[#14b8a6] flex-shrink-0" />
-                  <span className="font-semibold text-sm text-foreground">New Order</span>
-                  <span className="text-[11px] text-muted-foreground ml-auto">2m ago</span>
-                </div>
-                <p className="text-xs text-muted-foreground pl-4">Order #12345 has been placed</p>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex flex-col items-start gap-1 p-3 rounded-md hover:bg-muted/50 cursor-pointer">
-                <div className="flex items-center gap-2 w-full">
-                  <span className="inline-flex h-2 w-2 rounded-full bg-amber-400 flex-shrink-0" />
-                  <span className="font-semibold text-sm text-foreground">Low Stock Alert</span>
-                  <span className="text-[11px] text-muted-foreground ml-auto">1h ago</span>
-                </div>
-                <p className="text-xs text-muted-foreground pl-4">5 products are running low on stock</p>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex flex-col items-start gap-1 p-3 rounded-md hover:bg-muted/50 cursor-pointer">
-                <div className="flex items-center gap-2 w-full">
-                  <span className="inline-flex h-2 w-2 rounded-full bg-violet-400 flex-shrink-0" />
-                  <span className="font-semibold text-sm text-foreground">New Review</span>
-                  <span className="text-[11px] text-muted-foreground ml-auto">3h ago</span>
-                </div>
-                <p className="text-xs text-muted-foreground pl-4">New review received on Summer Dress</p>
-              </DropdownMenuItem>
+              {notifications.length === 0 ? (
+                <div className="p-4 text-center text-xs text-muted-foreground">No recent notifications</div>
+              ) : (
+                notifications.slice(0, 5).map((n) => (
+                  <DropdownMenuItem
+                    key={n.id}
+                    onClick={() => {
+                      if (n.data?.orderId) router.push(`/orders/${n.data.orderId}`);
+                    }}
+                    className="flex flex-col items-start gap-1 p-3 rounded-md hover:bg-muted/50 cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2 w-full">
+                      <span className={`inline-flex h-2 w-2 rounded-full ${n.isRead ? 'bg-muted-foreground/30' : 'bg-[#14b8a6]'} flex-shrink-0`} />
+                      <span className="font-semibold text-sm text-foreground">{n.title}</span>
+                      <span className="text-[10px] text-muted-foreground ml-auto">
+                        {n.createdAt ? new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground pl-4 line-clamp-2">{n.body || n.message}</p>
+                  </DropdownMenuItem>
+                ))
+              )}
             </div>
             <DropdownMenuSeparator className="my-1 border-border/20" />
             <DropdownMenuItem 
