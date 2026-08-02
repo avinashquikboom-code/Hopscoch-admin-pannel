@@ -38,7 +38,7 @@ export default function IntegrationsSettingsPage() {
   const [razorpay, setRazorpay] = useState({ key_id: '', key_secret: '' });
   const [google, setGoogle] = useState({ gemini_api_key: '', maps_api_key: '' });
   const [aws, setAws] = useState({ access_key_id: '', secret_access_key: '', region: 'ap-south-1', bucket_name: '' });
-  const [msg91, setMsg91] = useState({ auth_key: '', sender_id: 'HOPSCH', dlt_te_id: '', flow_id: '' });
+  const [msg91, setMsg91] = useState({ auth_key: '', sender_id: 'FCISEL', dlt_te_id: '', flow_id: '' });
   const [firebase, setFirebase] = useState({ api_key: '', project_id: '', messaging_sender_id: '', app_id: '', fcm_server_key: '' });
 
   // Show/Hide password states
@@ -711,7 +711,7 @@ export default function IntegrationsSettingsPage() {
                       id="msg91SenderId"
                       value={msg91.sender_id}
                       onChange={(e) => setMsg91({ ...msg91, sender_id: e.target.value.toUpperCase() })}
-                      placeholder="e.g. HOPSCH"
+                      placeholder="e.g. FCISEL"
                       maxLength={6}
                       className="rounded-lg border-border/60 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 h-11 text-sm font-mono uppercase tracking-wider"
                     />
@@ -873,7 +873,7 @@ export default function IntegrationsSettingsPage() {
                       id="firebaseProjectId"
                       value={firebase.project_id}
                       onChange={(e) => setFirebase({ ...firebase, project_id: e.target.value })}
-                      placeholder="e.g. hopscotch-fashion-prod"
+                      placeholder="e.g. fciseller-prod"
                       className="rounded-lg border-border/60 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 h-11 text-sm font-mono"
                     />
                   </div>
