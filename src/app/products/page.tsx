@@ -105,6 +105,7 @@ function normalizeProduct(raw: any) {
     name: raw.name || raw.title || 'Unnamed Product',
     sku: raw.sku || skuFromVariant || raw.code || `SKU-${raw.id ? String(raw.id).slice(0, 6) : '000'}`,
     price: Number(raw.basePrice || raw.price || raw.sellingPrice || raw.mrp || 0),
+    margin: Number(raw.margin ?? 0),
     shippingCharge: Number(raw.shippingCharge ?? raw.shipping_charge ?? 0),
     isGiftWrapAvailable: raw.isGiftWrapAvailable ?? raw.is_gift_wrap_available ?? true,
     giftWrapCharge: Number(raw.giftWrapCharge ?? raw.gift_wrap_charge ?? 0),
@@ -164,6 +165,7 @@ export default function ProductsPage() {
   const [editName, setEditName] = useState('');
   const [editSku, setEditSku] = useState('');
   const [editPrice, setEditPrice] = useState('');
+  const [editMargin, setEditMargin] = useState('0.00');
   const [editStock, setEditStock] = useState('');
   const [editShippingCharge, setEditShippingCharge] = useState('');
   const [editShippingType, setEditShippingType] = useState<'free' | 'paid'>('free');
@@ -190,6 +192,7 @@ export default function ProductsPage() {
     setEditName(product.name || '');
     setEditSku(product.sku || '');
     setEditPrice(String(product.price ?? 0));
+    setEditMargin(String(product.margin ?? 0));
     setEditStock(String(product.stock ?? 0));
     setEditShippingCharge(String(product.shippingCharge ?? 0));
     setEditShippingType(Number(product.shippingCharge ?? 0) > 0 ? 'paid' : 'free');
@@ -541,6 +544,7 @@ export default function ProductsPage() {
       name: formData.name, 
       sku: formData.sku && formData.sku.trim() !== '' ? formData.sku.trim() : undefined,
       price: parseFloat(formData.price) || 0,
+      margin: parseFloat(formData.margin) || 0,
       shippingCharge: finalShippingCharge,
       isGiftWrapAvailable: formData.isGiftWrapAvailable,
       giftWrapCharge: formData.isGiftWrapAvailable ? (parseFloat(formData.giftWrapCharge) || 0) : 0,
@@ -638,6 +642,7 @@ export default function ProductsPage() {
       name: editName,
       sku: editSku,
       price: parseFloat(editPrice) || 0,
+      margin: parseFloat(editMargin) || 0,
       stock: editStock !== '' ? parseInt(editStock) : selectedProduct.stock,
       shippingCharge: parseFloat(editShippingCharge) || 0,
       isGiftWrapAvailable: editIsGiftWrapAvailable,
@@ -669,6 +674,7 @@ export default function ProductsPage() {
         name: editName,
         sku: editSku || undefined,
         price: parseFloat(editPrice) || 0,
+        margin: parseFloat(editMargin) || 0,
         stock: editStock !== '' ? parseInt(editStock) : undefined,
         shippingCharge: parseFloat(editShippingCharge) || 0,
         isGiftWrapAvailable: editIsGiftWrapAvailable,
@@ -2139,11 +2145,35 @@ export default function ProductsPage() {
                         </div>
                       </div>
 
-                      {/* Pricing & Stock */}
-                      <div className="grid grid-cols-2 gap-3">
+                      {/* Pricing, Margin & Stock */}
+                      <div className="grid grid-cols-3 gap-3">
                         <div className="space-y-1">
                           <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Price (₹)</Label>
                           <Input type="number" step="0.01" value={editPrice} onChange={e => setEditPrice(e.target.value)} className="h-9 rounded-lg border-border/50 bg-background font-mono text-xs focus:border-primary" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Margin (%)</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            max="100"
+                            value={editMargin}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              const num = parseFloat(val);
+                              if (num < 0) {
+                                toast.error('Margin cannot be negative');
+                                return;
+                              }
+                              if (num > 100) {
+                                toast.error('Margin cannot exceed 100%');
+                              }
+                              setEditMargin(val);
+                            }}
+                            placeholder="e.g. 15.00"
+                            className="h-9 rounded-lg border-border/50 bg-background font-mono text-xs focus:border-primary"
+                          />
                         </div>
                         <div className="space-y-1">
                           <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Stock Qty</Label>
@@ -2559,6 +2589,12 @@ export default function ProductsPage() {
                             <div className="p-2.5 rounded-lg bg-background border border-border/30 space-y-0.5">
                               <span className="text-[10px] font-semibold text-muted-foreground uppercase block">Age Group</span>
                               <span className="font-bold text-foreground block uppercase">{selectedProduct.ageGroup || 'ADULT'}</span>
+                            </div>
+                            <div className="p-2.5 rounded-lg bg-background border border-border/30 space-y-0.5">
+                              <span className="text-[10px] font-semibold text-muted-foreground uppercase block">Margin (%)</span>
+                              <span className="font-bold text-foreground block font-mono">
+                                {selectedProduct.margin ? `${selectedProduct.margin}%` : '0.00%'}
+                              </span>
                             </div>
                             <div className="p-2.5 rounded-lg bg-background border border-border/30 space-y-0.5">
                               <span className="text-[10px] font-semibold text-muted-foreground uppercase block">Tax & HSN</span>

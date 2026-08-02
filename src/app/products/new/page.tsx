@@ -294,6 +294,7 @@ export default function NewProductPage() {
       sku: formDataObj.get('sku') as string,
       price: parsedPrice,
       basePrice: parsedPrice,
+      margin: parseFloat(margin) || 0,
       shippingCharge: parsedShippingCharge,
       stock: parsedStock,
       categoryId: Number(selectedSubCategory || selectedCategory),
