@@ -631,7 +631,7 @@ export default function NotificationsPage() {
                             <div className="h-5 w-5 rounded bg-primary flex items-center justify-center">
                               <Bell className="h-3 w-3 text-white" />
                             </div>
-                            <span className="text-[10px] font-bold text-white/80 uppercase tracking-wide">Aura Store</span>
+                            <span className="text-[10px] font-bold text-white/80 uppercase tracking-wide">FCI Seller</span>
                           </div>
                           <span className="text-[9px] text-white/50">now</span>
                         </div>
