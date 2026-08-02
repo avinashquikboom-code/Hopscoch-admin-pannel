@@ -1550,13 +1550,12 @@ export default function ProductsPage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="margin" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Margin (%)</Label>
+                    <Label htmlFor="margin" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Max Margin (₹)</Label>
                     <Input
                       id="margin"
                       type="number"
                       step="0.01"
                       min="0"
-                      max="100"
                       value={formData.margin}
                       onChange={(e) => {
                         const val = e.target.value;
@@ -1565,12 +1564,9 @@ export default function ProductsPage() {
                           toast.error('Margin cannot be negative');
                           return;
                         }
-                        if (num > 100) {
-                          toast.error('Margin cannot exceed 100%');
-                        }
                         setFormData({ ...formData, margin: val });
                       }}
-                      placeholder="e.g. 15.00"
+                      placeholder="e.g. 500.00"
                       className="rounded-lg border-border/50 focus:border-primary focus:ring-1 focus:ring-primary/20 h-11"
                     />
                   </div>
@@ -2153,12 +2149,11 @@ export default function ProductsPage() {
                           <Input type="number" step="0.01" value={editPrice} onChange={e => setEditPrice(e.target.value)} className="h-9 rounded-lg border-border/50 bg-background font-mono text-xs focus:border-primary" />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Margin (%)</Label>
+                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Max Margin (₹)</Label>
                           <Input
                             type="number"
                             step="0.01"
                             min="0"
-                            max="100"
                             value={editMargin}
                             onChange={(e) => {
                               const val = e.target.value;
@@ -2167,12 +2162,9 @@ export default function ProductsPage() {
                                 toast.error('Margin cannot be negative');
                                 return;
                               }
-                              if (num > 100) {
-                                toast.error('Margin cannot exceed 100%');
-                              }
                               setEditMargin(val);
                             }}
-                            placeholder="e.g. 15.00"
+                            placeholder="e.g. 500.00"
                             className="h-9 rounded-lg border-border/50 bg-background font-mono text-xs focus:border-primary"
                           />
                         </div>
@@ -2592,9 +2584,9 @@ export default function ProductsPage() {
                               <span className="font-bold text-foreground block uppercase">{selectedProduct.ageGroup || 'ADULT'}</span>
                             </div>
                             <div className="p-2.5 rounded-lg bg-background border border-border/30 space-y-0.5">
-                              <span className="text-[10px] font-semibold text-muted-foreground uppercase block">Margin (%)</span>
+                              <span className="text-[10px] font-semibold text-muted-foreground uppercase block">Max Margin (₹)</span>
                               <span className="font-bold text-foreground block font-mono">
-                                {selectedProduct.margin ? `${selectedProduct.margin}%` : '0.00%'}
+                                ₹{Number(selectedProduct.margin || 0).toFixed(2)}
                               </span>
                             </div>
                             <div className="p-2.5 rounded-lg bg-background border border-border/30 space-y-0.5">

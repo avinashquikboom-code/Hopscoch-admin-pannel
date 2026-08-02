@@ -75,8 +75,6 @@ export default function NewProductPage() {
       setMarginError(null);
     } else if (num < 0) {
       setMarginError('Margin cannot be negative');
-    } else if (num > 100) {
-      setMarginError('Margin cannot exceed 100%');
     } else {
       setMarginError(null);
     }
@@ -672,14 +670,13 @@ export default function NewProductPage() {
                       <Input id="mrp" type="number" step="0.01" placeholder="0.00" />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="margin" className="font-bold">Margin (%)</Label>
+                      <Label htmlFor="margin" className="font-bold">Max Margin (₹)</Label>
                       <Input 
                         id="margin" 
                         type="number" 
                         step="0.01" 
                         min="0"
-                        max="100"
-                        placeholder="e.g. 15.00" 
+                        placeholder="e.g. 500.00" 
                         value={margin}
                         onChange={(e) => handleMarginChange(e.target.value)}
                         className={marginError ? 'border-destructive focus:border-destructive' : ''}
