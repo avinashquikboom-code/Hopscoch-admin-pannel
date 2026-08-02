@@ -214,6 +214,8 @@ function generateFciSellerInvoiceHtml(order: any, currencySymbol: string = '₹'
   const dateStr = order.date || new Date().toLocaleDateString('en-IN');
   const invoiceNo = `INV-FCI-${(order.id || '').replace(/[^a-zA-Z0-9]/g, '')}`;
   const totalAmt = Number(order.amount || 0);
+  const sellerName = order.sellerNameSnapshot || order.sellerName || 'FCI Seller Retail Pvt. Ltd.';
+  const sellerContact = order.sellerContactSnapshot || order.sellerContact || '+91 9876543210';
 
   const taxableTotal = totalAmt / 1.18;
   const totalGst = totalAmt - taxableTotal;
@@ -291,9 +293,9 @@ function generateFciSellerInvoiceHtml(order: any, currencySymbol: string = '₹'
     <!-- Header -->
     <div class="header">
       <div>
-        <div class="logo">FCI <span>SELLER</span></div>
-        <p style="font-size: 12px; color: #0f172a; margin: 4px 0 0 0; font-weight: 700;">FCI Seller Retail Pvt. Ltd.</p>
-        <p style="font-size: 11px; color: #64748b; margin: 2px 0 0 0;">Official E-Commerce Marketplace Partner</p>
+        <div class="logo">${sellerName.split(' ')[0]} <span>${sellerName.split(' ').slice(1).join(' ')}</span></div>
+        <p style="font-size: 12px; color: #0f172a; margin: 4px 0 0 0; font-weight: 700;">${sellerName}</p>
+        <p style="font-size: 11px; color: #64748b; margin: 2px 0 0 0;">Contact: ${sellerContact}</p>
       </div>
       <div>
         <div class="invoice-title">Tax Invoice</div>
@@ -403,7 +405,7 @@ function generateFciSellerInvoiceHtml(order: any, currencySymbol: string = '₹'
         <p style="margin: 2px 0;">3. This is a computer-generated tax invoice for FCI Seller and requires no physical signature.</p>
       </div>
       <div class="signatory">
-        <p style="margin: 0; color: #64748b; font-size: 11px;">For <strong>FCI SELLER Retail Pvt. Ltd.</strong></p>
+        <p style="margin: 0; color: #64748b; font-size: 11px;">For <strong>${sellerName}</strong></p>
         <div class="signatory-space"></div>
         <p style="margin: 0; font-size: 11px;">Authorized Signatory</p>
       </div>
