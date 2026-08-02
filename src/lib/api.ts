@@ -171,18 +171,18 @@ export const api = {
       apiRequest<any>('/api/admin/profile', { method: 'PUT', body: JSON.stringify(body) }),
   },
 
-  // Orders — admin endpoints (see /api/admin/orders)
+  // Orders — admin endpoints (see /api/v1/admin/orders)
   orders: {
     getAll: (params?: Record<string, string>) => {
       const qs = params ? '?' + new URLSearchParams(params).toString() : '';
-      return apiRequest<any>(`/api/admin/orders${qs}`);
+      return apiRequest<any>(`/api/v1/admin/orders${qs}`);
     },
-    getById: (id: string | number) => apiRequest<any>(`/api/admin/orders/${id}`),
+    getById: (id: string | number) => apiRequest<any>(`/api/v1/admin/orders/${id}`),
     updateStatus: (id: string | number, status: string) =>
-      apiRequest<any>(`/api/admin/orders/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) }),
-    getTimeline: (id: string | number) => apiRequest<any>(`/api/admin/orders/${id}/timeline`),
+      apiRequest<any>(`/api/v1/admin/orders/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+    getTimeline: (id: string | number) => apiRequest<any>(`/api/v1/admin/orders/${id}/timeline`),
     cancel: (id: string | number) =>
-      apiRequest<any>(`/api/admin/orders/${id}`, { method: 'PATCH', body: JSON.stringify({ status: 'CANCELLED' }) }),
+      apiRequest<any>(`/api/v1/admin/orders/${id}`, { method: 'PATCH', body: JSON.stringify({ status: 'CANCELLED' }) }),
   },
 
   // Products

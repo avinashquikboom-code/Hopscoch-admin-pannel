@@ -494,7 +494,7 @@ export default function OrdersPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/admin/orders`, { headers: authHeaders() });
+      const res = await fetch(`${API_BASE}/api/v1/admin/orders`, { headers: authHeaders() });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json.message || `Failed to load orders (${res.status})`);
       const rawData = json.data?.orders ?? json.orders ?? json.data ?? json ?? [];
@@ -553,7 +553,7 @@ export default function OrdersPage() {
         refund_completed: 'REFUND_COMPLETED',
       };
       const dbStatus = STATUS_MAP[newStatus] || newStatus.toUpperCase();
-      await fetch(`${API_BASE}/api/admin/orders/${rawId}`, {
+      await fetch(`${API_BASE}/api/v1/admin/orders/${rawId}`, {
         method: 'PATCH',
         headers: authHeaders(),
         body: JSON.stringify({ status: dbStatus }),

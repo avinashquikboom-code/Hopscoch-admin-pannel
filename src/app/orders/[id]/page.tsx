@@ -71,8 +71,8 @@ export default function OrderDetailsPage({ params }: { params: any }) {
     setOrderError(null);
 
     Promise.all([
-      fetch(`${API_BASE}/admin/orders/${numericId}`, { headers: authHeaders() }).then(r => r.json()).catch(() => ({})),
-      fetch(`${API_BASE}/admin/orders/${numericId}/timeline`, { headers: authHeaders() }).then(r => r.json()).catch(() => ({})),
+      fetch(`${API_BASE}/api/v1/admin/orders/${numericId}`, { headers: authHeaders() }).then(r => r.json()).catch(() => ({})),
+      fetch(`${API_BASE}/api/v1/admin/orders/${numericId}/timeline`, { headers: authHeaders() }).then(r => r.json()).catch(() => ({})),
     ]).then(([orderJson, timelineJson]) => {
       const rawOrder = orderJson?.data ?? orderJson;
       if (!rawOrder || typeof rawOrder !== 'object' || (!rawOrder.id && !rawOrder.orderNumber)) {
@@ -153,7 +153,7 @@ export default function OrderDetailsPage({ params }: { params: any }) {
   const handleUpdateStatus = async (newStatus: string, courierName?: string, awbNumber?: string) => {
     try {
       const numericId = orderDetails?.numericId || id.replace(/\D/g, '');
-      const res = await fetch(`${API_BASE}/admin/orders/${numericId}`, {
+      const res = await fetch(`${API_BASE}/api/v1/admin/orders/${numericId}`, {
         method: 'PATCH',
         headers: authHeaders(),
         body: JSON.stringify({

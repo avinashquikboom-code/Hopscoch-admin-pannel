@@ -284,7 +284,7 @@ export default function InvoicesPage() {
   const fetchInvoices = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/admin/orders`, { credentials: 'omit', headers: authHeaders() });
+      const res = await fetch(`${API_BASE}/api/v1/admin/orders`, { credentials: 'omit', headers: authHeaders() });
       if (res.ok) {
         const json = await res.json();
         const rawOrders = Array.isArray(json) ? json : (json?.data?.orders || json?.orders || json?.data || []);
