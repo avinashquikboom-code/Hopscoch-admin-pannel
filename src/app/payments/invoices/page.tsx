@@ -52,7 +52,7 @@ import {
 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { API_BASE, authHeaders } from '@/lib/api';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 interface InvoiceItem {
   id: string;
