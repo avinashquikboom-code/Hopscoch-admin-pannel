@@ -128,9 +128,12 @@ export default function ShippingDashboardPage() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || 'Failed to load shipments');
       const raw = json.data?.shipments || [];
-      setShipmentsList(raw.map(normalizeShipment));
+      const list = raw.map(normalizeShipment);
+      setShipmentsList(list);
+      return list;
     } catch (e: any) {
       setError(e.message);
+      return [];
     } finally {
       setLoading(false);
     }
@@ -187,10 +190,25 @@ export default function ShippingDashboardPage() {
       const data = await res.json();
       if (res.ok) {
         toast.success(`${action.toUpperCase()} action processed successfully.`);
+        
+        const payload = data.data || {};
+        const docUrl = payload.invoiceUrl || payload.invoice_url || payload.labelUrl;
+        if (docUrl) {
+          const fullUrl = docUrl.startsWith('http') ? docUrl : `${API_BASE}${docUrl}`;
+          window.open(fullUrl, '_blank');
+        }
+
         // Reload details
-        fetchShipments();
+        const updatedList = await fetchShipments();
         fetchDashboardStats();
-        setSelectedShipment(null);
+
+        // Keep selected shipment updated
+        if (selectedShipment) {
+          const updatedSelected = (updatedList || shipmentsList).find((s: any) => s.orderId === orderId);
+          if (updatedSelected) {
+            setSelectedShipment(updatedSelected);
+          }
+        }
       } else {
         toast.error(data.message || `Action ${action} failed.`);
       }
