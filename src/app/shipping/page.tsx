@@ -511,13 +511,23 @@ export default function ShippingDashboardPage() {
                     <div className="space-y-2">
                       <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Document Downloads</h3>
                       {selectedShipment.labelUrl && (
-                        <a href={selectedShipment.labelUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-xs text-primary font-bold hover:underline">
-                          <FileText className="w-4 h-4" /> Download Shipping Label PDF
+                        <a
+                          href={selectedShipment.labelUrl.startsWith('http') ? selectedShipment.labelUrl : `${API_BASE}${selectedShipment.labelUrl}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-2 text-xs text-primary font-bold hover:underline"
+                        >
+                          <FileText className="w-4 h-4" /> Download Shipping Label PDF / HTML
                         </a>
                       )}
                       {selectedShipment.invoiceUrl && (
-                        <a href={selectedShipment.invoiceUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-xs text-primary font-bold hover:underline">
-                          <FileText className="w-4 h-4" /> Download Customer Invoice PDF
+                        <a
+                          href={selectedShipment.invoiceUrl.startsWith('http') ? selectedShipment.invoiceUrl : `${API_BASE}${selectedShipment.invoiceUrl}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-2 text-xs text-primary font-bold hover:underline"
+                        >
+                          <FileText className="w-4 h-4" /> Download Customer Invoice PDF / HTML
                         </a>
                       )}
                     </div>
