@@ -74,7 +74,9 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 
 function authHeaders(): HeadersInit {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+  const token = typeof window !== 'undefined'
+    ? localStorage.getItem('auth_token') || localStorage.getItem('token') || localStorage.getItem('admin_token')
+    : null;
   return { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
 }
 

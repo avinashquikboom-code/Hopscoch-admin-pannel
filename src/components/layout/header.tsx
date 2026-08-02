@@ -66,10 +66,10 @@ export function Header({ onMenuClick }: HeaderProps) {
 
     const fetchNotifications = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('auth_token') || localStorage.getItem('token') || localStorage.getItem('admin_token');
         if (!token) return;
 
-        const res = await fetch(`${API_BASE}/notifications/my`, {
+        const res = await fetch(`${API_BASE}/api/notifications/my`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const json = await res.json();
