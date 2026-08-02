@@ -535,17 +535,31 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addToast = useCallback((toastData: Omit<Toast, "id">) => {
-    // Prevent duplicate alerts in quick succession
-    const toastKey = `${toastData.type}:${toastData.message}`;
+    // Prevent duplicate alerts in quick succession using fuzzy normalization
+    const cleanMsg = (toastData.message || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "");
+
+    const toastKey = `${toastData.type}:${cleanMsg}`;
     if (recentToasts.has(toastKey)) {
       return "";
     }
     recentToasts.add(toastKey);
-    setTimeout(() => recentToasts.delete(toastKey), 1500);
+    setTimeout(() => recentToasts.delete(toastKey), 2000);
 
     const id = Math.random().toString(36).substring(2, 9);
     
     setToasts(prev => {
+      // Don't add duplicate toast if a matching type and fuzzy message is already visible
+      const isAlreadyVisible = prev.some(t => {
+        const existingClean = (t.message || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+        return t.type === toastData.type && (existingClean === cleanMsg || (cleanMsg.length > 5 && existingClean.includes(cleanMsg)) || (existingClean.length > 5 && cleanMsg.includes(existingClean)));
+      });
+
+      if (isAlreadyVisible) {
+        return prev;
+      }
+
       const newToastList = [...prev, { id, ...toastData }];
       if (newToastList.length > 3) {
         return newToastList.slice(newToastList.length - 3); // Max 3 toasts at a time
