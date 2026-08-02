@@ -224,6 +224,7 @@ export default function ProductsPage() {
             setEditName(raw.name || '');
             setEditSku(raw.sku || (raw.variants && raw.variants[0]?.sku) || '');
             setEditPrice(String(raw.basePrice ?? raw.price ?? 0));
+            setEditMargin(String(raw.margin ?? 0));
             setEditStock(String(raw.stock ?? (raw.variants && raw.variants[0]?.stock) ?? 0));
             const rawShipCharge = raw.shippingCharge ?? raw.shipping_charge ?? 0;
             setEditShippingCharge(String(rawShipCharge));
