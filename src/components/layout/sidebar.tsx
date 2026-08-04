@@ -133,10 +133,12 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
       name: 'Marketing',
       icon: ImageIcon,
       items: [
+        { name: 'Play, Posts & Stories', href: '/content' },
         { name: 'Banners', href: '/banners' },
         { name: 'Notifications', href: '/notifications' },
       ],
     },
+
     {
       name: 'Analytics',
       icon: BarChart3,
