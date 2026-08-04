@@ -88,6 +88,14 @@ export default function SettingsPage() {
     storeName: 'FCI Seller',
     sellerName: 'FCI Seller Retail Pvt. Ltd.',
     sellerContactNumber: '+91 9876543210',
+    // Seller legal fields (for invoice Sold By section)
+    sellerLegalName: '',
+    sellerGstNumber: '',
+    sellerAddress: '',
+    sellerCity: '',
+    sellerState: '',
+    sellerPincode: '',
+    sellerEmail: '',
     storeEmail: 'admin@fciseller.com',
     storePhone: '+91 9876543210',
     storeAddress: '123 Fashion Street, New York, NY 10001',
@@ -370,12 +378,56 @@ export default function SettingsPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label htmlFor="sellerName" className="text-xs font-bold uppercase tracking-wider text-primary">Seller Legal Business Name</Label>
+                    <Label htmlFor="sellerName" className="text-xs font-bold uppercase tracking-wider text-primary">Seller Display Name</Label>
                     <Input id="sellerName" value={config.sellerName} onChange={e => setConfig(prev => ({ ...prev, sellerName: e.target.value }))} placeholder="e.g. FCI Seller Retail Pvt. Ltd." className="h-10 rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20" />
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="sellerContactNumber" className="text-xs font-bold uppercase tracking-wider text-primary">Seller Contact Phone Number</Label>
                     <Input id="sellerContactNumber" type="tel" value={config.sellerContactNumber} onChange={e => setConfig(prev => ({ ...prev, sellerContactNumber: e.target.value }))} placeholder="e.g. +91 9876543210" className="h-10 rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20" />
+                  </div>
+                </div>
+
+                {/* ── Seller Legal Details (Invoice "Sold By") ──────────────── */}
+                <div className="rounded-xl border border-primary/30 bg-primary/5 p-5 space-y-4">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-wider text-primary">📄 Seller Legal Details — Invoice "Sold By" Section</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">These details appear on every tax invoice under "Sold By". Enter your registered company information.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="sellerLegalName" className="text-xs font-bold uppercase tracking-wider text-primary">Registered Legal Entity Name</Label>
+                      <Input id="sellerLegalName" value={config.sellerLegalName} onChange={e => setConfig(prev => ({ ...prev, sellerLegalName: e.target.value }))} placeholder="e.g. FCI Seller Retail Private Limited" className="h-10 rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="sellerGstNumber" className="text-xs font-bold uppercase tracking-wider text-primary">GSTIN</Label>
+                      <Input id="sellerGstNumber" value={config.sellerGstNumber} onChange={e => setConfig(prev => ({ ...prev, sellerGstNumber: e.target.value.toUpperCase() }))} placeholder="e.g. 27AAACF9988F1Z5" maxLength={15} className="h-10 rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20 font-mono tracking-wider" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="sellerAddress" className="text-xs font-bold uppercase tracking-wider text-primary">Registered Office / Street Address</Label>
+                    <Input id="sellerAddress" value={config.sellerAddress} onChange={e => setConfig(prev => ({ ...prev, sellerAddress: e.target.value }))} placeholder="e.g. Plot No. 42, Industrial Area, Phase 8B" className="h-10 rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20" />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="sellerCity" className="text-xs font-bold uppercase tracking-wider text-primary">City</Label>
+                      <Input id="sellerCity" value={config.sellerCity} onChange={e => setConfig(prev => ({ ...prev, sellerCity: e.target.value }))} placeholder="e.g. Mohali" className="h-10 rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="sellerState" className="text-xs font-bold uppercase tracking-wider text-primary">State</Label>
+                      <Input id="sellerState" value={config.sellerState} onChange={e => setConfig(prev => ({ ...prev, sellerState: e.target.value }))} placeholder="e.g. Punjab" className="h-10 rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="sellerPincode" className="text-xs font-bold uppercase tracking-wider text-primary">Pincode</Label>
+                      <Input id="sellerPincode" value={config.sellerPincode} onChange={e => setConfig(prev => ({ ...prev, sellerPincode: e.target.value }))} placeholder="e.g. 160055" maxLength={6} className="h-10 rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="sellerEmail" className="text-xs font-bold uppercase tracking-wider text-primary">Seller Legal / Invoicing Email</Label>
+                    <Input id="sellerEmail" type="email" value={config.sellerEmail} onChange={e => setConfig(prev => ({ ...prev, sellerEmail: e.target.value }))} placeholder="e.g. legal@fciseller.com" className="h-10 rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20" />
                   </div>
                 </div>
 

@@ -86,7 +86,10 @@ const statusStyles: Record<string, { bg: string; text: string; border: string; i
   refunded: { bg: 'bg-purple-500/10 dark:bg-purple-500/20', text: 'text-purple-600 dark:text-purple-400', border: 'border-purple-500/30', icon: RefreshCw },
 };
 
-function generateFciSellerInvoiceHtml(order: any): string {
+interface SellerInfo { sellerLegalName?: string; sellerGstNumber?: string; sellerAddress?: string; sellerCity?: string; sellerState?: string; sellerPincode?: string; sellerContactNumber?: string; sellerEmail?: string; sellerName?: string; }
+interface WarehouseInfo { name?: string; address?: string; city?: string; state?: string; pincode?: string; phone?: string; }
+
+function generateFciSellerInvoiceHtml(order: any, seller?: SellerInfo, warehouse?: WarehouseInfo): string {
   const rawId = String(order?.id || order?.orderNumber || '1001');
   const invoiceNo = `INV-FCI-${rawId.replace(/[^a-zA-Z0-9]/g, '')}`;
   const totalAmt = Number(order?.totalAmount || order?.amount || order?.total || 0);
@@ -104,6 +107,17 @@ function generateFciSellerInvoiceHtml(order: any): string {
   const city = addr.city || 'Mumbai';
   const state = addr.state || 'Maharashtra';
   const pincode = addr.pincode || addr.zipCode || '400705';
+
+  // Seller details (from settings, with fallback)
+  const sellerLegalName = seller?.sellerLegalName || seller?.sellerName || 'FCI Seller Retail Pvt. Ltd.';
+  const sellerGst = seller?.sellerGstNumber || '';
+  const sellerAddr = [seller?.sellerAddress, seller?.sellerCity, seller?.sellerState, seller?.sellerPincode].filter(Boolean).join(', ');
+  const sellerPhone = seller?.sellerContactNumber || '';
+  const sellerEmailVal = seller?.sellerEmail || '';
+
+  // Fulfilled By (from default warehouse)
+  const warehouseName = warehouse?.name || 'FCI Seller Fulfillment Center';
+  const warehouseAddr = warehouse ? [warehouse.address, warehouse.city, warehouse.state, warehouse.pincode].filter(Boolean).join(', ') : 'India';
 
   const items = Array.isArray(order?.items) ? order.items : [];
   const itemsRowsHtml = items.length > 0 ? items.map((item: any, idx: number) => {
@@ -157,7 +171,7 @@ function generateFciSellerInvoiceHtml(order: any): string {
     .logo span { color: #0f172a; }
     .invoice-title { font-size: 22px; font-weight: 900; text-align: right; text-transform: uppercase; color: #0f172a; }
     .sub-title { font-size: 11px; text-align: right; color: #64748b; font-weight: 600; text-transform: uppercase; margin-top: 4px; }
-    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 20px; }
     .box { border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 18px; background: #f8fafc; }
     .box-title { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #14b8a6; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
     .box p { font-size: 12px; margin: 3px 0; color: #334155; line-height: 1.4; }
@@ -199,21 +213,27 @@ function generateFciSellerInvoiceHtml(order: any): string {
 
     <div class="info-grid">
       <div class="box">
-        <div class="box-title">Sold By (Seller Details)</div>
-        <p><strong>FCI SELLER Retail Pvt. Ltd.</strong></p>
-        <p>Plot No. 42, E-Commerce Corridor, Tech Hub</p>
-        <p>Maharashtra - 400705, India</p>
-        <p><strong>GSTIN:</strong> 27AAACF9988F1Z5</p>
-        <p><strong>PAN:</strong> AAACF9988F | <strong>CIN:</strong> U74999MH2024PTC188888</p>
+        <div class="box-title">Sold By</div>
+        <p><strong>${sellerLegalName}</strong></p>
+        ${sellerAddr ? `<p>${sellerAddr}</p>` : ''}
+        ${sellerGst ? `<p><strong>GSTIN:</strong> ${sellerGst}</p>` : ''}
+        ${sellerPhone ? `<p><strong>Contact:</strong> ${sellerPhone}</p>` : ''}
+        ${sellerEmailVal ? `<p>${sellerEmailVal}</p>` : ''}
       </div>
       <div class="box">
-        <div class="box-title">Invoice & Customer Details</div>
+        <div class="box-title">Fulfilled By</div>
+        <p><strong>${warehouseName}</strong></p>
+        <p>${warehouseAddr}</p>
+        ${warehouse?.phone ? `<p>Ph: ${warehouse.phone}</p>` : ''}
+      </div>
+      <div class="box">
+        <div class="box-title">Invoice &amp; Customer Details</div>
         <p><strong>Invoice No:</strong> ${invoiceNo}</p>
         <p><strong>Invoice Date:</strong> ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
         <p><strong>Order ID:</strong> #${rawId}</p>
-        <p><strong>Billed Customer:</strong> ${customerName}</p>
+        <p><strong>Customer:</strong> ${customerName}</p>
         <p><strong>Contact:</strong> ${customerEmail} | ${customerPhone}</p>
-        <p><strong>Shipping Address:</strong> ${street}, ${city}, ${state} - ${pincode}</p>
+        <p><strong>Ship To:</strong> ${street}, ${city}, ${state} - ${pincode}</p>
       </div>
     </div>
 
@@ -261,7 +281,7 @@ function generateFciSellerInvoiceHtml(order: any): string {
         <p style="margin: 2px 0;">3. Computer-generated tax invoice for FCI Seller. No physical signature required.</p>
       </div>
       <div class="signatory">
-        <p>For FCI SELLER Retail Pvt. Ltd.</p>
+        <p>For ${sellerLegalName}</p>
         <div class="signatory-space"></div>
         <p style="font-size: 11px; color: #64748b;">Authorized Signatory</p>
       </div>
@@ -278,6 +298,8 @@ export default function InvoicesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceItem | null>(null);
+  const [sellerInfo, setSellerInfo] = useState<SellerInfo>({});
+  const [warehouseInfo, setWarehouseInfo] = useState<WarehouseInfo | undefined>(undefined);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [sorting, setSorting] = useState<SortingState>([]);
 
@@ -337,6 +359,36 @@ export default function InvoicesPage() {
 
   useEffect(() => {
     fetchInvoices();
+    // Fetch seller settings and default warehouse for dynamic invoice data
+    (async () => {
+      try {
+        const settRes = await fetch(`${API_BASE}/api/settings`, { headers: authHeaders() });
+        if (settRes.ok) {
+          const sj = await settRes.json();
+          const d = sj?.data || sj;
+          setSellerInfo({
+            sellerLegalName: d?.sellerLegalName,
+            sellerGstNumber: d?.sellerGstNumber,
+            sellerAddress: d?.sellerAddress,
+            sellerCity: d?.sellerCity,
+            sellerState: d?.sellerState,
+            sellerPincode: d?.sellerPincode,
+            sellerContactNumber: d?.sellerContactNumber,
+            sellerEmail: d?.sellerEmail,
+            sellerName: d?.sellerName,
+          });
+        }
+      } catch {}
+      try {
+        const wRes = await fetch(`${API_BASE}/api/v1/admin/inventory/warehouses?isDefault=true`, { headers: authHeaders() });
+        if (wRes.ok) {
+          const wj = await wRes.json();
+          const warehouses = wj?.data || wj?.warehouses || wj || [];
+          const def = Array.isArray(warehouses) ? warehouses.find((w: any) => w.isDefault) || warehouses[0] : warehouses;
+          if (def) setWarehouseInfo({ name: def.name, address: def.address, city: def.city, state: def.state, pincode: def.pincode, phone: def.phone });
+        }
+      } catch {}
+    })();
   }, []);
 
   const stats = useMemo(() => {
@@ -371,7 +423,7 @@ export default function InvoicesPage() {
   }, [invoices, searchQuery, statusFilter]);
 
   const handlePrint = (inv: InvoiceItem) => {
-    const html = generateFciSellerInvoiceHtml(inv.rawOrder);
+    const html = generateFciSellerInvoiceHtml(inv.rawOrder, sellerInfo, warehouseInfo);
     const printWin = window.open('', '_blank', 'width=950,height=850');
     if (printWin) {
       printWin.document.write(html);
