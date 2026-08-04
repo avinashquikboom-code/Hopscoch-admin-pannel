@@ -101,8 +101,14 @@ export function getImageUrl(url?: any): string {
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem('auth_token');
+  return (
+    localStorage.getItem('auth_token') ||
+    localStorage.getItem('accessToken') ||
+    localStorage.getItem('token') ||
+    localStorage.getItem('admin_token')
+  );
 }
+
 
 function getApiKey(): string {
   return process.env.NEXT_PUBLIC_ADMIN_API_KEY || '';
@@ -321,6 +327,19 @@ export const api = {
   activityLogs: {
     getAll: () => apiRequest<any>('/api/admin/activity-logs'),
   },
+
+  // Content (Play, Posts, Stories)
+  content: {
+    getAll: (params?: Record<string, string>) => {
+      const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+      return apiRequest<any>(`/api/admin/content${qs}`);
+    },
+    update: (id: number | string, body: Record<string, any>) =>
+      apiRequest<any>(`/api/admin/content/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+    delete: (id: number | string) =>
+      apiRequest<any>(`/api/admin/content/${id}`, { method: 'DELETE' }),
+  },
 };
+
 
 export default api;

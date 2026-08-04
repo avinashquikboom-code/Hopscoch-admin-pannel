@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { API_BASE, getImageUrl } from '@/lib/api';
+import { API_BASE, getImageUrl, authHeaders, api } from '@/lib/api';
 import { AdminLayout } from '@/components/layout/admin-layout';
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
@@ -36,10 +36,9 @@ import {
   Clock,
   Eye,
   Heart,
-  CheckCircle2,
-  X,
   Tag,
   Loader2,
+  X,
 } from 'lucide-react';
 
 interface TaggedProduct {
@@ -91,29 +90,17 @@ export default function ContentManagementPage() {
   const [isSearchingProducts, setIsSearchingProducts] = useState(false);
   const [taggedProducts, setTaggedProducts] = useState<any[]>([]);
 
-  // Token helper
-  const getAuthToken = () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('accessToken') || localStorage.getItem('token') || '';
-    }
-    return '';
-  };
-
   const fetchContent = useCallback(async () => {
     try {
       setIsLoading(true);
-      const token = getAuthToken();
-      let url = `${API_BASE}/api/admin/content?limit=50`;
+      const params: Record<string, string> = { limit: '50' };
       if (activeTab !== 'ALL') {
-        url += `&type=${activeTab}`;
+        params.type = activeTab;
       }
 
-      const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const json = await res.json();
-      if (json.success && Array.isArray(json.data)) {
-        setPosts(json.data);
+      const res = await api.content.getAll(params);
+      if (res.success && Array.isArray(res.data)) {
+        setPosts(res.data);
       }
     } catch (err) {
       console.error('Error fetching content:', err);
@@ -135,12 +122,8 @@ export default function ContentManagementPage() {
     const timer = setTimeout(async () => {
       try {
         setIsSearchingProducts(true);
-        const token = getAuthToken();
-        const res = await fetch(`${API_BASE}/api/products?search=${encodeURIComponent(productSearch)}&limit=10`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const json = await res.json();
-        const prods = json.data?.products || json.data || [];
+        const res = await api.products.getAll({ search: productSearch, limit: '10' });
+        const prods = res.data?.products || res.data || [];
         setAvailableProducts(Array.isArray(prods) ? prods : []);
       } catch (e) {
         console.error(e);
@@ -184,9 +167,11 @@ export default function ContentManagementPage() {
 
     try {
       setIsSubmitting(true);
-      const token = getAuthToken();
-      const formData = new FormData();
+      const headers = authHeaders() as Record<string, string>;
+      // Delete Content-Type so browser sets boundary for multipart
+      delete headers['Content-Type'];
 
+      const formData = new FormData();
       formData.append('type', contentType);
       if (title) formData.append('title', title);
       if (caption) formData.append('caption', caption);
@@ -201,9 +186,7 @@ export default function ContentManagementPage() {
 
       const res = await fetch(`${API_BASE}/api/admin/content`, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers,
         body: formData,
       });
 
@@ -236,18 +219,8 @@ export default function ContentManagementPage() {
 
   const handleToggleActive = async (post: ContentPost) => {
     try {
-      const token = getAuthToken();
-      const res = await fetch(`${API_BASE}/api/admin/content/${post.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ isActive: !post.isActive }),
-      });
-      if (res.ok) {
-        fetchContent();
-      }
+      await api.content.update(post.id, { isActive: !post.isActive });
+      fetchContent();
     } catch (err) {
       console.error(err);
     }
@@ -256,14 +229,8 @@ export default function ContentManagementPage() {
   const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this content item?')) return;
     try {
-      const token = getAuthToken();
-      const res = await fetch(`${API_BASE}/api/admin/content/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        fetchContent();
-      }
+      await api.content.delete(id);
+      fetchContent();
     } catch (err) {
       console.error(err);
     }
