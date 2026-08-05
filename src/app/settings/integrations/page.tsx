@@ -35,7 +35,7 @@ function authHeaders(): HeadersInit {
 }
 
 export default function IntegrationsSettingsPage() {
-  const [razorpay, setRazorpay] = useState({ key_id: '', key_secret: '' });
+  const [razorpay, setRazorpay] = useState({ key_id: '', key_secret: '', webhook_secret: '' });
   const [google, setGoogle] = useState({ gemini_api_key: '', maps_api_key: '' });
   const [aws, setAws] = useState({ access_key_id: '', secret_access_key: '', region: 'ap-south-1', bucket_name: '' });
   const [msg91, setMsg91] = useState({ auth_key: '', sender_id: 'FCISEL', dlt_te_id: '', flow_id: '' });
@@ -43,6 +43,7 @@ export default function IntegrationsSettingsPage() {
 
   // Show/Hide password states
   const [showRzpSecret, setShowRzpSecret] = useState(false);
+  const [showRzpWebhookSecret, setShowRzpWebhookSecret] = useState(false);
   const [showGemini, setShowGemini] = useState(false);
   const [showMaps, setShowMaps] = useState(false);
   const [showAwsSecret, setShowAwsSecret] = useState(false);
@@ -120,7 +121,7 @@ export default function IntegrationsSettingsPage() {
     }
     try {
       const emptySettings = provider === 'razorpay'
-        ? { key_id: '', key_secret: '' }
+        ? { key_id: '', key_secret: '', webhook_secret: '' }
         : provider === 'google'
         ? {
             gemini_api_key: keyName === 'gemini_api_key' ? '' : google.gemini_api_key,
@@ -141,7 +142,7 @@ export default function IntegrationsSettingsPage() {
       if (res.ok) {
         toast.success(`${label} disconnected successfully.`);
         if (provider === 'razorpay') {
-          setRazorpay({ key_id: '', key_secret: '' });
+          setRazorpay({ key_id: '', key_secret: '', webhook_secret: '' });
           setRazorpayTestResult(null);
         } else if (provider === 'google') {
           if (keyName === 'gemini_api_key') {
@@ -270,12 +271,15 @@ export default function IntegrationsSettingsPage() {
               </div>
 
               {/* Setup Box */}
-              <div className="bg-blue-500/5 border border-blue-500/15 rounded-lg p-4 space-y-1.5 text-xs text-blue-700 dark:text-blue-300/90">
+              <div className="bg-blue-500/5 border border-blue-500/15 rounded-lg p-4 space-y-2 text-xs text-blue-700 dark:text-blue-300/90">
                 <p className="font-bold text-blue-800 dark:text-blue-300">Setup steps</p>
                 <ol className="list-decimal pl-4 space-y-1">
-                  <li>Log in at dashboard.razorpay.com</li>
-                  <li>Go to Settings → API Keys and copy your Test/Live Key ID</li>
-                  <li>Paste the credentials below and save</li>
+                  <li>Log in at <strong>dashboard.razorpay.com</strong></li>
+                  <li>Go to <strong>Settings → API Keys</strong> and copy your Key ID & Key Secret</li>
+                  <li>Go to <strong>Settings → Webhooks</strong> → Click <strong>Add New Webhook</strong></li>
+                  <li>Enter Webhook URL: <code className="bg-blue-500/10 px-1 py-0.5 rounded font-mono text-[11px]">/api/webhooks/razorpay</code></li>
+                  <li>Subscribe to events: <code className="text-[11px]">payment.captured</code>, <code className="text-[11px]">payment.failed</code>, <code className="text-[11px]">refund.processed</code></li>
+                  <li>Copy your Webhook Secret and paste it below along with Key ID & Secret</li>
                 </ol>
               </div>
 
@@ -309,6 +313,20 @@ export default function IntegrationsSettingsPage() {
                     onToggleVisible={() => setShowRzpSecret(!showRzpSecret)}
                     focusColor="blue"
                   />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="rzpWebhookSecret" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Razorpay Webhook Secret</Label>
+                  <PasswordInput
+                    id="rzpWebhookSecret"
+                    value={razorpay.webhook_secret}
+                    onChange={(v) => setRazorpay({ ...razorpay, webhook_secret: v })}
+                    placeholder="Enter Webhook Secret (e.g. rzp_wh_secret_...)"
+                    visible={showRzpWebhookSecret}
+                    onToggleVisible={() => setShowRzpWebhookSecret(!showRzpWebhookSecret)}
+                    focusColor="blue"
+                  />
+                  <p className="text-[10px] text-muted-foreground">Webhook Secret used to verify signature from Razorpay Dashboard</p>
                 </div>
               </div>
 
