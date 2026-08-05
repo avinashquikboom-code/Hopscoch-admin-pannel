@@ -35,7 +35,7 @@ function authHeaders(): HeadersInit {
 }
 
 export default function IntegrationsSettingsPage() {
-  const [razorpay, setRazorpay] = useState({ key_id: '', key_secret: '', webhook_secret: '' });
+  const [razorpay, setRazorpay] = useState({ key_id: '', key_secret: '', webhook_secret: '', webhook_url: '' });
   const [google, setGoogle] = useState({ gemini_api_key: '', maps_api_key: '' });
   const [aws, setAws] = useState({ access_key_id: '', secret_access_key: '', region: 'ap-south-1', bucket_name: '' });
   const [msg91, setMsg91] = useState({ auth_key: '', sender_id: 'FCISEL', dlt_te_id: '', flow_id: '' });
@@ -72,7 +72,7 @@ export default function IntegrationsSettingsPage() {
       const res = await fetch(`${API_BASE}/api/v1/admin/settings/integrations`, { headers: authHeaders() });
       const json = await res.json();
       if (res.ok && json.data) {
-        if (json.data.razorpay) setRazorpay(json.data.razorpay);
+        if (json.data.razorpay) setRazorpay((prev) => ({ ...prev, ...json.data.razorpay }));
         if (json.data.google) setGoogle(json.data.google);
         if (json.data.aws) setAws(json.data.aws);
         if (json.data.msg91) setMsg91(json.data.msg91);
@@ -142,7 +142,7 @@ export default function IntegrationsSettingsPage() {
       if (res.ok) {
         toast.success(`${label} disconnected successfully.`);
         if (provider === 'razorpay') {
-          setRazorpay({ key_id: '', key_secret: '', webhook_secret: '' });
+          setRazorpay({ key_id: '', key_secret: '', webhook_secret: '', webhook_url: '' });
           setRazorpayTestResult(null);
         } else if (provider === 'google') {
           if (keyName === 'gemini_api_key') {
@@ -327,6 +327,29 @@ export default function IntegrationsSettingsPage() {
                     focusColor="blue"
                   />
                   <p className="text-[10px] text-muted-foreground">Webhook Secret used to verify signature from Razorpay Dashboard</p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="rzpWebhookUrl" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Razorpay Webhook URL</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="rzpWebhookUrl"
+                      value={razorpay.webhook_url || (typeof window !== 'undefined' ? `${window.location.origin}/api/webhooks/razorpay` : '')}
+                      onChange={(e) => setRazorpay({ ...razorpay, webhook_url: e.target.value })}
+                      placeholder="https://yourdomain.com/api/webhooks/razorpay"
+                      className="rounded-lg border-border/60 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 h-11 text-sm font-mono text-xs"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => copyToClipboard(razorpay.webhook_url || `${window.location.origin}/api/webhooks/razorpay`, 'Webhook URL')}
+                      className="rounded-lg border-border/60 h-11 px-4 text-xs font-semibold shrink-0"
+                    >
+                      <Copy className="w-3.5 h-3.5 mr-1.5" />
+                      Copy URL
+                    </Button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">Add this exact Webhook Endpoint URL in Razorpay Dashboard → Settings → Webhooks</p>
                 </div>
               </div>
 
