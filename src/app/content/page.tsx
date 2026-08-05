@@ -83,6 +83,8 @@ export default function ContentManagementPage() {
   const [sortOrder, setSortOrder] = useState('0');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [filePreviews, setFilePreviews] = useState<string[]>([]);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   
   // Product Tagging State
   const [productSearch, setProductSearch] = useState('');
@@ -165,6 +167,11 @@ export default function ContentManagementPage() {
       return;
     }
 
+    if (contentType === 'PLAY' && !thumbnailFile) {
+      alert('Please select a thumbnail image for the video.');
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       const headers = authHeaders() as Record<string, string>;
@@ -183,6 +190,10 @@ export default function ContentManagementPage() {
       selectedFiles.forEach((file) => {
         formData.append('media', file);
       });
+
+      if (thumbnailFile) {
+        formData.append('thumbnail', thumbnailFile);
+      }
 
       const res = await fetch(`${API_BASE}/api/admin/content`, {
         method: 'POST',
@@ -214,6 +225,8 @@ export default function ContentManagementPage() {
     setSortOrder('0');
     setSelectedFiles([]);
     setFilePreviews([]);
+    setThumbnailFile(null);
+    setThumbnailPreview(null);
     setTaggedProducts([]);
   };
 
@@ -555,6 +568,41 @@ export default function ContentManagementPage() {
                   </div>
                 )}
               </div>
+
+              {/* Video Thumbnail Upload Dropzone (for PLAY posts) */}
+              {contentType === 'PLAY' && (
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    Upload Video Thumbnail Image *
+                  </Label>
+                  <div className="border-2 border-dashed border-gray-200 hover:border-teal-500 rounded-xl p-4 text-center cursor-pointer transition-colors relative bg-gray-50/50">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          const file = e.target.files[0];
+                          setThumbnailFile(file);
+                          setThumbnailPreview(URL.createObjectURL(file));
+                        }
+                      }}
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                    />
+                    <ImageIcon className="w-6 h-6 text-gray-400 mx-auto mb-1" />
+                    <p className="text-xs font-semibold text-gray-700">
+                      {thumbnailFile ? thumbnailFile.name : 'Click to select thumbnail image'}
+                    </p>
+                    <p className="text-[11px] text-gray-400 mt-1">
+                      Required for video posts (JPEG/PNG/WebP)
+                    </p>
+                  </div>
+                  {thumbnailPreview && (
+                    <div className="w-16 h-20 rounded-lg overflow-hidden border bg-gray-900 mt-2">
+                      <img src={thumbnailPreview} alt="Thumbnail Preview" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Title */}
               <div className="space-y-2">
