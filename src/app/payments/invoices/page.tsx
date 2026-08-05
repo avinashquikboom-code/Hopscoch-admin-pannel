@@ -108,11 +108,20 @@ function generateFciSellerInvoiceHtml(order: any, seller?: SellerInfo, warehouse
   const state = addr.state || 'Maharashtra';
   const pincode = addr.pincode || addr.zipCode || '400705';
 
-  // Seller details (from settings, with fallback)
-  const sellerLegalName = seller?.sellerLegalName || seller?.sellerName || 'FCI Seller Retail Pvt. Ltd.';
+  // Prefer order-time seller snapshots (manual checkout entry), fall back to settings
+  const sellerLegalName =
+    order?.sellerNameSnapshot ||
+    seller?.sellerLegalName ||
+    seller?.sellerName ||
+    'FCI Seller Retail Pvt. Ltd.';
   const sellerGst = seller?.sellerGstNumber || '';
-  const sellerAddr = [seller?.sellerAddress, seller?.sellerCity, seller?.sellerState, seller?.sellerPincode].filter(Boolean).join(', ');
-  const sellerPhone = seller?.sellerContactNumber || '';
+  const sellerAddr =
+    order?.sellerAddressSnapshot ||
+    [seller?.sellerAddress, seller?.sellerCity, seller?.sellerState, seller?.sellerPincode].filter(Boolean).join(', ');
+  const sellerPhone =
+    order?.sellerContactSnapshot ||
+    seller?.sellerContactNumber ||
+    '';
   const sellerEmailVal = seller?.sellerEmail || '';
 
   // Fulfilled By (from default warehouse)

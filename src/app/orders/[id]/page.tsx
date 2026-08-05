@@ -90,6 +90,7 @@ export default function OrderDetailsPage({ params }: { params: any }) {
         invoiceNumber: `INV-${rawOrder.id}`,
         sellerName: rawOrder.sellerNameSnapshot || 'FCI Seller Retail Pvt. Ltd.',
         sellerContact: rawOrder.sellerContactSnapshot || '+91 9876543210',
+        sellerAddress: rawOrder.sellerAddressSnapshot || '',
         customer: {
           name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Customer',
           email: user.email || '',

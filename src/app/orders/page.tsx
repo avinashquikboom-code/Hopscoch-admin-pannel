@@ -216,6 +216,7 @@ function generateFciSellerInvoiceHtml(order: any, currencySymbol: string = '₹'
   const totalAmt = Number(order.amount || 0);
   const sellerName = order.sellerNameSnapshot || order.sellerName || 'FCI Seller Retail Pvt. Ltd.';
   const sellerContact = order.sellerContactSnapshot || order.sellerContact || '+91 9876543210';
+  const sellerAddress = order.sellerAddressSnapshot || order.sellerAddress || 'Plot No. 42, E-Commerce Corridor, Tech City, Karnataka - 560100, India';
 
   const taxableTotal = totalAmt / 1.18;
   const totalGst = totalAmt - taxableTotal;
@@ -307,9 +308,9 @@ function generateFciSellerInvoiceHtml(order: any, currencySymbol: string = '₹'
     <div class="info-grid">
       <div class="box">
         <div class="box-title">Sold By (Seller Details)</div>
-        <p><strong>FCI SELLER Retail Pvt. Ltd.</strong></p>
-        <p>Plot No. 42, E-Commerce Corridor, Tech City</p>
-        <p>Karnataka - 560100, India</p>
+        <p><strong>${sellerName}</strong></p>
+        <p>${sellerAddress}</p>
+        <p><strong>Contact:</strong> ${sellerContact}</p>
         <p><strong>GSTIN:</strong> 29AAACF9988F1Z5</p>
         <p><strong>PAN:</strong> AAACF9988F | <strong>CIN:</strong> U74999KA2024PTC188888</p>
       </div>
