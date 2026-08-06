@@ -251,16 +251,30 @@ export const api = {
       apiRequest<any>(`/api/returns/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
   },
 
-  // Reviews
+  // Reviews — admin endpoints (see /api/admin/reviews)
   reviews: {
     getAll: (params?: Record<string, string>) => {
       const qs = params ? '?' + new URLSearchParams(params).toString() : '';
-      return apiRequest<any>(`/api/reviews${qs}`);
+      return apiRequest<any>(`/api/admin/reviews${qs}`);
     },
-    approve: (id: string) =>
-      apiRequest<any>(`/api/reviews/${id}`, { method: 'PUT', body: JSON.stringify({ status: 'approved' }) }),
-    reject: (id: string) =>
-      apiRequest<any>(`/api/reviews/${id}`, { method: 'PUT', body: JSON.stringify({ status: 'reported' }) }),
+    updateStatus: (id: string | number, status: string) => {
+      // Admin API expects Prisma ReviewStatus: APPROVED | REJECTED | PENDING
+      const normalized =
+        status === 'reported' || status === 'rejected' ? 'REJECTED'
+        : status === 'approved' ? 'APPROVED'
+        : status === 'pending' ? 'PENDING'
+        : String(status).toUpperCase();
+      return apiRequest<any>(`/api/admin/reviews/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: normalized }),
+      });
+    },
+    approve: (id: string | number) =>
+      apiRequest<any>(`/api/admin/reviews/${id}`, { method: 'PUT', body: JSON.stringify({ status: 'APPROVED' }) }),
+    reject: (id: string | number) =>
+      apiRequest<any>(`/api/admin/reviews/${id}`, { method: 'PUT', body: JSON.stringify({ status: 'REJECTED' }) }),
+    delete: (id: string | number) =>
+      apiRequest<any>(`/api/admin/reviews/${id}`, { method: 'DELETE' }),
   },
 
   // Coupons

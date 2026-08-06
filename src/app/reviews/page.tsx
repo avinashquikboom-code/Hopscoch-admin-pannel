@@ -1,5 +1,5 @@
 'use client';
-import { API_BASE } from '@/lib/api';
+import { api } from '@/lib/api';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { AdminLayout } from '@/components/layout/admin-layout';
@@ -70,11 +70,6 @@ import {
 import { AnimatePresence, motion } from 'framer-motion';
 
 
-function authHeaders(): HeadersInit {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
-  return { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
-}
-
 function normalizeReview(raw: any) {
   return {
     id: raw.id || raw._id || String(Math.random()),
@@ -118,10 +113,9 @@ export default function ReviewsPage() {
   const fetchReviews = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/reviews`, { headers: authHeaders() });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.message || 'Failed to load reviews');
-      const raw = json.data ?? json.reviews ?? json ?? [];
+      const res = await api.reviews.getAll({ limit: '100' });
+      // Admin getReviews returns { reviews, pagination } inside data
+      const raw = res?.data?.reviews ?? res?.data ?? res?.reviews ?? [];
       setReviewsList(Array.isArray(raw) ? raw.map(normalizeReview) : []);
     } catch (e: any) { setError(e.message); } finally { setLoading(false); }
   }, []);
@@ -141,28 +135,33 @@ export default function ReviewsPage() {
   };
 
   const handleUpdateStatus = async (id: string, newStatus: string) => {
+    const prevList = reviewsList;
+    const prevSelected = selectedReview;
     setReviewsList(prev => 
       prev.map(r => r.id === id ? { ...r, status: newStatus } : r)
     );
     setSelectedReview((prev: any) => prev && prev.id === id ? { ...prev, status: newStatus } : prev);
     try {
-      await fetch(`${API_BASE}/api/reviews/${id}`, {
-        method: 'PUT',
-        headers: authHeaders(),
-        body: JSON.stringify({ status: newStatus })
-      });
-    } catch {}
+      await api.reviews.updateStatus(id, newStatus);
+    } catch (e: any) {
+      setReviewsList(prevList);
+      setSelectedReview(prevSelected);
+      setError(e.message || 'Failed to update review');
+    }
   };
 
   const handleDeleteReview = async (id: string) => {
+    const prevList = reviewsList;
+    const prevSelected = selectedReview;
     setReviewsList(prev => prev.filter(r => r.id !== id));
     setSelectedReview(null);
     try {
-      await fetch(`${API_BASE}/api/reviews/${id}`, {
-        method: 'DELETE',
-        headers: authHeaders()
-      });
-    } catch {}
+      await api.reviews.delete(id);
+    } catch (e: any) {
+      setReviewsList(prevList);
+      setSelectedReview(prevSelected);
+      setError(e.message || 'Failed to delete review');
+    }
   };
 
   const filteredReviews = useMemo(() => {
