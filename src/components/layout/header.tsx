@@ -25,6 +25,9 @@ interface HeaderProps {
   showMobileMenu?: boolean;
 }
 
+// Module-level persistent notification ID tracker across route changes / re-mounts
+const globalSeenNotificationIds = new Set<string>();
+
 export function Header({ onMenuClick, showMobileMenu = false }: HeaderProps) {
   const router = useRouter();
   const { currencyCode, currencySymbol, setCurrencyCode } = useCurrency();
@@ -63,7 +66,6 @@ export function Header({ onMenuClick, showMobileMenu = false }: HeaderProps) {
 
   useEffect(() => {
     let isMounted = true;
-    let prevIds = new Set<string>();
 
     const fetchNotifications = async () => {
       try {
@@ -88,13 +90,13 @@ export function Header({ onMenuClick, showMobileMenu = false }: HeaderProps) {
           const unread = items.filter((n: any) => !n.isRead).length;
           setUnreadCount(unread);
 
-          // Check if new notification arrived
+          // Check if brand new notification arrived (only toast for items never seen in current session)
           items.forEach((item: any) => {
             const idStr = String(item.id);
-            if (prevIds.size > 0 && !prevIds.has(idStr)) {
+            if (globalSeenNotificationIds.size > 0 && !globalSeenNotificationIds.has(idStr)) {
               toast.success(`🛍️ ${item.title}: ${item.body}`);
             }
-            prevIds.add(idStr);
+            globalSeenNotificationIds.add(idStr);
           });
         }
       } catch (err) {

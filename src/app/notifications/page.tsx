@@ -116,19 +116,22 @@ export default function NotificationsPage() {
       const res = await fetch(`${API_BASE}/api/notifications`, { headers: authHeaders() });
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || 'Failed to load notifications');
-      const raw = json.data ?? json.notifications ?? json ?? [];
-      if (Array.isArray(raw)) {
-        const seen = new Set();
-        const uniqueList = raw.filter((item: any) => {
-          const key = String(item.id || `${item.title}-${item.createdAt || item.message}`);
-          if (seen.has(key)) return false;
-          seen.add(key);
-          return true;
-        }).map(normalizeNotification);
-        setNotificationsList(uniqueList);
-      } else {
-        setNotificationsList([]);
-      }
+      const rawData = json.data ?? json.notifications ?? json;
+      const rawList = Array.isArray(rawData)
+        ? rawData
+        : (Array.isArray(rawData?.notifications)
+            ? rawData.notifications
+            : (Array.isArray(json?.notifications) ? json.notifications : []));
+
+      const seen = new Set();
+      const uniqueList = rawList.filter((item: any) => {
+        const key = String(item.id || `${item.title}-${item.createdAt || item.message}`);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      }).map(normalizeNotification);
+
+      setNotificationsList(uniqueList);
     } catch (e: any) { setError(e.message); } finally { setLoading(false); }
   }, []);
 

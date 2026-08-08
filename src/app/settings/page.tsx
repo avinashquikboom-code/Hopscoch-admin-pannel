@@ -228,8 +228,13 @@ export default function SettingsPage() {
     try {
       const res = await fetch(`${API_BASE}/api/notifications`, { headers: authHeaders() });
       const json = await res.json();
-      const raw = json.data ?? json.notifications ?? json ?? [];
-      setNotificationsList(Array.isArray(raw) ? raw.map(normalizeNotification) : []);
+      const rawData = json.data ?? json.notifications ?? json;
+      const rawList = Array.isArray(rawData)
+        ? rawData
+        : (Array.isArray(rawData?.notifications)
+            ? rawData.notifications
+            : (Array.isArray(json?.notifications) ? json.notifications : []));
+      setNotificationsList(rawList.map(normalizeNotification));
     } catch {
       setNotificationsList([]);
     } finally {
