@@ -378,22 +378,31 @@ export default function ContentManagementPage() {
                     <TableRow key={post.id} className="hover:bg-gray-50/50 transition-colors">
                       {/* Media Preview */}
                       <TableCell>
-                        <div className="w-12 h-16 rounded-lg overflow-hidden bg-gray-900 relative flex items-center justify-center border shadow-xs">
-                          {post.thumbnailUrl || (post.mediaUrls && post.mediaUrls[0]) ? (
-                            <img
-                              src={getImageUrl(post.thumbnailUrl || post.mediaUrls[0])}
-                              alt={post.title || 'Content'}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <ImageIcon className="w-6 h-6 text-gray-500" />
-                          )}
-                          {post.mediaType === 'VIDEO' && (
-                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                              <Play className="w-4 h-4 text-white fill-white" />
+                        {(() => {
+                          const displayUrl = post.mediaType === 'IMAGE'
+                            ? (post.mediaUrls && post.mediaUrls.length > 0 ? post.mediaUrls[0] : post.thumbnailUrl)
+                            : (post.thumbnailUrl || (post.mediaUrls && post.mediaUrls[0]));
+                          const finalSrc = getImageUrl(displayUrl);
+
+                          return (
+                            <div className="w-12 h-16 rounded-lg overflow-hidden bg-gray-900 relative flex items-center justify-center border shadow-xs">
+                              {finalSrc ? (
+                                <img
+                                  src={finalSrc}
+                                  alt={post.title || 'Content'}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <ImageIcon className="w-6 h-6 text-gray-500" />
+                              )}
+                              {post.mediaType === 'VIDEO' && (
+                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                  <Play className="w-4 h-4 text-white fill-white" />
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
+                          );
+                        })()}
                       </TableCell>
 
                       {/* Type Badge */}
