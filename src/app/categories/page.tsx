@@ -69,7 +69,8 @@ import {
   EyeOff,
   X,
   ArrowUpDown,
-  AlertTriangle
+  AlertTriangle,
+  Package,
 } from 'lucide-react';
 
 
@@ -327,10 +328,12 @@ export default function CategoriesPage() {
     const totalCount = categoriesList.length;
     const subcount = categoriesList.reduce((acc, cat) => acc + (cat.children?.length || 0), 0);
     const visibleCount = categoriesList.filter(c => c.isVisible).length;
+    const totalProductCount = categoriesList.reduce((acc, cat) => acc + (cat.productCount || 0), 0);
     return {
       totalCount,
       subcount,
-      visibleCount
+      visibleCount,
+      totalProductCount,
     };
   }, [categoriesList]);
 
@@ -381,11 +384,14 @@ export default function CategoriesPage() {
             <div className="absolute -top-12 -right-12 w-24 h-24 rounded-full bg-gradient-to-br from-emerald-500/5 to-teal-500/5 blur-xl opacity-50 group-hover:scale-150 transition-all" />
             <CardContent className="p-6 flex items-center justify-between">
               <div>
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Visible Status</span>
-                <h3 className="text-3xl font-black text-foreground tracking-tight mt-2 text-emerald-500">{stats.visibleCount} Active</h3>
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Total Products</span>
+                <h3 className="text-3xl font-black text-foreground tracking-tight mt-2">
+                  {loading ? <span className="text-muted-foreground text-2xl">—</span> : <span className="text-emerald-500">{stats.totalProductCount}</span>}
+                </h3>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{stats.visibleCount} categories visible</p>
               </div>
               <div className="h-12 w-12 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-                <Globe className="h-5.5 w-5.5" />
+                <Package className="h-5.5 w-5.5" />
               </div>
             </CardContent>
           </Card>
