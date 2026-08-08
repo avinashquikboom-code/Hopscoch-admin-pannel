@@ -25,8 +25,23 @@ interface HeaderProps {
   showMobileMenu?: boolean;
 }
 
-// Module-level persistent notification ID tracker across route changes / re-mounts
-const globalSeenNotificationIds = new Set<string>();
+// Helper functions to persist seen toast notification IDs across page refreshes
+const getSeenToastIds = (): Set<string> => {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const raw = sessionStorage.getItem('seen_toast_notif_ids');
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch {
+    return new Set();
+  }
+};
+
+const saveSeenToastIds = (set: Set<string>) => {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.setItem('seen_toast_notif_ids', JSON.stringify(Array.from(set)));
+  } catch {}
+};
 
 export function Header({ onMenuClick, showMobileMenu = false }: HeaderProps) {
   const router = useRouter();
@@ -66,6 +81,7 @@ export function Header({ onMenuClick, showMobileMenu = false }: HeaderProps) {
 
   useEffect(() => {
     let isMounted = true;
+    let isInitialFetch = true;
 
     const fetchNotifications = async () => {
       try {
@@ -78,7 +94,7 @@ export function Header({ onMenuClick, showMobileMenu = false }: HeaderProps) {
         const json = await res.json();
 
         if (json.success && Array.isArray(json.data) && isMounted) {
-          // Deduplicate items by ID
+          // Deduplicate items by ID for header dropdown list
           const seen = new Set();
           const items = json.data.filter((n: any) => {
             const key = String(n.id || `${n.title}-${n.createdAt}`);
@@ -86,18 +102,33 @@ export function Header({ onMenuClick, showMobileMenu = false }: HeaderProps) {
             seen.add(key);
             return true;
           });
+
           setNotifications(items);
           const unread = items.filter((n: any) => !n.isRead).length;
           setUnreadCount(unread);
 
-          // Check if brand new notification arrived (only toast for items never seen in current session)
-          items.forEach((item: any) => {
-            const idStr = String(item.id);
-            if (globalSeenNotificationIds.size > 0 && !globalSeenNotificationIds.has(idStr)) {
-              toast.success(`🛍️ ${item.title}: ${item.body}`);
-            }
-            globalSeenNotificationIds.add(idStr);
-          });
+          const seenToastIds = getSeenToastIds();
+
+          if (isInitialFetch) {
+            // On initial load / page refresh: NEVER fire toasts for historical notifications.
+            // Mark all currently existing notifications as seen.
+            items.forEach((item: any) => {
+              seenToastIds.add(String(item.id));
+            });
+            saveSeenToastIds(seenToastIds);
+            isInitialFetch = false;
+          } else {
+            // On subsequent polling checks while active on page:
+            // Only toast for GENUINELY NEW notifications that were not seen before
+            items.forEach((item: any) => {
+              const idStr = String(item.id);
+              if (!seenToastIds.has(idStr)) {
+                toast.success(`🛍️ ${item.title}: ${item.body}`);
+                seenToastIds.add(idStr);
+              }
+            });
+            saveSeenToastIds(seenToastIds);
+          }
         }
       } catch (err) {
         console.error('Failed to fetch admin notifications:', err);
