@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 
 // Menu item interface
 interface SubItem {
@@ -50,8 +51,22 @@ interface MenuGroup {
   items: SubItem[];
 }
 
-export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
+export function Sidebar({
+  collapsed,
+  onToggle,
+  mobileOpen = false,
+  onMobileClose,
+  forceIconOnly = false,
+}: {
+  collapsed: boolean;
+  onToggle: () => void;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
+  forceIconOnly?: boolean;
+}) {
   const pathname = usePathname();
+  const breakpoint = useBreakpoint();
+  const effectiveCollapsed = collapsed || forceIconOnly;
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     Catalog: true,
     Sales: false,
@@ -212,17 +227,42 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
     },
   ];
 
+  const handleNavClick = () => {
+    if (breakpoint === 'mobile') {
+      onMobileClose?.();
+    }
+  };
+
+  const sidebarAnimate = () => {
+    if (breakpoint === 'mobile') {
+      return { width: 250, x: mobileOpen ? 0 : -250 };
+    }
+    if (breakpoint === 'tablet') {
+      return { width: 70, x: 0 };
+    }
+    return { width: effectiveCollapsed ? 70 : 250, x: 0 };
+  };
+
   return (
+    <>
+      {breakpoint === 'mobile' && mobileOpen && (
+        <button
+          type="button"
+          className="fixed inset-0 z-30 bg-black/50 md:hidden cursor-default"
+          onClick={onMobileClose}
+          aria-label="Close navigation menu"
+        />
+      )}
     <motion.aside
       initial={false}
-      animate={{ width: collapsed ? 70 : 250 }}
+      animate={sidebarAnimate()}
       transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
-      className="fixed left-0 top-0 z-40 h-screen bg-background border-r border-border flex flex-col select-none"
+      className="fixed left-0 top-0 z-40 h-screen bg-background border-r border-border flex flex-col select-none max-h-[100dvh]"
     >
       {/* Brand Header */}
       <div className="flex h-16 items-center justify-between px-4 border-b border-border">
         <AnimatePresence mode="wait">
-          {!collapsed ? (
+          {!effectiveCollapsed ? (
             <motion.div
               initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
@@ -250,10 +290,10 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
           )}
         </AnimatePresence>
 
-        {!collapsed && (
+        {!effectiveCollapsed && !forceIconOnly && (
           <button
             onClick={onToggle}
-            className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-all cursor-pointer"
+            className="rounded-md p-2 min-h-11 min-w-11 flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-all cursor-pointer"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -266,15 +306,16 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
         <div className="space-y-1 mb-4">
           <Link
             href="/dashboard"
+            onClick={handleNavClick}
             className={cn(
-              'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all',
+              'flex items-center gap-3 rounded-lg px-3 py-2.5 min-h-11 text-sm font-medium transition-all',
               pathname === '/dashboard'
                 ? 'bg-primary/10 text-primary'
                 : 'text-muted-foreground hover:bg-muted hover:text-foreground'
             )}
           >
             <LayoutDashboard className="h-4 w-4 flex-shrink-0" />
-            {!collapsed && <span>Dashboard</span>}
+            {!effectiveCollapsed && <span>Dashboard</span>}
           </Link>
         </div>
 
@@ -289,35 +330,35 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
               <div key={group.name} className="space-y-0.5">
                 {/* Group Header Trigger */}
                 <button
-                  onClick={() => !collapsed && toggleGroup(group.name)}
+                  onClick={() => !effectiveCollapsed && toggleGroup(group.name)}
                   className={cn(
-                    'w-full flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-all text-left',
+                    'w-full flex items-center justify-between rounded-lg px-3 py-2.5 min-h-11 text-sm font-medium transition-all text-left',
                     isGroupActive
                       ? 'text-primary bg-primary/5'
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                    collapsed && 'cursor-default justify-center'
+                    effectiveCollapsed && 'cursor-default justify-center'
                   )}
                 >
                   <div className="flex items-center gap-3">
                     <GroupIcon className="h-4 w-4 flex-shrink-0" />
-                    {!collapsed && <span>{group.name}</span>}
+                    {!effectiveCollapsed && <span>{group.name}</span>}
                   </div>
-                  {!collapsed && (
+                  {!effectiveCollapsed && (
                     <ChevronDown className={cn("h-3.5 w-3.5 transition-transform text-muted-foreground", isOpen && "rotate-180")} />
                   )}
                 </button>
 
                 {/* Sub Items Accordion */}
                 <AnimatePresence initial={false}>
-                  {((isOpen && !collapsed) || (collapsed && isGroupActive)) && (
+                  {((isOpen && !effectiveCollapsed) || (effectiveCollapsed && isGroupActive)) && (
                     <motion.div
-                      initial={collapsed ? false : { height: 0, opacity: 0 }}
+                      initial={effectiveCollapsed ? false : { height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.15, ease: 'easeOut' }}
                       className="overflow-hidden"
                     >
-                      <div className={cn("space-y-0.5 pl-2 mt-0.5", !collapsed ? "ml-4" : "ml-2")}>
+                      <div className={cn("space-y-0.5 pl-2 mt-0.5", !effectiveCollapsed ? "ml-4" : "ml-2")}>
                         {group.items.map((item) => {
                           const isActive = pathname === item.href;
                           const ItemIcon = item.icon;
@@ -325,15 +366,16 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
                             <Link
                               key={item.href}
                               href={item.href}
+                              onClick={handleNavClick}
                               className={cn(
-                                'flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-all',
+                                'flex items-center gap-3 rounded-lg px-3 py-2.5 min-h-11 text-xs font-medium transition-all',
                                 isActive
                                   ? 'text-primary bg-primary/5'
                                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                               )}
                             >
                               {ItemIcon && <ItemIcon className="h-3.5 w-3.5 flex-shrink-0" />}
-                              {!collapsed && <span>{item.name}</span>}
+                              {!effectiveCollapsed && <span>{item.name}</span>}
                             </Link>
                           );
                         })}
@@ -350,29 +392,31 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
         <div className="space-y-1 pt-4 mt-4 border-t border-border">
           <Link
             href="/profile"
+            onClick={handleNavClick}
             className={cn(
-              'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all',
+              'flex items-center gap-3 rounded-lg px-3 py-2.5 min-h-11 text-sm font-medium transition-all',
               pathname === '/profile'
                 ? 'bg-primary/10 text-primary'
                 : 'text-muted-foreground hover:bg-muted hover:text-foreground'
             )}
           >
             <User className="h-4 w-4 flex-shrink-0" />
-            {!collapsed && <span>Admin Profile</span>}
+            {!effectiveCollapsed && <span>Admin Profile</span>}
           </Link>
 
           <Link
             href="/login"
-            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all text-destructive hover:bg-destructive/10 cursor-pointer"
+            onClick={handleNavClick}
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 min-h-11 text-sm font-medium transition-all text-destructive hover:bg-destructive/10 cursor-pointer"
           >
             <LogOut className="h-4 w-4 flex-shrink-0" />
-            {!collapsed && <span>Logout</span>}
+            {!effectiveCollapsed && <span>Logout</span>}
           </Link>
         </div>
       </ScrollArea>
 
-      {/* Collapse Trigger when Collapsed */}
-      {collapsed && (
+      {/* Collapse Trigger when Collapsed (desktop only) */}
+      {effectiveCollapsed && !forceIconOnly && (
         <div className="flex justify-center p-3 border-t border-border">
           <button
             onClick={onToggle}
@@ -384,7 +428,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
       )}
 
       {/* User Info Footer */}
-      {!collapsed && (
+      {!effectiveCollapsed && (
         <div className="border-t border-border p-4 bg-muted/50">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#14b8a6] to-[#0f766e] text-black font-bold text-xs flex-shrink-0">
@@ -402,6 +446,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
         </div>
       )}
     </motion.aside>
+    </>
   );
 }
 

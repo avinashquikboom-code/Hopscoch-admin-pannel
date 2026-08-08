@@ -439,7 +439,7 @@ export default function WarehousesPage() {
                 )}
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto admin-table-scroll -mx-1 px-1">
                 <table className="w-full text-sm text-left">
                   <thead className="bg-muted/40 text-xs uppercase font-bold text-muted-foreground">
                     <tr>
@@ -586,10 +586,16 @@ export default function WarehousesPage() {
 
         {/* Right-Side Slide-Over Drawer Panel */}
         {showDrawer && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex justify-end">
-            <div className="w-full max-w-lg bg-card h-full border-l border-border/80 shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+          <div
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex justify-end"
+            onClick={() => setShowDrawer(false)}
+          >
+            <div
+              className="w-full sm:max-w-lg max-h-[100dvh] bg-card h-full border-l border-border/80 shadow-2xl flex flex-col animate-in slide-in-from-right duration-300"
+              onClick={(e) => e.stopPropagation()}
+            >
               {/* Drawer Header */}
-              <div className="p-6 border-b flex items-center justify-between bg-muted/20">
+              <div className="p-4 sm:p-6 border-b flex items-center justify-between gap-3 bg-muted/20">
                 <div>
                   <h3 className="text-base font-bold text-foreground flex items-center gap-2">
                     <Building2 className="h-5 w-5 text-teal-600" />
@@ -605,7 +611,7 @@ export default function WarehousesPage() {
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowDrawer(false)}
-                  className="rounded-full h-8 w-8 text-muted-foreground hover:text-foreground cursor-pointer"
+                  className="rounded-full min-h-11 min-w-11 text-muted-foreground hover:text-foreground cursor-pointer shrink-0"
                 >
                   <X className="h-5 w-5" />
                 </Button>

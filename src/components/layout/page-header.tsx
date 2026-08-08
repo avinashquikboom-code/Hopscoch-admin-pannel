@@ -105,7 +105,7 @@ export function PageHeader({
   }
 
   return (
-    <div className="w-full bg-card/70 backdrop-blur-xl border border-border/40 rounded-2xl p-6 sm:p-7 mb-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden">
+    <div className="w-full bg-card/70 backdrop-blur-xl border border-border/40 rounded-2xl p-4 sm:p-6 lg:p-7 mb-6 sm:mb-8 flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden">
       {/* Decorative background glow */}
       <div className="absolute -right-24 -bottom-24 w-96 h-96 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
       <div className="absolute -left-24 -top-24 w-96 h-96 rounded-full bg-teal-500/10 blur-3xl pointer-events-none" />
@@ -148,7 +148,7 @@ export function PageHeader({
       {/* Right Column: Clock & Optional Actions */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 lg:self-center z-10 shrink-0">
         {/* Page specific action buttons slot */}
-        {displayActions && <div className="flex items-center gap-2 w-full sm:w-auto">{displayActions}</div>}
+        {displayActions && <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">{displayActions}</div>}
 
         {/* System Clock Widget */}
         {showClock && (

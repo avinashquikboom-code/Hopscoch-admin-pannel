@@ -1,7 +1,7 @@
 'use client';
 
 import { API_BASE, getImageUrl } from '@/lib/api';
-import { Search, Bell, User, Settings, LogOut, Menu, Sun, Moon, Globe, DollarSign, MapPin, ChevronDown } from 'lucide-react';
+import { Search, Bell, User, Settings, LogOut, Menu, Sun, Moon, Globe, DollarSign, MapPin, ChevronDown, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/toast';
@@ -22,9 +22,10 @@ import { useRouter } from 'next/navigation';
 
 interface HeaderProps {
   onMenuClick: () => void;
+  showMobileMenu?: boolean;
 }
 
-export function Header({ onMenuClick }: HeaderProps) {
+export function Header({ onMenuClick, showMobileMenu = false }: HeaderProps) {
   const router = useRouter();
   const { currencyCode, currencySymbol, setCurrencyCode } = useCurrency();
   const [user, setUser] = useState<{ firstName: string; lastName: string; email: string; avatarUrl?: string } | null>(null);
@@ -225,19 +226,22 @@ export function Header({ onMenuClick }: HeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-border/20 bg-background/60 backdrop-blur-lg px-6 transition-all duration-300">
-      <div className="flex items-center gap-4 flex-1">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="lg:hidden hover:bg-muted/60"
-          onClick={onMenuClick}
-        >
-          <Menu className="h-5 w-5 text-foreground" />
-        </Button>
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-2 sm:gap-4 border-b border-border/20 bg-background/60 backdrop-blur-lg px-4 sm:px-6 transition-all duration-300 supports-[padding:max(0px)]:pt-[max(0px,env(safe-area-inset-top))]">
+      <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+        {showMobileMenu && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden shrink-0 min-h-11 min-w-11 hover:bg-muted/60"
+            onClick={onMenuClick}
+            aria-label="Open navigation menu"
+          >
+            <Menu className="h-5 w-5 text-foreground" />
+          </Button>
+        )}
 
-        {/* Global Search */}
-        <div className="hidden md:flex flex-1 max-w-md">
+        {/* Global Search — tablet+ */}
+        <div className="hidden md:flex flex-1 max-w-md min-w-0">
           <div className="relative w-full group">
             <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground group-focus-within:text-[#14b8a6] transition-colors" />
             <Input
@@ -250,8 +254,9 @@ export function Header({ onMenuClick }: HeaderProps) {
       </div>
 
       {/* Header Actions */}
-      <div className="flex items-center gap-3">
-        {/* Quick Region, Currency & Language Action Button */}
+      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+        {/* Region / currency / language — tablet+ */}
+        <div className="hidden md:block">
         <DropdownMenu>
           <DropdownMenuTrigger render={
             <div suppressHydrationWarning className="flex items-center gap-2 rounded-full border border-border/40 bg-muted/30 hover:bg-muted/60 hover:border-[#14b8a6]/40 px-3 py-1.5 text-xs font-semibold text-foreground transition-all cursor-pointer shadow-xs">
@@ -366,13 +371,14 @@ export function Header({ onMenuClick }: HeaderProps) {
             </div>
           </DropdownMenuContent>
         </DropdownMenu>
+        </div>
 
-        {/* Theme Toggle */}
+        {/* Theme Toggle — tablet+ */}
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          className="h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-muted/60"
+          className="hidden md:flex h-11 w-11 min-h-11 min-w-11 text-muted-foreground hover:text-foreground hover:bg-muted/60"
           aria-label="Toggle theme"
         >
           {mounted && theme === 'dark' ? (
@@ -382,10 +388,117 @@ export function Header({ onMenuClick }: HeaderProps) {
           )}
         </Button>
 
+        {/* Mobile overflow: search, region, theme */}
+        <DropdownMenu>
+          <DropdownMenuTrigger render={
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden min-h-11 min-w-11 text-muted-foreground hover:text-foreground hover:bg-muted/60"
+              aria-label="More options"
+            >
+              <MoreHorizontal className="h-5 w-5" />
+            </Button>
+          } />
+          <DropdownMenuContent align="end" className="w-72 p-3 rounded-xl bg-card/95 border border-border/40 backdrop-blur-xl shadow-xl space-y-3">
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search..."
+                className="pl-10 h-11 bg-muted/30 border-border/30"
+              />
+            </div>
+            <DropdownMenuSeparator />
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-muted-foreground uppercase flex items-center gap-1">
+                <MapPin className="h-3 w-3 text-primary" /> Store Country
+              </label>
+              <select
+                value={currentCountry}
+                disabled={isUpdatingRegion}
+                onChange={(e) => handleQuickCountryChange(e.target.value)}
+                className="w-full h-11 rounded-lg border border-border/50 bg-background px-2.5 text-xs font-bold text-primary outline-none focus:border-[#14b8a6] cursor-pointer"
+              >
+                {countriesList.length > 0 ? (
+                  countriesList.map((c: any) => (
+                    <option key={c.code} value={c.code}>
+                      {c.name} ({c.code})
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value="IN">India (IN)</option>
+                    <option value="US">United States (US)</option>
+                  </>
+                )}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-muted-foreground uppercase flex items-center gap-1">
+                <DollarSign className="h-3 w-3 text-emerald-500" /> Currency
+              </label>
+              <select
+                value={currencyCode}
+                onChange={(e) => handleQuickCurrencyChange(e.target.value)}
+                className="w-full h-11 rounded-lg border border-border/50 bg-background px-2.5 text-xs font-semibold outline-none focus:border-[#14b8a6] cursor-pointer"
+              >
+                {currenciesList.length > 0 ? (
+                  currenciesList.map((c: any) => (
+                    <option key={c.code || c.id} value={c.code}>
+                      {c.code} ({c.symbol || ''}) - {c.name}
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value="INR">INR (₹)</option>
+                    <option value="USD">USD ($)</option>
+                  </>
+                )}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-muted-foreground uppercase flex items-center gap-1">
+                <Globe className="h-3 w-3 text-blue-500" /> Language
+              </label>
+              <select
+                value={currentLanguage}
+                onChange={(e) => handleQuickLanguageChange(e.target.value)}
+                className="w-full h-11 rounded-lg border border-border/50 bg-background px-2.5 text-xs font-semibold outline-none focus:border-[#14b8a6] cursor-pointer"
+              >
+                {languagesList.length > 0 ? (
+                  languagesList.map((l: any) => (
+                    <option key={l.code || l.id} value={l.code}>
+                      {l.flag || ''} {l.name} ({l.code})
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value="en">English (en)</option>
+                    <option value="hi">Hindi (hi)</option>
+                  </>
+                )}
+              </select>
+            </div>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="p-3 min-h-11 rounded-md hover:bg-muted/50 cursor-pointer text-sm font-medium"
+            >
+              {mounted && theme === 'dark' ? (
+                <Sun className="mr-2.5 h-4 w-4 text-amber-500" />
+              ) : (
+                <Moon className="mr-2.5 h-4 w-4" />
+              )}
+              Toggle theme
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         {/* Notifications Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger render={
-            <div className="relative rounded-md p-2 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors cursor-pointer border-none bg-transparent">
+            <div className="relative rounded-md p-2 min-h-11 min-w-11 flex items-center justify-center text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors cursor-pointer border-none bg-transparent">
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
                 <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#14b8a6] text-black text-[10px] font-black leading-none px-1 border-2 border-background">
@@ -437,7 +550,7 @@ export function Header({ onMenuClick }: HeaderProps) {
         {/* User Account Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger render={
-            <div className="relative h-10 w-10 rounded-full hover:bg-muted/65 p-0 border border-[#14b8a6]/30 cursor-pointer bg-transparent flex items-center justify-center">
+            <div className="relative h-11 w-11 min-h-11 min-w-11 rounded-full hover:bg-muted/65 p-0 border border-[#14b8a6]/30 cursor-pointer bg-transparent flex items-center justify-center">
               <Avatar className="h-9 w-9 rounded-full">
                 {user?.avatarUrl && <AvatarImage src={getImageUrl(user.avatarUrl)} alt="Admin" />}
                 <AvatarFallback className="bg-gradient-to-tr from-[#14b8a6] via-[#2dd4bf] to-[#0f766e] text-black font-bold text-xs rounded-full">

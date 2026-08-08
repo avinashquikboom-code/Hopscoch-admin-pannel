@@ -324,3 +324,45 @@
 .aura-gradient {
   background: linear-gradient(135deg, #134e4a 0%, #0F766E 50%, #0d9488 100%);
 }
+
+/* ── RESPONSIVE ADMIN UTILITIES ─────────────────────────────── */
+.admin-table-scroll {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.admin-table-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.admin-table-scroll::-webkit-scrollbar-thumb {
+  background-color: color-mix(in oklab, var(--border) 80%, transparent);
+  border-radius: 9999px;
+}
+
+/* Prevent horizontal page bleed on small screens */
+html,
+body {
+  overflow-x: clip;
+  max-width: 100%;
+}
+
+/* Safari: consistent form control sizing */
+input,
+select,
+textarea,
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+select {
+  -webkit-appearance: menulist;
+  appearance: menulist;
+}
+
+/* Sticky header safe-area (iOS Safari) */
+@supports (padding: max(0px)) {
+  .safe-area-top {
+    padding-top: max(0px, env(safe-area-inset-top));
+  }
+}

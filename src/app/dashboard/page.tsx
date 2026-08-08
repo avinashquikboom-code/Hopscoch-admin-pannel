@@ -334,12 +334,12 @@ export default function DashboardPage() {
             className="lg:col-span-8"
           >
             <Card className="border-border/30 rounded-lg bg-card/60 backdrop-blur-md overflow-hidden">
-              <CardHeader className="flex flex-row items-center justify-between border-b border-border/20 pb-4">
-                <div>
+              <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/20 pb-4">
+                <div className="min-w-0">
                   <CardTitle className="text-lg font-semibold text-foreground">Sales Performance</CardTitle>
                   <p className="text-xs text-muted-foreground mt-0.5 font-normal">Monthly revenue & orders from database</p>
                 </div>
-                <div className="flex items-center gap-3 text-xs font-medium">
+                <div className="flex items-center gap-3 text-xs font-medium shrink-0">
                   <div className="flex items-center gap-1.5 font-medium text-foreground">
                     <span className="w-2.5 h-2.5 rounded-full bg-[#14b8a6]" />
                     Revenue
@@ -445,7 +445,7 @@ export default function DashboardPage() {
                 </div>
 
                 {!loading && categoryData.length > 0 && (
-                  <div className="grid grid-cols-2 gap-3.5 mt-6 pt-4 border-t border-border/10">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-6 pt-4 border-t border-border/10">
                     {categoryData.map((item) => (
                       <div key={item.name} className="flex items-center gap-2">
                         <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />

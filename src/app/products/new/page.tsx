@@ -398,25 +398,25 @@ export default function NewProductPage() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
             <Link href="/products">
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="min-h-11 min-w-11 shrink-0">
                 <ArrowLeft className="h-5 w-5" />
               </Button>
             </Link>
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">New Product</h1>
-              <p className="text-muted-foreground mt-1">Add a new product to your inventory</p>
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground truncate">New Product</h1>
+              <p className="text-muted-foreground mt-1 text-sm">Add a new product to your inventory</p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" type="button">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto shrink-0">
+            <Button variant="outline" type="button" className="min-h-11 w-full sm:w-auto">
               <Eye className="mr-2 h-4 w-4" />
               Preview
             </Button>
             <Button 
-              className="bg-primary hover:bg-primary-dark"
+              className="bg-primary hover:bg-primary-dark min-h-11 w-full sm:w-auto"
               type="submit"
               form="new-product-form"
               disabled={isLoading}
@@ -429,7 +429,7 @@ export default function NewProductPage() {
 
         <form id="new-product-form" onSubmit={handleSubmit}>
           <Tabs defaultValue="basic" className="space-y-6">
-            <TabsList>
+            <TabsList className="w-full overflow-x-auto flex flex-nowrap justify-start h-auto p-1 gap-1">
               <TabsTrigger value="basic">Basic Info</TabsTrigger>
               <TabsTrigger value="pricing">Pricing & Inventory</TabsTrigger>
               <TabsTrigger value="images">Images</TabsTrigger>
@@ -855,7 +855,7 @@ export default function NewProductPage() {
                   </div>
 
                   {images.length > 0 && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                       {images.map((image, index) => (
                         <motion.div
                           key={index}
