@@ -45,7 +45,7 @@ export default function SettingsPaymentsPage() {
   const [gateways, setGateways] = useState({
     stripe: { enabled: true, publishableKey: 'pk_live_51M3...', secretKey: 'sk_live_51M3...' },
     cod: { enabled: true, extraFee: 2.0 },
-    applePay: { enabled: true, merchantId: 'merchant.com.aura' },
+    applePay: { enabled: true, merchantId: 'merchant.com.fciseller' },
   });
 
   const [isSaved, setIsSaved] = useState(false);

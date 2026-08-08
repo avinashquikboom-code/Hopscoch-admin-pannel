@@ -556,7 +556,7 @@ export default function BrandsPage() {
                         id="slug" 
                         value={formData.slug}
                         onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                        placeholder="aura-original" 
+                        placeholder="fciseller-original" 
                         className="pl-10 h-11 rounded-lg border-border/50 focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all" 
                       />
                     </div>

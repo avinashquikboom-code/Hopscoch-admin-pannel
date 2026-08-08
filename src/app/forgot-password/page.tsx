@@ -170,7 +170,7 @@ export default function ForgotPasswordPage() {
         </Card>
 
         <p className="text-center text-xs text-slate-400 dark:text-zinc-600 mt-5 font-light">
-          Protected by AURA Enterprise Secure Shield • v2.4.0
+          Protected by FCISeller Enterprise Secure Shield • v2.4.0
         </p>
       </motion.div>
     </div>

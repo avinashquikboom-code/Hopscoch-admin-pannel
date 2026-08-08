@@ -83,7 +83,7 @@ export default function VisualSearchPage() {
     } catch {
       // Fallback fallback seed entries
       setVisualSearches([
-        { id: '1', productId: 'BRAND-AURA', productName: 'Floral Silk Dress', imageUrl: 'https://images.unsplash.com/photo-1596783074918-c84cb06531ca?q=80&w=600', metadata: { colors: ['#ef4444', '#ec4899', '#ffffff'], patterns: ['floral', 'printed'], style: ['casual', 'summer'], category: 'dresses', confidence: 0.95 }, similarProducts: ['PROD-002', 'PROD-003'], createdAt: '2026-07-05' },
+        { id: '1', productId: 'BRAND-FCI', productName: 'Floral Silk Dress', imageUrl: 'https://images.unsplash.com/photo-1596783074918-c84cb06531ca?q=80&w=600', metadata: { colors: ['#ef4444', '#ec4899', '#ffffff'], patterns: ['floral', 'printed'], style: ['casual', 'summer'], category: 'dresses', confidence: 0.95 }, similarProducts: ['PROD-002', 'PROD-003'], createdAt: '2026-07-05' },
         { id: '2', productId: 'BRAND-COUTURE', productName: 'Classic White Shirt', imageUrl: 'https://images.unsplash.com/photo-1596783074918-c84cb06531ca?q=80&w=600', metadata: { colors: ['#ffffff', '#f5f5f4'], patterns: ['solid'], style: ['formal', 'office'], category: 'tops', confidence: 0.92 }, similarProducts: ['PROD-005'], createdAt: '2026-07-04' },
       ]);
     } finally {

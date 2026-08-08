@@ -588,7 +588,7 @@ export default function InventoryPage() {
                         required
                         value={formData.sku}
                         onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                        placeholder="e.g. AURA-DR-01" 
+                        placeholder="e.g. FCI-DR-01" 
                         className="pl-10 h-11 rounded-lg border-border/50 focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all" 
                       />
                     </div>
