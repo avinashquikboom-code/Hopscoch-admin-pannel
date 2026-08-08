@@ -76,7 +76,14 @@ export function Header({ onMenuClick, showMobileMenu = false }: HeaderProps) {
         const json = await res.json();
 
         if (json.success && Array.isArray(json.data) && isMounted) {
-          const items = json.data;
+          // Deduplicate items by ID
+          const seen = new Set();
+          const items = json.data.filter((n: any) => {
+            const key = String(n.id || `${n.title}-${n.createdAt}`);
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
           setNotifications(items);
           const unread = items.filter((n: any) => !n.isRead).length;
           setUnreadCount(unread);

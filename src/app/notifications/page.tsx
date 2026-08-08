@@ -117,7 +117,18 @@ export default function NotificationsPage() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || 'Failed to load notifications');
       const raw = json.data ?? json.notifications ?? json ?? [];
-      setNotificationsList(Array.isArray(raw) ? raw.map(normalizeNotification) : []);
+      if (Array.isArray(raw)) {
+        const seen = new Set();
+        const uniqueList = raw.filter((item: any) => {
+          const key = String(item.id || `${item.title}-${item.createdAt || item.message}`);
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        }).map(normalizeNotification);
+        setNotificationsList(uniqueList);
+      } else {
+        setNotificationsList([]);
+      }
     } catch (e: any) { setError(e.message); } finally { setLoading(false); }
   }, []);
 
