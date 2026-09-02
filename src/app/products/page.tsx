@@ -138,6 +138,16 @@ function normalizeProduct(raw: any) {
 
 export default function ProductsPage() {
   const [productsList, setProductsList] = useState<any[]>([]);
+  const [dbStats, setDbStats] = useState<{
+    totalCount: number;
+    activeCount: number;
+    lowStockCount: number;
+    featuredCount: number;
+    publishedCount?: number;
+    draftCount?: number;
+    archivedCount?: number;
+    deletedCount?: number;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { fmt: fmtPrice } = useCurrency();
@@ -498,6 +508,18 @@ export default function ProductsPage() {
       const normalized = Array.isArray(raw) ? raw.map(normalizeProduct) : [];
       console.log('✅ Normalized products list:', normalized);
       setProductsList(normalized);
+
+      if (json.data?.stats) {
+        setDbStats(json.data.stats);
+      } else if (json.data?.pagination?.total != null) {
+        const total = Number(json.data.pagination.total);
+        setDbStats({
+          totalCount: total,
+          activeCount: normalized.filter(p => p.status === 'published' || p.status === 'active').length,
+          lowStockCount: normalized.filter(p => p.stock < 20).length,
+          featuredCount: normalized.filter(p => p.isFeatured).length,
+        });
+      }
     } catch (e: any) {
       console.error('❌ [fetchProducts] Error:', e);
       setError(e.message);
@@ -899,6 +921,14 @@ export default function ProductsPage() {
   });
 
   const stats = useMemo(() => {
+    if (dbStats) {
+      return {
+        totalCount: dbStats.totalCount,
+        activeCount: dbStats.activeCount ?? dbStats.publishedCount ?? 0,
+        lowStockCount: dbStats.lowStockCount ?? 0,
+        featuredCount: dbStats.featuredCount ?? 0,
+      };
+    }
     const totalCount = productsList.length;
     const activeCount = productsList.filter(p => p.status === 'published' || p.status === 'active').length;
     const lowStockCount = productsList.filter(p => p.stock < 20).length;
@@ -910,7 +940,7 @@ export default function ProductsPage() {
       lowStockCount,
       featuredCount
     };
-  }, [productsList]);
+  }, [dbStats, productsList]);
 
   const getProductGradient = (name: string) => {
     let hash = 0;
