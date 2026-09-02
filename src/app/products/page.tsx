@@ -72,9 +72,30 @@ import {
   SlidersHorizontal,
   ArrowUpDown,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
+
+function generatePageNumbers(current: number, total: number): (number | string)[] {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+  const pages: (number | string)[] = [];
+  pages.push(1);
+  if (current > 3) pages.push('...');
+
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  for (let i = start; i <= end; i++) {
+    pages.push(i);
+  }
+
+  if (current < total - 2) pages.push('...');
+  pages.push(total);
+  return pages;
+}
 
 
 function authHeaders(): HeadersInit {
@@ -433,6 +454,25 @@ export default function ProductsPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [stockLevelFilter, setStockLevelFilter] = useState('all');
 
+  // Server-side Pagination State
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(50);
+  const [paginationInfo, setPaginationInfo] = useState<{
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  }>({
+    page: 1,
+    limit: 50,
+    total: 0,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPreviousPage: false,
+  });
+
   const [newVarColor, setNewVarColor] = useState('');
   const [newVarSize, setNewVarSize] = useState('');
   const [newVarPrice, setNewVarPrice] = useState('');
@@ -495,30 +535,50 @@ export default function ProductsPage() {
     }
   };
 
-  const fetchProducts = useCallback(async () => {
+  const fetchProducts = useCallback(async (targetPage?: number, targetPageSize?: number) => {
     setLoading(true); setError(null);
     try {
-      console.log('📌 [fetchProducts] GET /api/admin/products?limit=1000');
-      const res = await fetch(`${API_BASE}/api/admin/products?limit=1000`, { headers: authHeaders() });
+      const pageToUse = targetPage ?? currentPage;
+      const sizeToUse = targetPageSize ?? pageSize;
+      const params = new URLSearchParams();
+      params.set('page', String(pageToUse));
+      params.set('limit', String(sizeToUse));
+      if (searchQuery.trim()) params.set('search', searchQuery.trim());
+      if (categoryFilter !== 'all') params.set('categoryId', categoryFilter);
+      if (brandFilter !== 'all') params.set('brandId', brandFilter);
+      if (statusFilter !== 'all') params.set('status', statusFilter);
+      if (stockLevelFilter !== 'all') params.set('stockLevel', stockLevelFilter);
+
+      const res = await fetch(`${API_BASE}/api/admin/products?${params.toString()}`, { headers: authHeaders() });
       const json = await res.json();
-      console.log('📥 [fetchProducts] Server Response:', res.status, json);
       if (!res.ok) throw new Error(json.message || 'Failed to load products');
 
       const raw = json.data?.products ?? (Array.isArray(json.data) ? json.data : []) ?? json.products ?? json ?? [];
       const normalized = Array.isArray(raw) ? raw.map(normalizeProduct) : [];
-      console.log('✅ Normalized products list:', normalized);
       setProductsList(normalized);
+
+      if (json.data?.pagination) {
+        const p = json.data.pagination;
+        setPaginationInfo({
+          page: p.page || pageToUse,
+          limit: p.limit || sizeToUse,
+          total: p.total != null ? Number(p.total) : normalized.length,
+          totalPages: p.totalPages || Math.max(1, Math.ceil((p.total || normalized.length) / sizeToUse)),
+          hasNextPage: p.hasNextPage ?? (pageToUse < (p.totalPages || 1)),
+          hasPreviousPage: p.hasPreviousPage ?? (pageToUse > 1),
+        });
+      }
 
       if (json.data?.stats) {
         setDbStats(json.data.stats);
       } else if (json.data?.pagination?.total != null) {
         const total = Number(json.data.pagination.total);
-        setDbStats({
+        setDbStats((prev: any) => ({
           totalCount: total,
-          activeCount: normalized.filter(p => p.status === 'published' || p.status === 'active').length,
-          lowStockCount: normalized.filter(p => p.stock < 20).length,
-          featuredCount: normalized.filter(p => p.isFeatured).length,
-        });
+          activeCount: prev?.activeCount ?? normalized.filter(p => p.status === 'published' || p.status === 'active').length,
+          lowStockCount: prev?.lowStockCount ?? normalized.filter(p => p.stock < 20).length,
+          featuredCount: prev?.featuredCount ?? normalized.filter(p => p.isFeatured).length,
+        }));
       }
     } catch (e: any) {
       console.error('❌ [fetchProducts] Error:', e);
@@ -526,11 +586,17 @@ export default function ProductsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentPage, pageSize, searchQuery, categoryFilter, brandFilter, statusFilter, stockLevelFilter]);
 
+  // Fetch products on page, pageSize, search, or filter changes
   useEffect(() => { 
     fetchProducts(); 
   }, [fetchProducts]);
+
+  // Reset to page 1 when search or filter values change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, categoryFilter, brandFilter, statusFilter, stockLevelFilter]);
 
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -872,31 +938,7 @@ export default function ProductsPage() {
     }
   };
 
-  const filteredProducts = useMemo(() => {
-    return productsList.filter(product => {
-      const matchesSearch =
-        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.brand.toLowerCase().includes(searchQuery.toLowerCase());
-
-      const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter;
-      const matchesBrand = brandFilter === 'all' || product.brand === brandFilter;
-      const matchesStatus =
-        statusFilter === 'all' ||
-        (statusFilter === 'active'
-          ? (product.status === 'published' || product.status === 'active')
-          : product.status === statusFilter);
-      
-      let matchesStock = true;
-      if (stockLevelFilter !== 'all') {
-        if (stockLevelFilter === 'out') matchesStock = product.stock === 0;
-        else if (stockLevelFilter === 'low') matchesStock = product.stock > 0 && product.stock < 20;
-        else if (stockLevelFilter === 'in') matchesStock = product.stock >= 20;
-      }
-
-      return matchesSearch && matchesCategory && matchesBrand && matchesStatus && matchesStock;
-    });
-  }, [productsList, searchQuery, categoryFilter, brandFilter, statusFilter, stockLevelFilter]);
+  const filteredProducts = productsList;
 
   const [sorting, setSorting] = useState<SortingState>([]);
 
@@ -916,8 +958,6 @@ export default function ProductsPage() {
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageSize: 15 } },
   });
 
   const stats = useMemo(() => {
@@ -1488,18 +1528,109 @@ export default function ProductsPage() {
                 </TableBody>
               </Table>
             </div>
-            {filteredProducts.length > 0 && (
-              <div className="flex items-center justify-between p-3 border-t border-border/30 bg-muted/10 text-xs">
-                <span className="text-muted-foreground font-semibold">
-                  Page {productTable.getState().pagination.pageIndex + 1} of {productTable.getPageCount() || 1} &bull; {filteredProducts.length} products
-                </span>
-                <div className="flex items-center gap-1">
-                  <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => productTable.previousPage()} disabled={!productTable.getCanPreviousPage()}>
-                    <ChevronLeft className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg" onClick={() => productTable.nextPage()} disabled={!productTable.getCanNextPage()}>
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </Button>
+            {productsList.length > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-border/30 bg-muted/10 text-xs">
+                <div className="flex items-center gap-3">
+                  <span className="text-muted-foreground font-medium">
+                    Showing <strong className="text-foreground">{Math.min((currentPage - 1) * pageSize + 1, paginationInfo.total)}</strong>–<strong className="text-foreground">{Math.min(currentPage * pageSize, paginationInfo.total)}</strong> of <strong className="text-foreground">{paginationInfo.total.toLocaleString()}</strong> products
+                  </span>
+                  <span className="text-muted-foreground font-medium border-l border-border/40 pl-3">
+                    Page <strong className="text-foreground">{currentPage}</strong> of <strong className="text-foreground">{paginationInfo.totalPages}</strong>
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  {/* Page Size Selector */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground font-medium">Rows per page:</span>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => {
+                        const newSize = Number(e.target.value);
+                        setPageSize(newSize);
+                        setCurrentPage(1);
+                      }}
+                      className="h-8 rounded-lg border border-border/40 bg-background px-2 text-xs font-semibold outline-none focus:ring-1 focus:ring-[#14b8a6]/30 cursor-pointer"
+                    >
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                      <option value={200}>200</option>
+                    </select>
+                  </div>
+
+                  {/* Navigation Buttons */}
+                  <div className="flex items-center gap-1">
+                    {/* First Page */}
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 rounded-lg"
+                      onClick={() => setCurrentPage(1)}
+                      disabled={currentPage <= 1 || loading}
+                      title="First Page"
+                    >
+                      <ChevronsLeft className="h-4 w-4" />
+                    </Button>
+
+                    {/* Previous Page */}
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 rounded-lg"
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage <= 1 || loading}
+                      title="Previous Page"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+
+                    {/* Page Number Buttons */}
+                    {generatePageNumbers(currentPage, paginationInfo.totalPages).map((pNum, idx) => (
+                      pNum === '...' ? (
+                        <span key={`dots-${idx}`} className="px-1.5 text-muted-foreground font-bold select-none">...</span>
+                      ) : (
+                        <Button
+                          key={`page-${pNum}`}
+                          variant={currentPage === pNum ? 'default' : 'outline'}
+                          size="sm"
+                          className={`h-8 min-w-[32px] px-2 rounded-lg text-xs font-bold ${
+                            currentPage === pNum
+                              ? 'bg-primary text-primary-foreground shadow-sm'
+                              : 'hover:bg-muted/60'
+                          }`}
+                          onClick={() => setCurrentPage(Number(pNum))}
+                          disabled={loading}
+                        >
+                          {pNum}
+                        </Button>
+                      )
+                    ))}
+
+                    {/* Next Page */}
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 rounded-lg"
+                      onClick={() => setCurrentPage((p) => Math.min(paginationInfo.totalPages, p + 1))}
+                      disabled={currentPage >= paginationInfo.totalPages || loading}
+                      title="Next Page"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+
+                    {/* Last Page */}
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 rounded-lg"
+                      onClick={() => setCurrentPage(paginationInfo.totalPages)}
+                      disabled={currentPage >= paginationInfo.totalPages || loading}
+                      title="Last Page"
+                    >
+                      <ChevronsRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}
