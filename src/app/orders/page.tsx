@@ -1,5 +1,6 @@
 'use client';
 import { API_BASE } from '@/lib/api';
+import { SELLER_CONFIG } from '@/constants/seller';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useCurrency } from '@/context/currency-context';
@@ -214,9 +215,11 @@ function generateFciSellerInvoiceHtml(order: any, currencySymbol: string = '₹'
   const dateStr = order.date || new Date().toLocaleDateString('en-IN');
   const invoiceNo = `INV-FCI-${(order.id || '').replace(/[^a-zA-Z0-9]/g, '')}`;
   const totalAmt = Number(order.amount || 0);
-  const sellerName = order.sellerNameSnapshot || order.sellerName || 'FCI Seller Retail Pvt. Ltd.';
-  const sellerContact = order.sellerContactSnapshot || order.sellerContact || '+91 9876543210';
-  const sellerAddress = order.sellerAddressSnapshot || order.sellerAddress || 'Plot No. 42, E-Commerce Corridor, Tech City, Karnataka - 560100, India';
+  const sellerName = order.sellerNameSnapshot || order.sellerName || SELLER_CONFIG.name;
+  const sellerContact = order.sellerContactSnapshot || order.sellerContact || SELLER_CONFIG.contactNumber;
+  const sellerAddress = order.sellerAddressSnapshot || order.sellerAddress || SELLER_CONFIG.fullAddress;
+  const sellerGst = order.sellerGstNumber || SELLER_CONFIG.gstin;
+  const sellerEmail = order.sellerEmail || SELLER_CONFIG.supportEmail;
 
   const taxableTotal = totalAmt / 1.18;
   const totalGst = totalAmt - taxableTotal;
@@ -252,7 +255,7 @@ function generateFciSellerInvoiceHtml(order: any, currencySymbol: string = '₹'
 <html>
 <head>
   <meta charset="utf-8"/>
-  <title>Tax Invoice - FCI SELLER #${order.id}</title>
+  <title>Tax Invoice - FCI #${order.id}</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #fff; color: #1e293b; margin: 0; padding: 24px; }
     .invoice-card { max-width: 850px; margin: 0 auto; border: 1px solid #cbd5e1; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
@@ -294,9 +297,10 @@ function generateFciSellerInvoiceHtml(order: any, currencySymbol: string = '₹'
     <!-- Header -->
     <div class="header">
       <div>
-        <div class="logo">${sellerName.split(' ')[0]} <span>${sellerName.split(' ').slice(1).join(' ')}</span></div>
-        <p style="font-size: 12px; color: #0f172a; margin: 4px 0 0 0; font-weight: 700;">${sellerName}</p>
-        <p style="font-size: 11px; color: #64748b; margin: 2px 0 0 0;">Contact: ${sellerContact}</p>
+        <div class="logo">FCI</div>
+        <div style="font-size: 11px; color: #334155; margin-top: 4px;"><strong>GSTIN:</strong> ${sellerGst}</div>
+        <div style="font-size: 11px; color: #334155; margin-top: 2px;"><strong>Support:</strong> ${sellerEmail}</div>
+        <div style="font-size: 11px; color: #334155; margin-top: 2px; max-width: 380px;"><strong>Address:</strong> ${sellerAddress}</div>
       </div>
       <div>
         <div class="invoice-title">Tax Invoice</div>
@@ -310,9 +314,9 @@ function generateFciSellerInvoiceHtml(order: any, currencySymbol: string = '₹'
         <div class="box-title">Sold By (Seller Details)</div>
         <p><strong>${sellerName}</strong></p>
         <p>${sellerAddress}</p>
+        <p><strong>GSTIN:</strong> ${sellerGst}</p>
+        <p><strong>Support:</strong> ${sellerEmail}</p>
         <p><strong>Contact:</strong> ${sellerContact}</p>
-        <p><strong>GSTIN:</strong> 29AAACF9988F1Z5</p>
-        <p><strong>PAN:</strong> AAACF9988F | <strong>CIN:</strong> U74999KA2024PTC188888</p>
       </div>
       <div class="box">
         <div class="box-title">Invoice & Order Summary</div>
@@ -320,7 +324,7 @@ function generateFciSellerInvoiceHtml(order: any, currencySymbol: string = '₹'
         <p><strong>Invoice Date:</strong> ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
         <p><strong>Order ID:</strong> #${order.id}</p>
         <p><strong>Order Date:</strong> ${dateStr}</p>
-        <p><strong>Place of Supply:</strong> Karnataka (29)</p>
+        <p><strong>Place of Supply:</strong> Gujarat (24)</p>
       </div>
     </div>
 
@@ -402,8 +406,8 @@ function generateFciSellerInvoiceHtml(order: any, currencySymbol: string = '₹'
       <div class="terms">
         <p style="font-weight: 700; color: #0f172a; margin-bottom: 4px;">Terms & Conditions / Declaration:</p>
         <p style="margin: 2px 0;">1. Goods once sold are eligible for return as per FCI Seller Return Policy.</p>
-        <p style="margin: 2px 0;">2. All disputes are subject to Bangalore jurisdiction only.</p>
-        <p style="margin: 2px 0;">3. This is a computer-generated tax invoice for FCI Seller and requires no physical signature.</p>
+        <p style="margin: 2px 0;">2. All disputes are subject to Ahmedabad judicial jurisdiction.</p>
+        <p style="margin: 2px 0;">3. This is a computer-generated tax invoice for FCI and requires no physical signature.</p>
       </div>
       <div class="signatory">
         <p style="margin: 0; color: #64748b; font-size: 11px;">For <strong>${sellerName}</strong></p>

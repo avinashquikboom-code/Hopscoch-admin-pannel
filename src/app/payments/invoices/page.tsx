@@ -53,6 +53,7 @@ import {
 import { PageHeader } from '@/components/layout/page-header';
 import { API_BASE, authHeaders } from '@/lib/api';
 import { toast } from '@/components/ui/toast';
+import { SELLER_CONFIG } from '@/constants/seller';
 
 interface InvoiceItem {
   id: string;
@@ -108,24 +109,25 @@ function generateFciSellerInvoiceHtml(order: any, seller?: SellerInfo, warehouse
   const state = addr.state || 'Maharashtra';
   const pincode = addr.pincode || addr.zipCode || '400705';
 
-  // Prefer order-time seller snapshots (manual checkout entry), fall back to settings
+  // Prefer order-time seller snapshots (manual checkout entry), fall back to settings, then SELLER_CONFIG
   const sellerLegalName =
     order?.sellerNameSnapshot ||
     seller?.sellerLegalName ||
     seller?.sellerName ||
-    'FCI Seller Retail Pvt. Ltd.';
-  const sellerGst = seller?.sellerGstNumber || '';
+    SELLER_CONFIG.name;
+  const sellerGst = seller?.sellerGstNumber || SELLER_CONFIG.gstin;
   const sellerAddr =
     order?.sellerAddressSnapshot ||
-    [seller?.sellerAddress, seller?.sellerCity, seller?.sellerState, seller?.sellerPincode].filter(Boolean).join(', ');
+    [seller?.sellerAddress, seller?.sellerCity, seller?.sellerState, seller?.sellerPincode].filter(Boolean).join(', ') ||
+    SELLER_CONFIG.fullAddress;
   const sellerPhone =
     order?.sellerContactSnapshot ||
     seller?.sellerContactNumber ||
-    '';
-  const sellerEmailVal = seller?.sellerEmail || '';
+    SELLER_CONFIG.contactNumber;
+  const sellerEmailVal = seller?.sellerEmail || SELLER_CONFIG.supportEmail;
 
   // Fulfilled By (from default warehouse)
-  const warehouseName = warehouse?.name || 'FCI Seller Fulfillment Center';
+  const warehouseName = warehouse?.name || 'FCI Fulfillment Center';
   const warehouseAddr = warehouse ? [warehouse.address, warehouse.city, warehouse.state, warehouse.pincode].filter(Boolean).join(', ') : 'India';
 
   const items = Array.isArray(order?.items) ? order.items : [];
@@ -171,7 +173,7 @@ function generateFciSellerInvoiceHtml(order: any, seller?: SellerInfo, warehouse
 <html>
 <head>
   <meta charset="utf-8"/>
-  <title>Tax Invoice - FCI SELLER #${rawId}</title>
+  <title>Tax Invoice - FCI #${rawId}</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #fff; color: #1e293b; margin: 0; padding: 24px; }
     .invoice-card { max-width: 850px; margin: 0 auto; border: 1px solid #cbd5e1; padding: 32px; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); }
@@ -210,9 +212,10 @@ function generateFciSellerInvoiceHtml(order: any, seller?: SellerInfo, warehouse
   <div class="invoice-card">
     <div class="header">
       <div>
-        <div class="logo">FCI <span>SELLER</span></div>
-        <p style="font-size: 12px; color: #0f172a; margin: 4px 0 0 0; font-weight: 700;">FCI Seller Retail Pvt. Ltd.</p>
-        <p style="font-size: 11px; color: #64748b; margin: 2px 0 0 0;">Official E-Commerce Marketplace Partner</p>
+        <div class="logo">FCI</div>
+        <div style="font-size: 11px; color: #334155; margin-top: 4px;"><strong>GSTIN:</strong> ${sellerGst}</div>
+        <div style="font-size: 11px; color: #334155; margin-top: 2px;"><strong>Support:</strong> ${sellerEmailVal}</div>
+        <div style="font-size: 11px; color: #334155; margin-top: 2px; max-width: 380px;"><strong>Address:</strong> ${sellerAddr}</div>
       </div>
       <div>
         <div class="invoice-title">Tax Invoice</div>
@@ -224,10 +227,10 @@ function generateFciSellerInvoiceHtml(order: any, seller?: SellerInfo, warehouse
       <div class="box">
         <div class="box-title">Sold By</div>
         <p><strong>${sellerLegalName}</strong></p>
-        ${sellerAddr ? `<p>${sellerAddr}</p>` : ''}
-        ${sellerGst ? `<p><strong>GSTIN:</strong> ${sellerGst}</p>` : ''}
+        <p>${sellerAddr}</p>
+        <p><strong>GSTIN:</strong> ${sellerGst}</p>
+        <p><strong>Support:</strong> ${sellerEmailVal}</p>
         ${sellerPhone ? `<p><strong>Contact:</strong> ${sellerPhone}</p>` : ''}
-        ${sellerEmailVal ? `<p>${sellerEmailVal}</p>` : ''}
       </div>
       <div class="box">
         <div class="box-title">Fulfilled By</div>
