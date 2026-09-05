@@ -1,5 +1,6 @@
 'use client';
 import { API_BASE } from '@/lib/api';
+import { SELLER_CONFIG } from '@/constants/seller';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useCurrency, getCurrencyForCountry, getLanguageForCountry } from '@/context/currency-context';
@@ -85,20 +86,20 @@ export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [config, setConfig] = useState({
-    storeName: 'FCI Seller',
-    sellerName: 'FCI Seller Retail Pvt. Ltd.',
-    sellerContactNumber: '+91 9876543210',
+    storeName: SELLER_CONFIG.name,
+    sellerName: SELLER_CONFIG.name,
+    sellerContactNumber: SELLER_CONFIG.contactNumber,
     // Seller legal fields (for invoice Sold By section)
-    sellerLegalName: '',
-    sellerGstNumber: '',
-    sellerAddress: '',
-    sellerCity: '',
-    sellerState: '',
-    sellerPincode: '',
-    sellerEmail: '',
-    storeEmail: 'admin@fciseller.com',
-    storePhone: '+91 9876543210',
-    storeAddress: '123 Fashion Street, New York, NY 10001',
+    sellerLegalName: SELLER_CONFIG.legalName,
+    sellerGstNumber: SELLER_CONFIG.gstin,
+    sellerAddress: SELLER_CONFIG.address,
+    sellerCity: SELLER_CONFIG.city,
+    sellerState: SELLER_CONFIG.state,
+    sellerPincode: SELLER_CONFIG.pincode,
+    sellerEmail: SELLER_CONFIG.supportEmail,
+    storeEmail: SELLER_CONFIG.supportEmail,
+    storePhone: SELLER_CONFIG.contactNumber,
+    storeAddress: SELLER_CONFIG.fullAddress,
     country: 'IN',
     currency: 'INR',
     language: 'en',
@@ -399,41 +400,41 @@ export default function SettingsPage() {
                     <p className="text-xs text-muted-foreground mt-0.5">These details appear on every tax invoice under "Sold By". Enter your registered company information.</p>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="sellerLegalName" className="text-xs font-bold uppercase tracking-wider text-primary">Registered Legal Entity Name</Label>
-                      <Input id="sellerLegalName" value={config.sellerLegalName} onChange={e => setConfig(prev => ({ ...prev, sellerLegalName: e.target.value }))} placeholder="e.g. FCI Seller Retail Private Limited" className="h-10 rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="sellerLegalName" className="text-xs font-bold uppercase tracking-wider text-primary">Registered Legal Entity Name</Label>
+                        <Input id="sellerLegalName" value={config.sellerLegalName} onChange={e => setConfig(prev => ({ ...prev, sellerLegalName: e.target.value }))} placeholder="e.g. FCI" className="h-10 rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="sellerGstNumber" className="text-xs font-bold uppercase tracking-wider text-primary">GSTIN</Label>
+                        <Input id="sellerGstNumber" value={config.sellerGstNumber} onChange={e => setConfig(prev => ({ ...prev, sellerGstNumber: e.target.value.toUpperCase() }))} placeholder="e.g. 24GUKPS9446A1ZA" maxLength={15} className="h-10 rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20 font-mono tracking-wider" />
+                      </div>
                     </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="sellerGstNumber" className="text-xs font-bold uppercase tracking-wider text-primary">GSTIN</Label>
-                      <Input id="sellerGstNumber" value={config.sellerGstNumber} onChange={e => setConfig(prev => ({ ...prev, sellerGstNumber: e.target.value.toUpperCase() }))} placeholder="e.g. 27AAACF9988F1Z5" maxLength={15} className="h-10 rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20 font-mono tracking-wider" />
-                    </div>
-                  </div>
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="sellerAddress" className="text-xs font-bold uppercase tracking-wider text-primary">Registered Office / Street Address</Label>
-                    <Input id="sellerAddress" value={config.sellerAddress} onChange={e => setConfig(prev => ({ ...prev, sellerAddress: e.target.value }))} placeholder="e.g. Plot No. 42, Industrial Area, Phase 8B" className="h-10 rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20" />
-                  </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="sellerAddress" className="text-xs font-bold uppercase tracking-wider text-primary">Registered Office / Street Address</Label>
+                      <Input id="sellerAddress" value={config.sellerAddress} onChange={e => setConfig(prev => ({ ...prev, sellerAddress: e.target.value }))} placeholder="e.g. F/7 Jethabhai Park, Narayan Nagar Road, Paldi" className="h-10 rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20" />
+                    </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="sellerCity" className="text-xs font-bold uppercase tracking-wider text-primary">City</Label>
-                      <Input id="sellerCity" value={config.sellerCity} onChange={e => setConfig(prev => ({ ...prev, sellerCity: e.target.value }))} placeholder="e.g. Mohali" className="h-10 rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20" />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="sellerCity" className="text-xs font-bold uppercase tracking-wider text-primary">City</Label>
+                        <Input id="sellerCity" value={config.sellerCity} onChange={e => setConfig(prev => ({ ...prev, sellerCity: e.target.value }))} placeholder="e.g. Ahmedabad" className="h-10 rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="sellerState" className="text-xs font-bold uppercase tracking-wider text-primary">State</Label>
+                        <Input id="sellerState" value={config.sellerState} onChange={e => setConfig(prev => ({ ...prev, sellerState: e.target.value }))} placeholder="e.g. Gujarat" className="h-10 rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="sellerPincode" className="text-xs font-bold uppercase tracking-wider text-primary">Pincode</Label>
+                        <Input id="sellerPincode" value={config.sellerPincode} onChange={e => setConfig(prev => ({ ...prev, sellerPincode: e.target.value }))} placeholder="e.g. 380007" maxLength={6} className="h-10 rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20" />
+                      </div>
                     </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="sellerState" className="text-xs font-bold uppercase tracking-wider text-primary">State</Label>
-                      <Input id="sellerState" value={config.sellerState} onChange={e => setConfig(prev => ({ ...prev, sellerState: e.target.value }))} placeholder="e.g. Punjab" className="h-10 rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="sellerPincode" className="text-xs font-bold uppercase tracking-wider text-primary">Pincode</Label>
-                      <Input id="sellerPincode" value={config.sellerPincode} onChange={e => setConfig(prev => ({ ...prev, sellerPincode: e.target.value }))} placeholder="e.g. 160055" maxLength={6} className="h-10 rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20" />
-                    </div>
-                  </div>
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="sellerEmail" className="text-xs font-bold uppercase tracking-wider text-primary">Seller Legal / Invoicing Email</Label>
-                    <Input id="sellerEmail" type="email" value={config.sellerEmail} onChange={e => setConfig(prev => ({ ...prev, sellerEmail: e.target.value }))} placeholder="e.g. legal@fciseller.com" className="h-10 rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20" />
-                  </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="sellerEmail" className="text-xs font-bold uppercase tracking-wider text-primary">Seller Legal / Invoicing Email</Label>
+                      <Input id="sellerEmail" type="email" value={config.sellerEmail} onChange={e => setConfig(prev => ({ ...prev, sellerEmail: e.target.value }))} placeholder="e.g. fashioncityinidia18@gmail.com" className="h-10 rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20" />
+                    </div>
                 </div>
 
                 <div className="space-y-1.5">

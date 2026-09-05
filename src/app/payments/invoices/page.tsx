@@ -344,7 +344,7 @@ export default function InvoicesPage() {
             customerEmail: user.email || o.customerEmail || 'customer@example.com',
             customerPhone: user.phone || o.customerPhone || 'N/A',
             shippingAddress: `${street}, ${city}, ${state} - ${pincode}`,
-            gstNumber: o.gstNumber || 'GSTIN-27AAACF9988F1Z5',
+            gstNumber: o.sellerGstNumber || o.gstNumber || SELLER_CONFIG.gstin,
             amount: totalAmt,
             taxableAmount: taxable,
             taxAmount: tax,
