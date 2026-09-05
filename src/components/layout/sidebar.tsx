@@ -222,6 +222,7 @@ export function Sidebar({
         { name: 'General Settings', href: '/settings', icon: Settings },
         { name: 'Languages, Currencies & Countries', href: '/settings/languages', icon: Languages },
         { name: 'Integrations', href: '/settings/integrations', icon: SlidersHorizontal },
+        { name: 'Legal Policies', href: '/settings/policies', icon: FileText },
         { name: 'Reset Store Data', href: '/settings/reset', icon: Trash2 },
       ],
     },

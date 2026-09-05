@@ -21,7 +21,8 @@ import {
   Ship,
   Box,
   ExternalLink,
-  Loader2
+  Loader2,
+  Copy
 } from 'lucide-react';
 
 const statusConfig = {
@@ -329,17 +330,63 @@ export default function OrderDetailsPage({ params }: { params: any }) {
                   </Button>
                 )}
 
-                {orderDetails.status === 'shipped' && (
+                {(orderDetails.awbNumber || orderDetails.courierPartner || orderDetails.status === 'shipped' || orderDetails.status === 'delivered') && (
                   <div className="p-3 bg-teal-500/10 border border-teal-500/30 rounded-md space-y-2 text-xs">
-                    <p className="font-bold text-teal-700 dark:text-teal-400">Order Shipped</p>
+                    <div className="flex items-center justify-between">
+                      <p className="font-bold text-teal-700 dark:text-teal-400">
+                        {orderDetails.status === 'delivered' ? 'Shipment Delivered' : 'Shipment In Transit'}
+                      </p>
+                      {orderDetails.awbNumber && (
+                        <a
+                          href={
+                            orderDetails.courierPartner?.toLowerCase().includes('delhivery')
+                              ? `https://www.delhivery.com/track/package/${orderDetails.awbNumber}`
+                              : orderDetails.courierPartner?.toLowerCase().includes('bluedart')
+                              ? `https://www.bluedart.com/tracking?numbers=${orderDetails.awbNumber}`
+                              : orderDetails.courierPartner?.toLowerCase().includes('dtdc')
+                              ? `https://www.dtdc.in/tracking/shipment-tracking.asp?trNo=${orderDetails.awbNumber}`
+                              : orderDetails.courierPartner?.toLowerCase().includes('xpressbees')
+                              ? `https://www.xpressbees.com/shipment/tracking?awbNo=${orderDetails.awbNumber}`
+                              : `https://shiprocket.co/tracking/${orderDetails.awbNumber}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[11px] font-bold text-teal-600 hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <ExternalLink className="h-3 w-3" /> Track Direct
+                        </a>
+                      )}
+                    </div>
                     <p><strong>Courier:</strong> {orderDetails.courierPartner || 'N/A'}</p>
-                    <p><strong>AWB Number:</strong> <code className="bg-muted px-1.5 py-0.5 rounded font-mono font-bold">{orderDetails.awbNumber || 'N/A'}</code></p>
+                    <div className="flex items-center justify-between">
+                      <p>
+                        <strong>AWB Number:</strong>{' '}
+                        <code className="bg-muted px-1.5 py-0.5 rounded font-mono font-bold">
+                          {orderDetails.awbNumber || 'N/A'}
+                        </code>
+                      </p>
+                      {orderDetails.awbNumber && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(orderDetails.awbNumber);
+                            toast.success('AWB Number copied to clipboard!');
+                          }}
+                          className="text-muted-foreground hover:text-foreground flex items-center gap-1 p-1 hover:bg-muted rounded text-[11px] font-semibold cursor-pointer border border-border"
+                          title="Copy AWB Number"
+                        >
+                          <Copy className="h-3.5 w-3.5" /> Copy
+                        </button>
+                      )}
+                    </div>
                     <Button onClick={() => setShowShipModal(true)} variant="outline" size="sm" className="w-full mt-2 text-xs cursor-pointer">
                       Edit Courier / AWB Info
                     </Button>
-                    <Button onClick={() => handleUpdateStatus('DELIVERED')} variant="default" size="sm" className="w-full mt-1 bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer">
-                      <CheckCircle className="mr-1.5 h-3.5 w-3.5" /> Mark as Delivered
-                    </Button>
+                    {orderDetails.status === 'shipped' && (
+                      <Button onClick={() => handleUpdateStatus('DELIVERED')} variant="default" size="sm" className="w-full mt-1 bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer">
+                        <CheckCircle className="mr-1.5 h-3.5 w-3.5" /> Mark as Delivered
+                      </Button>
+                    )}
                   </div>
                 )}
               </CardContent>
