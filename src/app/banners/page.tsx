@@ -55,7 +55,8 @@ import {
   AlertTriangle,
   Globe,
   EyeOff,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Loader2
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from '@/components/ui/toast';
@@ -101,6 +102,7 @@ export default function BannersPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({ title: '', type: 'home', link: '', position: '1', startDate: '', endDate: '', isActive: true, description: '' });
   const [selectedBanner, setSelectedBanner] = useState<any | null>(null);
 
@@ -130,6 +132,8 @@ export default function BannersPage() {
 
   const handleCreateBanner = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     let imageUrl = '';
 
     try {
@@ -152,31 +156,41 @@ export default function BannersPage() {
           throw new Error('No URL returned from server');
         }
       }
-    } catch (err: any) {
-      console.error('Error uploading banner file:', err);
-      toast.error(`Image upload failed: ${err.message || 'Network Error'}`);
-      return; // Stop creation
-    }
 
-    const body = {
-      title: formData.title,
-      type: formData.type,
-      link: formData.link || '/',
-      position: String(formData.position || '1'),
-      startDate: formData.startDate || '2026-01-01',
-      endDate: formData.endDate || '2026-12-31',
-      isActive: formData.isActive,
-      description: formData.description,
-      imageUrl,
-    };
-    try {
-      const res = await fetch(`${API_BASE}/api/settings/banners`, { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
-      if (res.ok) { await fetchBanners(); }
-      else { setBannersList(prev => [...prev, normalizeBanner({ ...body, id: String(Date.now()) })]); }
-    } catch { setBannersList(prev => [...prev, normalizeBanner({ ...body, id: String(Date.now()) })]); }
-    setFormData({ title: '', type: 'home', link: '', position: '1', startDate: '', endDate: '', isActive: true, description: '' });
-    setImageFile(null);
-    setIsAddOpen(false);
+      const body = {
+        title: formData.title,
+        type: formData.type,
+        link: formData.link || '/',
+        position: String(formData.position || '1'),
+        startDate: formData.startDate || '2026-01-01',
+        endDate: formData.endDate || '2026-12-31',
+        isActive: formData.isActive,
+        description: formData.description,
+        imageUrl,
+      };
+
+      const res = await fetch(`${API_BASE}/api/settings/banners`, { 
+        method: 'POST', 
+        headers: authHeaders(), 
+        body: JSON.stringify(body) 
+      });
+
+      if (res.ok) { 
+        toast.success('Banner created successfully');
+        setFormData({ title: '', type: 'home', link: '', position: '1', startDate: '', endDate: '', isActive: true, description: '' });
+        setImageFile(null);
+        setIsAddOpen(false);
+        await fetchBanners(); 
+      } else { 
+        const errJson = await res.json().catch(() => ({}));
+        toast.error(errJson.message || 'Failed to create banner');
+      }
+    } catch (err: any) {
+      console.error('Error creating banner:', err);
+      toast.error(`Error: ${err.message || 'Network Error'}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleToggleActive = async (id: string) => {
@@ -200,8 +214,17 @@ export default function BannersPage() {
     setBannersList(prev => prev.filter(b => b.id !== id));
     setSelectedBanner(null);
     try {
-      await fetch(`${API_BASE}/api/settings/banners/${id}`, { method: 'DELETE', headers: authHeaders() });
-    } catch {}
+      const res = await fetch(`${API_BASE}/api/settings/banners/${id}`, { method: 'DELETE', headers: authHeaders() });
+      if (!res.ok) {
+        toast.error('Failed to delete banner on server');
+        await fetchBanners();
+      } else {
+        toast.success('Banner deleted successfully');
+      }
+    } catch {
+      toast.error('Network error while deleting banner');
+      await fetchBanners();
+    }
   };
 
   const handleSaveBanner = async () => {
@@ -431,6 +454,9 @@ export default function BannersPage() {
                               src={getImageUrl(banner.imageUrl)} 
                               alt={banner.title} 
                               className="w-28 h-14 rounded-lg object-cover shadow-inner border border-border/20"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=300&q=80';
+                              }}
                             />
                           ) : (
                             <div className={`w-28 h-14 rounded-lg bg-gradient-to-tr ${bannerGradients[idx % bannerGradients.length]} flex items-center justify-center flex-shrink-0 shadow-inner relative overflow-hidden`}>
@@ -730,8 +756,13 @@ export default function BannersPage() {
                 <Button type="button" variant="ghost" onClick={() => setIsAddOpen(false)} className="rounded-lg h-11 px-6">
                   Cancel
                 </Button>
-                <Button type="submit" className="rounded-lg h-11 px-6 bg-primary text-white hover:bg-primary/95">
-                  Publish Ad
+                <Button 
+                  type="submit" 
+                  disabled={isSubmitting} 
+                  className="rounded-lg h-11 px-6 bg-primary text-white hover:bg-primary/95 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {isSubmitting ? 'Publishing Ad...' : 'Publish Ad'}
                 </Button>
               </SheetFooter>
             </form>
@@ -825,6 +856,9 @@ export default function BannersPage() {
                         src={editImageFile ? URL.createObjectURL(editImageFile) : getImageUrl(selectedBanner.imageUrl)} 
                         alt={selectedBanner.title} 
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1200&q=80';
+                        }}
                       />
                       <div className="absolute top-3 left-3 bg-black/40 px-2 py-0.5 rounded text-[10px] font-bold text-white uppercase tracking-widest backdrop-blur">
                         {selectedBanner.type.toUpperCase()} PREVIEW
