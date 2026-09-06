@@ -2,6 +2,7 @@
 import { API_BASE } from '@/lib/api';
 
 import { useState, useEffect } from 'react';
+import { SELLER_CONFIG } from '@/constants/seller';
 import { AdminLayout } from '@/components/layout/admin-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -89,8 +90,8 @@ export default function OrderDetailsPage({ params }: { params: any }) {
         numericId: rawOrder.id,
         id: rawOrder.orderNumber || `#${rawOrder.id}`,
         invoiceNumber: `INV-${rawOrder.id}`,
-        sellerName: rawOrder.sellerNameSnapshot || 'FCI Seller Retail Pvt. Ltd.',
-        sellerContact: rawOrder.sellerContactSnapshot || '+91 9876543210',
+        sellerName: rawOrder.sellerNameSnapshot || SELLER_CONFIG.name,
+        sellerContact: rawOrder.sellerContactSnapshot || SELLER_CONFIG.contactNumber,
         sellerAddress: rawOrder.sellerAddressSnapshot || '',
         customer: {
           name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Customer',

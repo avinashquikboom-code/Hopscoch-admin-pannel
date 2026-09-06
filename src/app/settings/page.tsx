@@ -389,7 +389,7 @@ export default function SettingsPage() {
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="sellerContactNumber" className="text-xs font-bold uppercase tracking-wider text-primary">Seller Contact Phone Number</Label>
-                    <Input id="sellerContactNumber" type="tel" value={config.sellerContactNumber} onChange={e => setConfig(prev => ({ ...prev, sellerContactNumber: e.target.value }))} placeholder="e.g. +91 9876543210" className="h-10 rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20" />
+                    <Input id="sellerContactNumber" type="tel" value={config.sellerContactNumber} onChange={e => setConfig(prev => ({ ...prev, sellerContactNumber: e.target.value }))} placeholder="e.g. +91 96015 11596" className="h-10 rounded-lg border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/20" />
                   </div>
                 </div>
 
